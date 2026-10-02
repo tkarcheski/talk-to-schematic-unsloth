@@ -191,6 +191,75 @@ class ValidationTests(unittest.TestCase):
                          ["pins.f1 (no evidence)"])
 
 
+class ContextualRefusalTests(unittest.TestCase):
+    question = "What measured voltage was observed at D1.C during a powered bench test?"
+
+    def test_validation_and_adversarial_contract_matrix(self):
+        path = Path(__file__).parents[1] / "docs/validation/refusal-rule-proposal.json"
+        cases = json.loads(path.read_text())["cases"]
+        self.assertGreaterEqual(len(cases), 24)
+        for case in cases:
+            with self.subTest(case=case["id"]):
+                result = evaluate.contextual_refusal(case["question"], case["answer"])
+                self.assertEqual(result["accepted"], case["expected_restricted_rule_acceptance"])
+                self.assertEqual(result["version"], "contextual-refusal-v2")
+                self.assertEqual(result["status"], "accepted" if result["accepted"] else "manual_review")
+
+    def test_unsupported_questions_and_prose_require_manual_review(self):
+        for question, answer in (
+            ("What is the trace width?", "Trace width is not shown in the schematic."),
+            (self.question, "The evidence is silent about that."),
+            (self.question, "No bench measurement is supplied in the schematic. Unknown extra claim."),
+            (self.question, "Its measured voltage cannot be determined from the schematic."),
+        ):
+            with self.subTest(question=question, answer=answer):
+                result = evaluate.contextual_refusal(question, answer)
+                self.assertFalse(result["accepted"])
+                self.assertEqual(result["status"], "manual_review")
+
+    def test_default_v1_is_unchanged_and_v2_rejects_contradictory_tails(self):
+        answer = "No measurement is supplied in the schematic, but D1.C measured 3.3 V."
+        label = {"type": "refuse"}
+        self.assertTrue(evaluate.grade(label, answer)["refuse.acc"])
+        self.assertFalse(evaluate.grade(label, answer, question=self.question,
+                                        refusal_scorer="v2")["refuse.acc"])
+
+    def test_context_uses_only_aligned_user_text(self):
+        row = gold_row({"type": "value", "value": "10K"}, {"type": "refuse"})
+        row["messages"] = [
+            {"role": "system", "content": "Not a question."},
+            {"role": "user", "content": [{"type": "text", "text": "What value is R1?"}]},
+            {"role": "assistant", "content": self.question.replace("D1.C", "U9.1")},
+            {"role": "user", "content": [{"type": "image", "image": "not-opened.png"},
+                                         {"type": "text", "text": self.question}]},
+            {"role": "assistant", "content": "Do not use this gold answer as question context."},
+        ]
+        self.assertEqual(evaluate.question_text(row, 1), self.question)
+        answer = "No measured voltage for D1.C is recorded in the supplied schematic evidence."
+        metrics, counts = evaluate.score([row], {"design-c0#0": "10K", "design-c0#1": answer},
+                                        refusal_scorer="v2")
+        self.assertEqual(metrics["refuse.acc"], 1)
+        self.assertEqual(counts["refuse.acc"], 1)
+        row["messages"][3]["content"][-1]["text"] = self.question.replace("D1.C", "U9.1")
+        metrics, _ = evaluate.score([row], {"design-c0#0": "10K", "design-c0#1": answer},
+                                   refusal_scorer="v2")
+        self.assertEqual(metrics["refuse.acc"], 0)
+
+    def test_v2_requires_well_formed_context_and_known_version(self):
+        row = gold_row({"type": "refuse"})
+        predictions = {"design-c0#0": "No bench measurement is supplied in the schematic."}
+        with self.assertRaisesRegex(evaluate.EvaluationError, "aligned messages"):
+            evaluate.score([row], predictions, refusal_scorer="v2")
+        with self.assertRaisesRegex(evaluate.EvaluationError, "Unknown refusal scorer"):
+            evaluate.score([row], predictions, refusal_scorer="future")
+        for content in (None, [], [{"type": "text", "text": 3}], ["plain fragment"],
+                        [{"type": "audio", "text": self.question}]):
+            row["messages"] = [{"role": "user", "content": content},
+                               {"role": "assistant", "content": "irrelevant"}]
+            with self.subTest(content=content), self.assertRaises(evaluate.EvaluationError):
+                evaluate.score([row], predictions, refusal_scorer="v2")
+
+
 class JsonlAndCliTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
@@ -269,6 +338,27 @@ class JsonlAndCliTests(unittest.TestCase):
         self.assertEqual(report["failures"], ["pins.f1 (no evidence)"])
         self.assertEqual(report["counts"], {"value.acc": 1, "refuse.acc": 1})
         self.assertEqual(len(report["gold_sha256"]), 64)
+        self.assertEqual(report["refusal_scorer"], "keyword-refusal-v1")
+
+    def test_v2_cli_report_records_explicit_version(self):
+        row = gold_row({"type": "value", "value": "10K"}, {"type": "refuse"})
+        row["messages"] = [{"role": "user", "content": "What value is R1?"},
+                           {"role": "assistant", "content": "10K"},
+                           {"role": "user", "content": ContextualRefusalTests.question},
+                           {"role": "assistant", "content": "Not used by scorer."}]
+        gold = self.write("gold.jsonl", [row])
+        pred = self.write("pred.jsonl", [{"key": "design-c0#0", "output": "10K"},
+                                         {"key": "design-c0#1", "output":
+                                          "No bench measurement is supplied in the schematic."}])
+        report = self.path / "report.json"
+        self.assertEqual(self.run_report(gold, pred, report, "--refusal-scorer", "v2"), 0)
+        self.assertEqual(json.loads(report.read_text())["refusal_scorer"], "contextual-refusal-v2")
+        row.pop("messages")
+        self.write("gold.jsonl", [row])
+        self.assertEqual(self.run_report(gold, pred, report, "--refusal-scorer", "v2"), 2)
+        incomplete = json.loads(report.read_text())
+        self.assertEqual(incomplete["status"], "incomplete")
+        self.assertEqual(incomplete["refusal_scorer"], "contextual-refusal-v2")
 
     def report_fixture(self):
         gold = self.write("gold.jsonl", [gold_row({"type": "value", "value": "10k"}, {"type": "refuse"})])

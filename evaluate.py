@@ -97,6 +97,7 @@ PROFILES = {
     "real-grounding": {"value.acc": (">=", 0.95), "pins.f1": (">=", 0.95), "refuse.acc": (">=", 0.98)},
     "real-vision": {"value.acc": (">=", 0.95), "refuse.acc": (">=", 0.98)},
 }
+REFUSAL_SCORERS = {"v1": "keyword-refusal-v1", "v2": "contextual-refusal-v2"}
 
 
 def strip(t):
@@ -143,7 +144,102 @@ def _number_correct(gold, answer):
     return abs(actual - expected) <= tolerance
 
 
-def grade(g, ans):
+def contextual_refusal(question, answer):
+    """Conservative v2 grammar for the two real-corpus refusal question forms.
+
+    A complete answer must contain a subject-grounded, evidence-scoped denial,
+    and every clause must match the restricted grammar. Unrecognized language
+    needs manual review; rejection is not proof of a hallucination. This does
+    not inspect source truth and is deliberately separate from default v1.
+    """
+    if not isinstance(question, str) or not question.strip():
+        raise EvaluationError("Contextual refusal scoring requires user question text")
+    question = " ".join(question.split())
+    measured = re.fullmatch(
+        rf"What measured voltage was observed at ({REFDES}\.[A-Z0-9_$+-]+) during a powered bench test\?",
+        question, re.I)
+    missing = re.fullmatch(rf"What value is ({REFDES}), and what does it connect to\?", question, re.I)
+    result = {"version": REFUSAL_SCORERS["v2"], "accepted": False,
+              "status": "manual_review", "reason": "unsupported_question"}
+    if not (measured or missing):
+        return result
+    kind, subject = ("measurement", measured[1]) if measured else ("missing_component", missing[1])
+    result.update(kind=kind, subject=subject)
+    subject_pattern = re.escape(subject)
+    scope = (r"(?:the |this )?(?:(?:supplied|provided|extracted|native) )*"
+             r"(?:schematic(?: or source)?(?: evidence)?|source(?: evidence)?|sheet(?: evidence)?|evidence)")
+    if measured:
+        fact = r"(?:bench measurement|powered bench measurement|measured voltage(?: value)?)"
+        location = rf"(?: (?:at|for) {subject_pattern})?"
+        predicate = r"(?:is|was) (?:supplied|provided|recorded|observed|shown)"
+        absence = rf"no {fact}{location} {predicate}{location}(?: during a powered bench test)?"
+        primary = [
+            rf"{absence} (?:in|on) {scope}",
+            rf"(?:in|on) {scope}, {absence}",
+            rf"{scope} (?:contains|provides|records) no (?:recorded )?{fact}{location}",
+        ]
+        secondary = [
+            r"i cannot (?:infer|determine) (?:a |the )?measured voltage",
+            rf"(?:its |the )?measured voltage cannot be determined from {scope}",
+        ]
+    else:
+        primary = [
+            rf"there is no (?:component )?{subject_pattern} (?:in|on) {scope}",
+            rf"no (?:component )?{subject_pattern} is (?:present|shown|included) (?:in|on) {scope}",
+            rf"{subject_pattern} (?:is not|isn't) (?:present|shown|included|recorded|specified) (?:in|on) {scope}",
+            rf"{scope} does not (?:contain|include|show|specify) (?:component )?{subject_pattern}",
+        ]
+        secondary = [
+            r"its value and connections are not shown",
+            rf"its value and connections cannot be determined from {scope}",
+        ]
+    # Do not discard code blocks, quoted tails, contrast clauses, or unknown
+    # text: any unmatched clause must prevent automatic acceptance.
+    text = strip(answer).replace("**", "").replace("\\n", "\n")
+    clauses = [" ".join(part.split()).strip(" .") for part in
+               re.split(r"[.!]\s+|[\r\n]+|,\s+so\s+", text) if part.strip(" .")]
+    if not clauses:
+        return {**result, "reason": "empty_answer"}
+    grounded = False
+    for clause in clauses:
+        if any(re.fullmatch(pattern, clause, re.I) for pattern in primary):
+            grounded = True
+        elif not any(re.fullmatch(pattern, clause, re.I) for pattern in secondary):
+            return {**result, "reason": "unrecognized_or_unsupported_claim"}
+    if not grounded:
+        return {**result, "reason": "no_grounded_absence_statement"}
+    return {**result, "accepted": True, "status": "accepted", "reason": "restricted_grammar_match"}
+
+
+def question_text(row, turn):
+    """Read only the aligned user message, never the gold assistant response."""
+    messages = row.get("messages")
+    if not isinstance(messages, list):
+        raise EvaluationError("Contextual refusal scoring requires aligned messages")
+    users = [message for message in messages if message.get("role") == "user"]
+    if turn >= len(users):
+        raise EvaluationError("Contextual refusal scoring requires aligned user turns")
+    content = users[turn].get("content")
+    if isinstance(content, str):
+        text = content
+    elif isinstance(content, list):
+        parts = []
+        for part in content:
+            if not isinstance(part, dict):
+                raise EvaluationError("User content must contain typed content objects")
+            if part.get("type") == "text" and isinstance(part.get("text"), str):
+                parts.append(part["text"])
+            elif part.get("type") not in {"image", "image_url"}:
+                raise EvaluationError("User text content is malformed or unsupported")
+        text = "\n".join(parts)
+    else:
+        raise EvaluationError("User content must be text or a typed content list")
+    if not text.strip():
+        raise EvaluationError("Contextual refusal scoring requires nonempty user text")
+    return text
+
+
+def grade(g, ans, *, question=None, refusal_scorer="v1"):
     """Grade one label; callers scoring a dataset must use :func:`score`."""
     t = g["type"]
     ans = strip(ans)
@@ -191,6 +287,10 @@ def grade(g, ans):
         contradiction = re.search(r"\bno\b|\b(?:isn't|doesn't|not)\b", rest, re.I) if said_yes else re.search(r"\byes\b", rest, re.I)
         return {"yesno.acc": said_yes == g["yes"] and not contradiction}
     if t == "refuse":
+        if refusal_scorer == "v2":
+            return {"refuse.acc": contextual_refusal(question, ans)["accepted"]}
+        if refusal_scorer != "v1":
+            raise EvaluationError(f"Unknown refusal scorer: {refusal_scorer}")
         return {"refuse.acc": bool(re.search(REFUSE, ans, re.I))}
     if t == "refdes":
         return {"fix.names_part": bool(g["refdes"]) and all(
@@ -277,8 +377,10 @@ def validate_gold_rows(gold_rows):
     return expected
 
 
-def score(gold_rows, preds):
+def score(gold_rows, preds, *, refusal_scorer="v1"):
     """Return (mean metrics, evidence counts), requiring complete predictions."""
+    if refusal_scorer not in REFUSAL_SCORERS:
+        raise EvaluationError(f"Unknown refusal scorer: {refusal_scorer}")
     expected = validate_gold_rows(gold_rows)
     if not isinstance(preds, Mapping) or any(not isinstance(key, str) or not isinstance(output, str)
                                              for key, output in preds.items()):
@@ -295,7 +397,8 @@ def score(gold_rows, preds):
     for r in gold_rows:
         for i, g in enumerate(r["gold"]):
             ans = strip(preds[f"{r['id']}#{i}"])
-            for k, v in grade(g, ans).items():
+            question = question_text(r, i) if refusal_scorer == "v2" and g["type"] == "refuse" else None
+            for k, v in grade(g, ans, question=question, refusal_scorer=refusal_scorer).items():
                 if v is not None:
                     acc.setdefault(k, []).append(float(v))
     return {k: sum(v) / len(v) for k, v in sorted(acc.items())}, {k: len(v) for k, v in acc.items()}
@@ -407,6 +510,7 @@ def _file_hash(path):
 
 def _report_evidence(args):
     return {"schema_version": 1, "profile": args.profile,
+            "refusal_scorer": REFUSAL_SCORERS[args.refusal_scorer],
             "gold_sha256": _file_hash(args.gold),
             "predictions_sha256": _file_hash(args.pred),
             "baseline_predictions_sha256": _file_hash(args.pred_base),
@@ -419,6 +523,8 @@ def main(argv=None):
     ap.add_argument("--pred", required=True)
     ap.add_argument("--pred-base")
     ap.add_argument("--profile", choices=PROFILES, default="synthetic")
+    ap.add_argument("--refusal-scorer", choices=REFUSAL_SCORERS, default="v1",
+                    help="v2 is an opt-in restricted contextual grammar; unmatched prose needs manual review")
     ap.add_argument("--report", type=Path, help="write machine-readable benchmark evidence")
     a = ap.parse_args(argv)
     inputs = [path for path in (a.gold, a.pred, a.pred_base) if path is not None]
@@ -432,8 +538,8 @@ def main(argv=None):
             return 2
     try:
         gold = load_gold(a.gold)
-        ft, n = score(gold, load(a.pred))
-        base = score(gold, load(a.pred_base))[0] if a.pred_base else None
+        ft, n = score(gold, load(a.pred), refusal_scorer=a.refusal_scorer)
+        base = score(gold, load(a.pred_base), refusal_scorer=a.refusal_scorer)[0] if a.pred_base else None
     except (ValueError, OSError) as exc:
         if a.report:
             report = {**_report_evidence(a), "metrics": {}, "counts": {}, "baseline_metrics": None,
@@ -460,6 +566,7 @@ def main(argv=None):
     if legacy_numbers:
         print(f"LIMITATION: {legacy_numbers} legacy numeric labels lack units; these receive magnitude-only grading.")
     print("Grading uses format and keyword heuristics; it does not establish semantic correctness.")
+    print(f"Refusal scorer: {REFUSAL_SCORERS[a.refusal_scorer]}")
     print(f"{'metric':32s} {'n':>5s} {'model':>8s}" + (f" {'base':>8s}" if base else "") + "  gate")
     for k, v in ft.items():
         gate, mark = gates.get(k), ""
