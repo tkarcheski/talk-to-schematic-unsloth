@@ -50,6 +50,15 @@ def _inside(root: Path, relative: str) -> Path:
     return path
 
 
+def _artifact_path(root: Path, relative: str) -> Path:
+    """Require portable, canonical inventory names before reading or writing."""
+    path = _inside(root, relative)
+    if (".." in Path(relative).parts or Path(relative).as_posix() != relative
+            or path.relative_to(root).as_posix() != relative):
+        raise ValueError("Snapshot artifact paths must be canonical relative paths without aliases")
+    return path
+
+
 def _images(row: dict):
     for message in row["messages"]:
         content = message.get("content")
@@ -105,9 +114,13 @@ def _load_base(base: Path, inputs: dict) -> tuple[dict, dict, dict, dict]:
             separators=(",", ":")).encode()) != manifest.get("snapshot_sha256"):
         raise ValueError("Base snapshot manifest hash/schema is invalid")
     datasets, preserved, image_data = {}, {}, {}
+    artifact_paths = set()
     for section in ("datasets", "images"):
         for artifact in manifest[section]:
-            path = _inside(base, artifact["path"])
+            path = _artifact_path(base, artifact["path"])
+            if path in artifact_paths:
+                raise ValueError("Duplicate base snapshot artifact path")
+            artifact_paths.add(path)
             data = path.read_bytes()
             if digest(data) != artifact["sha256"]:
                 raise ValueError(f"Base snapshot artifact hash mismatch: {path}")
@@ -407,13 +420,21 @@ def write_snapshot(plan: ExpandedPlan, output: str) -> dict:
                 for block in _images(row):
                     block["image"] = "../" + block["image"]
             files[f"{view}/train.jsonl"] = _encode_rows(rows)
+        destinations = {staging / "manifest.json"}
+        for relative in [*files, *plan.images]:
+            path = _artifact_path(staging, relative)
+            if path in destinations:
+                raise ValueError("Snapshot output artifacts collide")
+            destinations.add(path)
         for relative, data in sorted(files.items()):
-            path = staging / relative
+            path = _artifact_path(staging, relative)
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
             artifacts.append({"path": relative, "sha256": digest(data), "rows": len(read_rows(data))})
         for relative, item in sorted(plan.images.items()):
-            path = staging / relative
+            path = _artifact_path(staging, relative)
+            if item["path"] != relative:
+                raise ValueError("Image inventory path differs from its output path")
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(item["data"])
             if digest(path.read_bytes()) != item["sha256"]:
@@ -422,7 +443,7 @@ def write_snapshot(plan: ExpandedPlan, output: str) -> dict:
                     "images": [{key: value for key, value in item.items() if key != "data"}
                                for _, item in sorted(plan.images.items())]}
         manifest["snapshot_sha256"] = digest(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode())
-        (staging / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        _artifact_path(staging, "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         if destination.exists() or destination.is_symlink():
             raise ValueError("Snapshot destination appeared during generation")
         staging.rename(destination)

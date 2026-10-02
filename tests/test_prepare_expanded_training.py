@@ -217,6 +217,60 @@ def test_corrupt_base_artifact_cannot_be_carried_into_snapshot(case):
         plan(case)
 
 
+@pytest.mark.parametrize('alias', ['../base/val.jsonl', './val.jsonl', 'evidence/../val.jsonl'])
+def test_base_manifest_alias_cannot_escape_new_snapshot_and_overwrite_sentinel(case, tmp_path, alias):
+    base = case[1]
+    path = base / 'manifest.json'
+    manifest = json.loads(path.read_text())
+    aliased = dict(next(item for item in manifest['datasets'] if item['path'] == 'val.jsonl'))
+    aliased['path'] = alias
+    manifest['datasets'].append(aliased)
+    manifest.pop('snapshot_sha256')
+    manifest['snapshot_sha256'] = hashlib.sha256(json.dumps(
+        manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    path.write_text(json.dumps(manifest))
+    sentinel = tmp_path / 'publish/base/val.jsonl'
+    sentinel.parent.mkdir(parents=True)
+    sentinel.write_text('unrelated file to preserve')
+    output = tmp_path / 'publish/new-snapshot'
+    with pytest.raises(ValueError, match='canonical relative paths'):
+        write_snapshot(plan(case), str(output))
+    assert sentinel.read_text() == 'unrelated file to preserve'
+    assert not output.exists()
+    assert not list(output.parent.glob('new-snapshot.partial-*'))
+
+
+@pytest.mark.parametrize('section', ['preserved', 'images'])
+def test_publication_rechecks_each_output_path_before_any_file_write(case, tmp_path, section):
+    planned = plan(case)
+    sentinel = tmp_path / 'outside.jsonl'
+    sentinel.write_text('keep')
+    relative = '../outside.jsonl'
+    if section == 'preserved':
+        planned.preserved[relative] = planned.preserved['val.jsonl']
+    else:
+        item = copy.deepcopy(next(iter(planned.images.values())))
+        item['path'] = relative
+        planned.images[relative] = item
+    with pytest.raises(ValueError, match='escapes|canonical'):
+        write_snapshot(planned, str(tmp_path / 'expanded'))
+    assert sentinel.read_text() == 'keep'
+    assert not (tmp_path / 'expanded').exists()
+    assert not list(tmp_path.glob('expanded.partial-*'))
+
+
+def test_image_output_cannot_replace_a_dataset_or_manifest(case, tmp_path):
+    for relative in ('train.jsonl', 'manifest.json'):
+        planned = plan(case)
+        item = copy.deepcopy(next(iter(planned.images.values())))
+        item['path'] = relative
+        planned.images[relative] = item
+        with pytest.raises(ValueError, match='artifacts collide'):
+            write_snapshot(planned, str(tmp_path / 'expanded'))
+        assert not (tmp_path / 'expanded').exists()
+        assert not list(tmp_path.glob('expanded.partial-*'))
+
+
 def test_exclusion_drops_entire_value_group_without_substitution_or_native_change(case, tmp_path):
     exclusion = tmp_path / 'exclusions.json'
     exclusion.write_text(json.dumps([{'board_id': 'board-train-p1', 'refdes': 'C1',
