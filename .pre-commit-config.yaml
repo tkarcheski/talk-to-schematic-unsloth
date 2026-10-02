@@ -36,3 +36,10 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-push]
+      - id: browser-state-tests
+        name: Browser state regression suite
+        entry: npm run test:browser-state
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

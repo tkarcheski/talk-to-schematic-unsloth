@@ -5,6 +5,7 @@ const state = {
   image: null,
   history: [],
   health: null,
+  healthRequest: 0,
   pending: false,
   selection: 0,
   notice: "",
@@ -50,7 +51,6 @@ $("zoom-in").addEventListener("click", () => setZoom(state.zoom * 1.35));
 $("zoom-out").addEventListener("click", () => setZoom(state.zoom / 1.35));
 $("zoom-fit").addEventListener("click", () => setZoom("fit"));
 $("zoom-actual").addEventListener("click", () => setZoom(1));
-$("schematic-image").addEventListener("load", () => setZoom("fit", false));
 $("image-stage").addEventListener("keydown", (event) => {
   if (event.ctrlKey || event.metaKey || event.altKey) return;
   const zoomKeys = {
@@ -113,8 +113,11 @@ function controls() {
   $("chat-status").textContent = status;
 }
 async function health() {
+  const request = ++state.healthRequest;
   try {
-    state.health = await api("/health");
+    const result = await api("/health");
+    if (request !== state.healthRequest) return;
+    state.health = result;
     const available = state.health.loaded;
     $("model-status").textContent =
       `${state.health.model} · ${state.health.busy ? "generating" : available ? "ready locally" : "model not loaded"}`;
@@ -123,6 +126,7 @@ async function health() {
       available && !state.health.busy,
     );
   } catch {
+    if (request !== state.healthRequest) return;
     state.health = null;
     $("model-status").textContent = "Local model unavailable";
     $("model-status").classList.remove("ready");
@@ -196,11 +200,22 @@ async function selectExample() {
       );
     const data = await asDataURL(await response.blob());
     if (selection !== state.selection) return;
+    const drawing = $("schematic-image");
+    drawing.src = data;
+    try {
+      await drawing.decode();
+      if (!drawing.naturalWidth || !drawing.naturalHeight)
+        throw new Error("The decoded image is empty.");
+    } catch {
+      throw new Error(
+        "The schematic image could not be decoded. Choose another example or reload this page to retry.",
+      );
+    }
+    if (selection !== state.selection) return;
     state.example = example;
     state.image = data;
     $("drawing-heading").textContent = example.title;
     $("sheet-label").textContent = `Sheet ${example.page}`;
-    $("schematic-image").src = data;
     $("schematic-image").alt =
       `${example.title}, schematic sheet ${example.page}`;
     $("schematic-image").hidden = false;
@@ -211,6 +226,7 @@ async function selectExample() {
     $("source-meta").textContent =
       `${example.attribution} · ${example.license} · ${example.revision.slice(0, 8)}`;
     $("source").hidden = false;
+    setZoom("fit", false);
     for (const question of example.suggested_questions) {
       const button = document.createElement("button");
       button.type = "button";
@@ -301,11 +317,15 @@ $("chat-form").addEventListener("submit", async (event) => {
 $("example").addEventListener("change", selectExample);
 $("mode").addEventListener("change", reset);
 $("reset").addEventListener("click", reset);
-async function init() {
-  await health();
+$("retry-examples").addEventListener("click", loadCatalog);
+async function loadCatalog() {
+  $("retry-examples").hidden = true;
+  $("example").replaceChildren();
+  $("image-placeholder").textContent = "Loading source schematics…";
+  showError("");
+  controls();
   try {
     const catalog = await api("/api/examples");
-    $("example").replaceChildren();
     if (!catalog.examples.length)
       throw new Error(
         "No example corpus is configured. Start the server with --examples data/real after building the corpus.",
@@ -319,10 +339,16 @@ async function init() {
     controls();
     await selectExample();
   } catch (error) {
+    $("example").replaceChildren();
+    $("retry-examples").hidden = false;
     showError(error.message);
     $("image-placeholder").textContent = "No examples available";
     controls();
   }
+}
+async function init() {
+  await health();
+  await loadCatalog();
   window.setInterval(health, 5000);
 }
 init();
