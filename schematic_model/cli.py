@@ -14,6 +14,8 @@ COMMANDS = {
     "train": "schematic_model.training",
     "inspect": "schematic_model.inspect",
     "corpus": "schematic_model.corpus",
+    "skills": "schematic_model.skill_bundle",
+    "deploy": "schematic_model.deployment",
 }
 
 

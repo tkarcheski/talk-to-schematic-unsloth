@@ -24,6 +24,9 @@ dev = ["pytest>=8,<10", "ruff>=0.12,<1", "coverage>=7,<8"]
 packages = ["schematic_model"]
 py-modules = ["hwsynth", "build_dataset", "evaluate", "make_mock_preds", "predict", "chat", "train_unsloth"]
 
+[tool.setuptools.package-data]
+schematic_model = ["skills/*/SKILL.md"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
