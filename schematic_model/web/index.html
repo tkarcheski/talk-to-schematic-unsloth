@@ -24,10 +24,10 @@
     </header>
     <main>
       <section class="intro">
-        <p class="eyebrow">FROM THE SOURCE</p>
-        <h1>A closer look at your circuit.</h1>
+        <h1>Schematic workspace</h1>
         <p>
-          Explore a real schematic. Ask a question. Keep the evidence in view.
+          Inspect a source drawing and keep the evidence beside your
+          conversation.
         </p>
       </section>
       <div id="error" class="error" role="alert" hidden></div>
@@ -46,17 +46,62 @@
               <option>Loading examples…</option>
             </select>
           </div>
-          <div class="image-stage">
-            <p id="image-placeholder">Loading source schematics…</p>
+          <div
+            class="image-toolbar"
+            role="group"
+            aria-label="Schematic view controls"
+          >
+            <button id="zoom-out" type="button" aria-label="Zoom out" disabled>
+              −
+            </button>
+            <output id="zoom-level" aria-live="polite" aria-label="Image zoom"
+              >Fit</output
+            >
+            <button id="zoom-in" type="button" aria-label="Zoom in" disabled>
+              +
+            </button>
+            <button
+              id="zoom-fit"
+              type="button"
+              aria-label="Fit schematic to viewport"
+              disabled
+            >
+              Fit
+            </button>
+            <button
+              id="zoom-actual"
+              type="button"
+              aria-label="Show full resolution at 100 percent"
+              disabled
+            >
+              100%
+            </button>
             <a
               id="image-link"
               target="_blank"
               rel="noopener"
               hidden
-              aria-label="Open full resolution schematic"
-              ><img id="schematic-image" alt="" hidden
-            /></a>
+              aria-label="Open full resolution schematic in a new tab"
+              >Open ↗</a
+            >
           </div>
+          <div
+            id="image-stage"
+            class="image-stage"
+            tabindex="0"
+            role="region"
+            aria-label="Scrollable schematic image"
+            aria-describedby="zoom-help"
+          >
+            <p id="image-placeholder">Loading source schematics…</p>
+            <div class="image-canvas">
+              <img id="schematic-image" alt="" hidden />
+            </div>
+          </div>
+          <p id="zoom-help" class="sr-only">
+            Use arrow keys to scroll the schematic. Plus and minus zoom. Zero
+            fits the drawing; one shows full resolution.
+          </p>
           <div id="source" class="source" hidden>
             <div>
               <a id="source-link" target="_blank" rel="noopener"

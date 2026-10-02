@@ -129,6 +129,47 @@ try {
     "Two distinct board images loaded with pinned source and attribution",
   );
 
+  await expect(page.locator("#zoom-actual")).toBeEnabled();
+  await page.locator("#zoom-actual").click();
+  await expect(page.locator("#zoom-level")).toHaveText("100%");
+  const actualSize = await page
+    .locator("#schematic-image")
+    .evaluate((image) => ({
+      displayed: image.getBoundingClientRect().width,
+      native: image.naturalWidth,
+    }));
+  expect(Math.abs(actualSize.displayed - actualSize.native)).toBeLessThan(1);
+  expect(
+    await page
+      .locator("#image-stage")
+      .evaluate((stage) => stage.scrollWidth > stage.clientWidth),
+  ).toBe(true);
+  const zoomScreenshot = path.join(destination, "desktop-100-percent.png");
+  await page.locator("#image-stage").screenshot({ path: zoomScreenshot });
+  report.screenshots.push(zoomScreenshot);
+  await page.locator("#image-stage").focus();
+  await page.locator("#image-stage").press("+");
+  await expect(page.locator("#zoom-level")).toHaveText("135%");
+  await page.locator("#image-stage").press("0");
+  await expect(page.locator("#zoom-fit")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect
+    .poll(() =>
+      page
+        .locator("#image-stage")
+        .evaluate(
+          (stage) =>
+            stage.scrollWidth <= stage.clientWidth + 1 &&
+            stage.scrollHeight <= stage.clientHeight + 1,
+        ),
+    )
+    .toBe(true);
+  report.checks.push(
+    "100% uses native image resolution inside a bounded scrolling viewport; keyboard zoom and Fit work",
+  );
+
   await page.locator("#mode").selectOption("vision");
   await expect(page.locator("#mode-note")).toContainText("only the image");
   await expect(page.locator(".message")).toHaveCount(0);

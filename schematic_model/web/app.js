@@ -8,7 +8,66 @@ const state = {
   pending: false,
   selection: 0,
   notice: "",
+  zoom: 1,
+  fit: true,
 };
+function setZoom(value, preserveCenter = true) {
+  const image = $("schematic-image");
+  const stage = $("image-stage");
+  if (!state.image || !image.naturalWidth || !image.naturalHeight) return;
+  const centerX =
+    (stage.scrollLeft + stage.clientWidth / 2) / stage.scrollWidth;
+  const centerY =
+    (stage.scrollTop + stage.clientHeight / 2) / stage.scrollHeight;
+  state.fit = value === "fit";
+  state.zoom = state.fit
+    ? Math.min(
+        1,
+        (stage.clientWidth - 32) / image.naturalWidth,
+        (stage.clientHeight - 32) / image.naturalHeight,
+      )
+    : Math.max(0.05, Math.min(4, value));
+  image.style.width = `${image.naturalWidth * state.zoom}px`;
+  $("zoom-level").textContent = `${Math.round(state.zoom * 100)}%`;
+  $("zoom-fit").setAttribute("aria-pressed", String(state.fit));
+  $("zoom-actual").setAttribute(
+    "aria-pressed",
+    String(!state.fit && state.zoom === 1),
+  );
+  if (state.fit || !preserveCenter) {
+    stage.scrollLeft = 0;
+    stage.scrollTop = 0;
+  } else {
+    stage.scrollLeft = centerX * stage.scrollWidth - stage.clientWidth / 2;
+    stage.scrollTop = centerY * stage.scrollHeight - stage.clientHeight / 2;
+  }
+  $("zoom-out").disabled = state.zoom <= 0.05;
+  $("zoom-in").disabled = state.zoom >= 4;
+  $("zoom-fit").disabled = false;
+  $("zoom-actual").disabled = false;
+}
+$("zoom-in").addEventListener("click", () => setZoom(state.zoom * 1.35));
+$("zoom-out").addEventListener("click", () => setZoom(state.zoom / 1.35));
+$("zoom-fit").addEventListener("click", () => setZoom("fit"));
+$("zoom-actual").addEventListener("click", () => setZoom(1));
+$("schematic-image").addEventListener("load", () => setZoom("fit", false));
+$("image-stage").addEventListener("keydown", (event) => {
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  const zoomKeys = {
+    "+": state.zoom * 1.35,
+    "=": state.zoom * 1.35,
+    "-": state.zoom / 1.35,
+    0: "fit",
+    1: 1,
+  };
+  if (Object.hasOwn(zoomKeys, event.key)) {
+    event.preventDefault();
+    setZoom(zoomKeys[event.key]);
+  }
+});
+new ResizeObserver(() => {
+  if (state.fit) setZoom("fit", false);
+}).observe($("image-stage"));
 function showError(message) {
   $("error").textContent = message;
   $("error").hidden = !message;
@@ -116,6 +175,9 @@ async function selectExample() {
   const selection = ++state.selection;
   state.example = null;
   state.image = null;
+  for (const id of ["zoom-in", "zoom-out", "zoom-fit", "zoom-actual"])
+    $(id).disabled = true;
+  $("zoom-level").textContent = "Fit";
   reset();
   $("schematic-image").hidden = true;
   $("image-link").hidden = true;

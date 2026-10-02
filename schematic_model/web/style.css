@@ -129,7 +129,7 @@ main {
   margin: auto;
 }
 .intro {
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 .eyebrow {
   font-size: 10px;
@@ -139,11 +139,11 @@ main {
   margin: 0 0 7px;
 }
 h1 {
-  font-size: clamp(25px, 3.3vw, 42px);
+  font-size: clamp(22px, 2.4vw, 29px);
   font-weight: 550;
   line-height: 1.2;
-  letter-spacing: -1.4px;
-  margin: 0 0 10px;
+  letter-spacing: -0.7px;
+  margin: 0 0 6px;
 }
 .intro > p:last-child {
   color: var(--muted);
@@ -215,32 +215,73 @@ select {
   font-size: 13px;
 }
 .image-stage {
-  display: flex;
-  flex: 1;
+  position: relative;
+  flex: 1 1 480px;
+  height: 480px;
   min-height: 330px;
-  align-items: center;
-  justify-content: center;
+  max-height: 640px;
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
   background: #fff;
   border-top: 1px solid #e7ece7;
   border-bottom: 1px solid #e7ece7;
-  padding: 18px;
   text-align: center;
 }
 .image-stage p {
+  position: absolute;
+  inset: 40% 18px auto;
   font-size: 13px;
   color: var(--muted);
 }
-.image-stage a {
-  display: block;
-  max-width: 100%;
-  width: 100%;
+.image-canvas {
+  display: grid;
+  place-items: center;
+  width: max-content;
+  min-width: 100%;
+  min-height: 100%;
+  padding: 16px;
 }
 .image-stage img {
   display: block;
-  width: 100%;
-  max-height: 660px;
-  object-fit: contain;
-  margin: auto;
+  max-width: none;
+  max-height: none;
+  height: auto;
+}
+.image-stage:focus-visible {
+  outline: 3px solid #63a990;
+  outline-offset: -3px;
+}
+.image-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  padding: 0 26px 12px;
+}
+.image-toolbar button {
+  min-width: 32px;
+  min-height: 32px;
+  border: 1px solid #cdd9d2;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--accent);
+  padding: 4px 9px;
+  font-size: 12px;
+}
+.image-toolbar button:hover:not(:disabled) {
+  background: #edf4ee;
+}
+.image-toolbar output {
+  min-width: 42px;
+  text-align: center;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.image-toolbar a {
+  margin-left: auto;
+  font-size: 11px;
 }
 .source {
   padding: 17px 26px;
@@ -432,10 +473,10 @@ textarea::placeholder {
     border-bottom: 1px solid var(--border);
   }
   .image-stage {
-    min-height: 220px;
-  }
-  .image-stage img {
-    max-height: 480px;
+    flex: none;
+    height: 440px;
+    min-height: 280px;
+    max-height: 60vh;
   }
   .conversation {
     min-height: 260px;
