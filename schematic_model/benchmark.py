@@ -155,6 +155,12 @@ def _run_benchmark(config: DeploymentConfig, dataset: str, output: str, *, profi
     records = _load_records(output_path)
     if set(records) - expected:
         raise ValueError("Existing benchmark contains keys outside this dataset")
+    # Resource/model initialization errors are infrastructure failures, never
+    # synthetic failed answers for every turn. Fully completed resumes need no GPU.
+    if set(records) != expected:
+        load_engine = getattr(client, "load", None)
+        if callable(load_engine):
+            load_engine()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     if not metadata.exists():
         _write_report(metadata, binding, protected)

@@ -170,6 +170,35 @@ def test_infrastructure_failure_invalidates_old_report(case):
     assert not report.exists()
 
 
+def test_model_startup_failure_is_infrastructure_not_failed_answers(case):
+    config, dataset, output = case
+    engine = Engine()
+
+    def failed_load():
+        raise InferenceError("Insufficient free GPU memory to load the local model")
+
+    engine.load = failed_load
+    with pytest.raises(InferenceError, match="Insufficient free GPU"):
+        run_benchmark(config, str(dataset), str(output), profile="real-vision", engine=engine)
+    assert not output.exists()
+    assert not output.with_suffix(".jsonl.report.json").exists()
+    assert not engine.calls
+
+
+def test_completed_resume_does_not_reload_model(case):
+    config, dataset, output = case
+    run_benchmark(config, str(dataset), str(output), profile="real-vision", engine=Engine())
+    engine = Engine()
+
+    def failed_load():
+        raise AssertionError("Completed resume must not load the model")
+
+    engine.load = failed_load
+    report = run_benchmark(config, str(dataset), str(output), profile="real-vision", engine=engine, resume=True)
+    assert report["successful_turns"] == 3
+    assert not engine.calls
+
+
 def test_atomic_writer_cannot_overwrite_image_at_fixed_temporary_name(case):
     config, dataset, output = case
     row = json.loads(dataset.read_text())
