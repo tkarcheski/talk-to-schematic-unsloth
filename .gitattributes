@@ -1,0 +1,2 @@
+# Upstream fixtures are byte-exact, including original line endings and spaces.
+tests/fixtures/real/* -text -whitespace

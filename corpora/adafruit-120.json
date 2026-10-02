@@ -1,0 +1,3150 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "repository": "adafruit/TSL2561-breakout-board-PCB",
+      "revision": "d949119f096adcdd69122fa0ae8a410190f3239d",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "49f970ac487dbfd0cdd641d29c81e5e65d046c5a3e4e709946bf93851d94661c",
+      "files": [
+        {
+          "path": "TSL2561 Stemma.sch",
+          "sha256": "b58bb38ce9f3fcac9ca48b1b9d70faf8a8b6698ab8f37bd9f730e0f8b6490448",
+          "bytes": 95160
+        },
+        {
+          "path": "TSL2561_5V_REV-A.sch",
+          "sha256": "cb256cc315977939e283df7f098e8e127ed3002cb6bd477f78b45c96ace96ec9",
+          "bytes": 332159
+        },
+        {
+          "path": "TSL2561_v0.1.sch",
+          "sha256": "9417720c6bbda543a3777d167f62017fbd015560631d217fcb82e50df3cf1ce3",
+          "bytes": 262435
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "7d290c2439d690bd7fe96a584cd7aa33a7db2c244904c6f144cd2c90be49fb4a",
+          "bytes": 2139
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/TIMESQUARE-DIY-Watch-Kit",
+      "revision": "e96eb4b1c59d834064f6a437160f73b773111f46",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "ab56040079bc1189379e7b7edf343fb857ded995f4132796b25e4053a5ce58fd",
+      "files": [
+        {
+          "path": "Adafruit_TIMESQUARE.sch",
+          "sha256": "7ece18829034a474fffd5c849d742ad86920f992eabe6cf72f192cb24cd62d8e",
+          "bytes": 506515
+        },
+        {
+          "path": "license.txt",
+          "sha256": "3f941b3b89cf7b8370ceb83cc76d2120d471b58735d8ca60238a751a48d7f72f",
+          "bytes": 22240
+        },
+        {
+          "path": "README.md",
+          "sha256": "464ec0e210fb341b061a1785377be84c20e9b2cde07999922ad8642b99074fab",
+          "bytes": 2782
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/RP2040-Based-Tester-Brains-PCB",
+      "revision": "2d2ad210bc536647132b5b5b1e395b6177a4dccf",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "6b0b56698d55878a7dcc06582247a0a34adb01cf5f994e1a2d866f602750b160",
+      "files": [
+        {
+          "path": "Adafruit RP2040 Tester Brains rev A.sch",
+          "sha256": "718375f09eb561bcff5ec1a73ddec7fcbf2b7e371bccadb8dd5376a85acf055f",
+          "bytes": 442246
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "10b57fd99461b466c8923aa691da7b0887de65b9323c9f2ddcde1a69ee84400e",
+          "bytes": 2843
+        },
+        {
+          "path": "factory-reset/README.md",
+          "sha256": "11b820856ff2777f7ac77e62251e50c243fec28b6ee8b21a8b8a6a4fbf052200",
+          "bytes": 296
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Pixie-3W-Smart-LED-PCB",
+      "revision": "68dae8b61938339e1cd423abbddee3cfc6715022",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "3914145fee1816ecf716603d9aa95e0ee04f396f963156f92f769ab3abbe40f7",
+      "files": [
+        {
+          "path": "Pixie.sch",
+          "sha256": "7627f319a9b49c199442f938c6358fcfa9292c58240e960e429f6706de2abe96",
+          "bytes": 229026
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "5865404926fb686ccbd14a70a1fec418627cfc02792e68f0e6b1763955f0519f",
+          "bytes": 1529
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/NeoPixel-Sticks",
+      "revision": "73d3e55379367ca0ef051d7c9a8b846b6948b21a",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "4594359bf3cdffcf3adde18b8e87cef71c876c0e4cdd54616ea436a5b9684ef9",
+      "files": [
+        {
+          "path": "Adafruit NeoPixel 8 Stick v2.sch",
+          "sha256": "5552125b4aae9f2f896e992e0b9601173ba06799f36c844597ab986bd98b1883",
+          "bytes": 230116
+        },
+        {
+          "path": "Adafruit NeoPixel 8 Stick.sch",
+          "sha256": "544fc16c0ccbe3dfaaa97ae4e9e4f5495f3bbe6c46c502fbd6550845ead75db3",
+          "bytes": 206949
+        },
+        {
+          "path": "NeoPixel Stick 8 WWA rev D.sch",
+          "sha256": "67a960a9613202fd3651dee25afd279bd3424540245ae19339806e80e352f569",
+          "bytes": 128164
+        },
+        {
+          "path": "license.txt",
+          "sha256": "3f941b3b89cf7b8370ceb83cc76d2120d471b58735d8ca60238a751a48d7f72f",
+          "bytes": 22240
+        },
+        {
+          "path": "README.md",
+          "sha256": "85ef7e3d7b586446fe19d16471eb19f902d1d691d84c409cecfa17fd9d0421d5",
+          "bytes": 2596
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/DS1307-breakout-board",
+      "revision": "22f84c8b77cacd22bf1296fa9f996f89bf646ae6",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "b394ada2cbd0bad839d3cbcdbf8d2cceeb6c3431b2993e3aca9c6febd4acaab0",
+      "files": [
+        {
+          "path": "DS1307 Rev B.sch",
+          "sha256": "b6409c39af0cbc96935ccd2c6866acaea33b017ed74b7ddc3be00f5b04e29669",
+          "bytes": 118975
+        },
+        {
+          "path": "ds1307.sch",
+          "sha256": "be28de6cec2ad7ffbecf07e9c62ad460beaaa56c655efcbe80de8e9e3c35b191",
+          "bytes": 317291
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "769cd11362acce5ffde6739f58a4439e60d4ebc0ffc0d82042922e9a87842260",
+          "bytes": 1834
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/DotStar-2020-8x8-Matrix-PCB",
+      "revision": "40f15689e170cea4bffe8427b758e0617109e5db",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "8ebd3413ddbcfc03d11a6dc02e79a895d6e0f4a5e1b7ea63760a658b31e2097d",
+      "files": [
+        {
+          "path": "Adafruit DotStar 2020 8x8 Matrix .sch",
+          "sha256": "95a569be6b38d9ccbf821df6db5175f89f2ee5af0128fcbf4bd0253a91fa708f",
+          "bytes": 120838
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "2b353a721fc935df198a6c9c1953e0256208356e23b4bb9e23e9f92c0bde3da1",
+          "bytes": 3353
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_USB_Boarduino_PCB",
+      "revision": "54a885baee53612ef38a02fa0ca4cf845c4ce1ae",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "c23c499f738d98577c882175bf9a46f0722ab9006bfaa78fbddf4b5d00a9feeb",
+      "files": [
+        {
+          "path": "usbboarduino20.sch",
+          "sha256": "85559bfd09f607766aaa6ec7c2e9e21a0a8be125e6c450ab540510874542eb49",
+          "bytes": 773750
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "b6eaeeb9c16739fe13b6cf3063533bdb45ea2d3228129e68a4d7760d6074f7c2",
+          "bytes": 2331
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_Trellis",
+      "revision": "ed55d2b8e0e7266798c11dea75f4dbf1a81849e7",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "b903d244e8a03d810faffbd339e0b528fea0e0155aa7450b19e457eaf2b6c890",
+      "files": [
+        {
+          "path": "Adafruit Trellis 4x4 3mm HT16K33.sch",
+          "sha256": "164f0c9fe89330e2144df3acfed854002c77570bb776a44875b14c6223dec567",
+          "bytes": 402579
+        },
+        {
+          "path": "license.txt",
+          "sha256": "3f941b3b89cf7b8370ceb83cc76d2120d471b58735d8ca60238a751a48d7f72f",
+          "bytes": 22240
+        },
+        {
+          "path": "README.md",
+          "sha256": "41c074543c3556c98807d89028b8411a8f96e5a0035985ce4540df5fb80cb811",
+          "bytes": 2403
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_MSA311_PCB",
+      "revision": "a4a29e76941999057e062a5255594cabc4eba0ca",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "49eb265aeb72019f6044d9da4c5e521e276c07deefa75c160b3e1d51d2e84e8e",
+      "files": [
+        {
+          "path": "Adafruit MSA311.sch",
+          "sha256": "a943622f26ee7c0a357afbf6f768e7659bf9363ef2ba76d91c0e013625a9ada5",
+          "bytes": 383719
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "8849f4c0ab0a389ca7b50e5c2122feeca9689fe2b57602b1acdfe4c34e97c69e",
+          "bytes": 1400
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_MintyBoost_PCB",
+      "revision": "2d03cfdf2a06f5a048e26807e254c4bf6dc982c6",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "5a7fec9acde2077dec91f73267122a5c98640cda9761445abfa471fed6fea540",
+      "files": [
+        {
+          "path": "mintyboostv2.sch",
+          "sha256": "86d5080f62472a163291e235aa84a273048e47d10bc36850c3592ce2f0177d5a",
+          "bytes": 613221
+        },
+        {
+          "path": "mintyboostv3.sch",
+          "sha256": "e8221e84e9c4c6a4ac5b63b87c70e1755f650377406cc55d2d80ca121e1d22f3",
+          "bytes": 613779
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "23a67debe77d2e74ec8c8177a9d798c6401d0e4a66167844f9d95f0a00953b34",
+          "bytes": 2765
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_MCP73833_PCB",
+      "revision": "c8e08fe3e272270b8fe101589ec37858f0e59ce4",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "2a607be568b05ea3faee9c1afb980f7b5646b8544cef0752ba6e96306c508c96",
+      "files": [
+        {
+          "path": "MCP73833_QFN_v1.0.sch",
+          "sha256": "e1a7d638f65b1b4650dff42abb3714a9b71bd0af723f6cdf3eead47ddf89eca1",
+          "bytes": 207738
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "433ef6159250b9b4584472ae3ab8c21e2d5a30450328c6603618acf0af9bddce",
+          "bytes": 2377
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_FTDI-Friend-PCB",
+      "revision": "46ca96fff7e8e48b999d585ec85313cfc4ab9ec9",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "da2f169b4f113d4503f056afe7c07a5f5c9719ab4b20f9400d1b243f4756272f",
+      "files": [
+        {
+          "path": "Adafruit FTDI Friend Rev A.sch",
+          "sha256": "ee4374123ade2ad786c01273fe7037c2d8bf23b22f14e4391bf4d22f9bc5a0dc",
+          "bytes": 724596
+        },
+        {
+          "path": "Adafruit FTDI Friend Rev B.sch",
+          "sha256": "1edac58850c449fa7760f59351e02b1687a3c8ee139b9b23b40788148f8977af",
+          "bytes": 238972
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "773583115503cd40c3c2ec00f796cb76fbd14ec9523140231436b423b8d6a077",
+          "bytes": 1957
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_Floppy_FeatherWing_PCB",
+      "revision": "8793e86222bd62b1ee243e07e97a8de9ff6a7e7e",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "8ae6be71e0603a68a1c4c835736a3cc7b151ebd8436459236d2d270bf0613312",
+      "files": [
+        {
+          "path": "Adafruit Floppy FeatherWing.sch",
+          "sha256": "764d1e03cc2e10074eb1d07ff7ea39782d118baba7222c09c8b35f1e398c74fa",
+          "bytes": 460029
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "e09cfe5b3aa77e43a2f55f7f45f28f1ddb557756853b27decfd82f9df31a69ff",
+          "bytes": 3783
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_CC3000_Shield_PCB",
+      "revision": "a71c0cc10eed4df29f471f94e1aeac4f31d22bba",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "b68090f2c8d9abb8fd88ae3e228f3d0cfe99de253b4df228a9a06cc3771f58bb",
+      "files": [
+        {
+          "path": "Adafruit CC3000 shield REV-B.sch",
+          "sha256": "c9f3532bf04326cad05c2a95f25417f3a65629ecf79273db31bce6526bdd8d3f",
+          "bytes": 294384
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "b5d558c65f7072ca1f3ca27070c737db6873434ec308b3c5a2f750e75ca39338",
+          "bytes": 1977
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_Breadboard_NeoPixel_PCB",
+      "revision": "fcb0f12bb62142336634dfb3a8a8ffc5c15bb90e",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "020f310ae38e4443fa6d4dca2b7d6934c8d0d731a8c824d07536de83c842bd26",
+      "files": [
+        {
+          "path": "Adafruit_Breadboard_NeoPixel.sch",
+          "sha256": "817dde498d1a961e7c7aab88694b859575d9785b94818a5b1f3ba9f92758b2c0",
+          "bytes": 259987
+        },
+        {
+          "path": "license.txt",
+          "sha256": "3f941b3b89cf7b8370ceb83cc76d2120d471b58735d8ca60238a751a48d7f72f",
+          "bytes": 22240
+        },
+        {
+          "path": "README.md",
+          "sha256": "47e83a64ea2a83647c757f824571093e0d84c897c719688963f6e862e82eb8dc",
+          "bytes": 2201
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_ADXL375_PCB",
+      "revision": "0a0dd0672917c61476f87e22fec645ff99dc67d2",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "060ba9729ad3fd5479292be5a6c92346b895ee118346d2a2f1362217d58f74f1",
+      "files": [
+        {
+          "path": "Adafruit ADXL375.sch",
+          "sha256": "53910d8e8fbcd27c17fc5f9fdb247b112444cd59e477ef02f549b61b39db93d3",
+          "bytes": 429426
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "eb31f334ff0de5756bf72017fc5f62d4b643388ce18a134fe92bb5c00525015e",
+          "bytes": 1994
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_ADXL345_PCB",
+      "revision": "0d863e1e75eeb2bbb8324bbc15c622388ea3f0de",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "1203522d82834b5b5d18331ff0bbf7124b733566b263997907b4f28cfae63fe2",
+      "files": [
+        {
+          "path": "ADXL345 STEMMA QT.sch",
+          "sha256": "0e5600cbe023e6e8d5ce2a45cc83f97e7a651879c001fdcdc0c7d73f60241164",
+          "bytes": 429381
+        },
+        {
+          "path": "Adafruit ADXL345 Triple-Axis Accelerometer.sch",
+          "sha256": "3da0b3171bd3161c7e1d4f463f654afd692fd4462fda7fce7cf705daa40e12fe",
+          "bytes": 358315
+        },
+        {
+          "path": "Adafruit_ADXL345.sch",
+          "sha256": "28c3e75b0f9cb06a37450ca77710c18b0bf3c37f77cf60d442450d2fca4f86c9",
+          "bytes": 532393
+        },
+        {
+          "path": "license.txt",
+          "sha256": "3f941b3b89cf7b8370ceb83cc76d2120d471b58735d8ca60238a751a48d7f72f",
+          "bytes": 22240
+        },
+        {
+          "path": "README.md",
+          "sha256": "a3ead75cd058805114ce6658f2cc8d9fecd0accd115f517c452321566f8901ed",
+          "bytes": 1866
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_ADXL343_PCB",
+      "revision": "13dce5a5963041d7d7f60492da459e00a96f4344",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "522c3e779f3ba679d1ffdbe73515a7599ef119414e21f488aa6160ce8aedaff7",
+      "files": [
+        {
+          "path": "ADXL343 Rev B.sch",
+          "sha256": "8914b549208865182257a379bb148d10218440743f5c21a4919c52c02c5c5be2",
+          "bytes": 129904
+        },
+        {
+          "path": "Adafruit ADXL343 STEMMA QT.sch",
+          "sha256": "53910d8e8fbcd27c17fc5f9fdb247b112444cd59e477ef02f549b61b39db93d3",
+          "bytes": 429426
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "6d594832648bfe9a8b0aa69ee21ce2c72f696170fcd3c21b82c3284174cd2c19",
+          "bytes": 1076
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "2c50bdc5e332d1f817853a87e97bae3c99faf46147ee252e67193233b64dc53d",
+          "bytes": 3884
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_2.8_Inch_TFT_Shield_PCB",
+      "revision": "048abde4fd0ae02c8872e1938297e66b5d4e8784",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "32726ec40c5b215593d48c4444257660d1ac41d991090b299052a7ffbfc0e2ec",
+      "files": [
+        {
+          "path": "tfttouchshield.sch",
+          "sha256": "8cfa9f969cd7abdef57679dd94c53fb6968bec9b11ad120638ee8d6853d28413",
+          "bytes": 454189
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "447709da30ee2e5a84d3a8fef19b32c1e26ecad54f23e780b98036f2520d13b5",
+          "bytes": 3419
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit_1.8_Inch_TFT_Breakout_PCB",
+      "revision": "7576960fd63b68edda938ea4f998d6c8d9fbab62",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "65f9463c5291800534d81e6900eabb9c91c36b64ef8038d97c8f4e0204d49aaa",
+      "files": [
+        {
+          "path": "jdt1800-bob.sch",
+          "sha256": "0ccd682c8f6cbefe3815d1578baad998409fe6b01f84e7948f0a744132f961dc",
+          "bytes": 366304
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "f015c03eefc3a44c9e389c86e414decb680169c64adb830cef76897546de5c74",
+          "bytes": 2171
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Wiz5500-Ethernet-Co-Processor-Breakout-Board-PCB",
+      "revision": "f7faefb4fd304faa20f5977add138715da4b3f3c",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "77c5edc74eb748d51ece3f0e3036a72413d3aafc480a38034ced77030dc669b9",
+      "files": [
+        {
+          "path": "Adafruit-Wiz5500-Ethernet-Co-Processor-Breakout-Board.sch",
+          "sha256": "8c2cd7a921aa8fc0527500bbc786be74162b4ec272f1ceef578915fce0b138ac",
+          "bytes": 249332
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "016595657718e328b55b109f128a67d8c46f622010d8b41dbd35920f174d3008",
+          "bytes": 2465
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-WINC1500-Shield-PCB",
+      "revision": "5b4642c624ffe549731ff9aae4aeb5330fbbb4a3",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "e83ae451d72f12b6d870150afc60f80f305d8c3c90156de56d504d3dac6d268a",
+      "files": [
+        {
+          "path": "Adafruit Winc1500 Shield.sch",
+          "sha256": "94ad413a6465bc82b4e4920c99dccab2304ab3e6615e8c1e826e4ac598b9672c",
+          "bytes": 305830
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "8dbe4601eb873b494ff552e3e65a95a946d5847115b7bb0d210ec883248d9bbe",
+          "bytes": 3155
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Wii-Nunchuck-Breakout-Adapter-PCB",
+      "revision": "d3f2e25c4f9211553e32b36ffce03212f414ead3",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "3f867f2788326bfaad8bb12605c0a05492c00333b2a10df64d871df4713e8eaa",
+      "files": [
+        {
+          "path": "Adafruit Wii Nunchuck Breakout Adapter.sch",
+          "sha256": "387dbc551eda8927a2ace91a9968cc9a16c0c566d7d8264e9e850219325e4e20",
+          "bytes": 378435
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "dfa3d175c5e68d9587f8a5beeb146862557ea217775e005ebcf4aaa61165a2d3",
+          "bytes": 2244
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-WICED-WiFi-Feather-PCB",
+      "revision": "f2c70ce49ef3df7f60be3a6a30fa39ff34a9dde3",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "c3152b1e802c8be33e0e65b9ad11ae9de73b13ce213e8a23e9690ada159beeaf",
+      "files": [
+        {
+          "path": "Adafruit WICED WiFi Feather.sch",
+          "sha256": "b15257620bd274ff04f20071131bc76b02cf889545c1ac2e50e35d26c7c6c8f3",
+          "bytes": 306943
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "fc88d520c7c76b2f575b35dc6515d3a0016dc8000d71041a7ae210cd31536472",
+          "bytes": 1081
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-WCH-CH9102F-Friend-PCB",
+      "revision": "eb022866b738f738971172c8725546e7b221369f",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "5b3c39f83b91a4ced982f1f674a7a3847697c315126fe98c5c47dd8f731631d7",
+      "files": [
+        {
+          "path": "Adafruit CH9102F.sch",
+          "sha256": "9508a2b89bbb403e43e1b850dfa9a986e75b5c08f419f2885610413d509e1821",
+          "bytes": 196827
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "8d41cd62ff69adc9d84ccbb5ae146064540d7e121bbb2b6c375e398ffe07bc0f",
+          "bytes": 3306
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-VS1053-Breakout-PCB",
+      "revision": "61db4e571d89d321c33bb693b84f80da1510c5e2",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "6a6c84b50ca011fc4c6b8a5b0f1d2e8335e6727a58bcacf139e940108783ccb6",
+      "files": [
+        {
+          "path": "Adafruit VS1053 Breakout.sch",
+          "sha256": "8a98feaf7a8b337daddd8111306d3fbc87c7729a226df19b7a3b8bc4d95b50c2",
+          "bytes": 859760
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "cf5697ce8b6c91cc38e7d1f87cfd509461d3601eb5be90231c51fc80ebb7f4ac",
+          "bytes": 1900
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-VL6180X-ToF-Distance-Sensor-PCB",
+      "revision": "2577abd97ffa3dab39b631643d5861f5b6bd98c1",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "dcaaad8528b496d1f0be673cd58d0297ceb78524c8988a494b2b853c9dcc6404",
+      "files": [
+        {
+          "path": "Adafruit VL6180 Time of Flight Sensor.sch",
+          "sha256": "430fb775b64e3f290e2f3bacac8a33b70042d8e673706e3c2c27ae6f91fdf018",
+          "bytes": 409480
+        },
+        {
+          "path": "Adafruit VL6180X.sch",
+          "sha256": "f825fde77f0e09acc77d78ee9ca96f0615232fa150a89cd29831ec3a6e12ab6e",
+          "bytes": 126676
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "d890cee095df394ec0326cba9c2e502221206468920c81cde0ec1e2851e11cc5",
+          "bytes": 2472
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-VL53L4CX-PCB",
+      "revision": "8e287e0d06293984a3c2b4e14180830dda2e3acc",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "cf0e2fda10547446f5105c90fe37b157c4735f61fd2777957b7db17cbead56e2",
+      "files": [
+        {
+          "path": "Adafruit VL53L4CX.sch",
+          "sha256": "7f2992ebf5d1fe9b1a3863b040e0002245f74e66e19ad1339c6d10314c4e1391",
+          "bytes": 416620
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "fdabca8666feff8b2e74c7141c4f3c0578933ae3136e417443b6473a05c8da75",
+          "bytes": 3257
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-VL53L1X-PCB",
+      "revision": "e2a85759d3b85907b3c2422f3c140d6bb45390d7",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "6b7bf9609f33daa4ebf2a8f86157ca1c593c444a1019bda432f1fcf4c9557c78",
+      "files": [
+        {
+          "path": "Adafruit VL53L1X.sch",
+          "sha256": "7ed27e02880bf1afe3df2329b77dc40caf0808b40e6ec2025db270ffb24c6a1a",
+          "bytes": 416621
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "9b70df353bf5b8104d363e1262d1861f8fa6960ab6f28ec45d86570309b84f0d",
+          "bytes": 3162
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-VL53L0X-ToF-Distance-Sensor-PCB",
+      "revision": "1ef873512150740edc9798f90028facfa35fd81f",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "c1c1a8a45cb0412c20093dcb7bf25b49091cb268bcbaa0f4a3f7a3acda331150",
+      "files": [
+        {
+          "path": "Adafruit VL530X STEMMA QT.sch",
+          "sha256": "3c734c2bce34fda502dfeaa486c2d6464c2a916313b183ce69f4326c4e5b85d6",
+          "bytes": 411017
+        },
+        {
+          "path": "Adafruit VL53L0X.sch",
+          "sha256": "356c9003795d437c67fbb0a84f39c5c45b087650955cff1440427578ed4906c8",
+          "bytes": 127872
+        },
+        {
+          "path": "license.txt",
+          "sha256": "3f941b3b89cf7b8370ceb83cc76d2120d471b58735d8ca60238a751a48d7f72f",
+          "bytes": 22240
+        },
+        {
+          "path": "README.md",
+          "sha256": "15904ea1ad3d9caf7ccbba11996f223b3ff5f45cbbc17517a7a36117d9d56acd",
+          "bytes": 2539
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Verter-PCB",
+      "revision": "47ff9d8588a4b841b6d0a1efa42fc9275463c16e",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "d4e245a3e04ed39fa5f6b9f4fda1cafe2949c9257e69515aeb60d61e273f97b3",
+      "files": [
+        {
+          "path": "Adafruit Verter TPS63060 2A BoostBuck.sch",
+          "sha256": "64da290fb975b669352cf63e2c187b6d28431df4864f31dc31252d978b1784e5",
+          "bytes": 177284
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "9a441757e894868fa2c453750ff72453e2a4e63f6bfdc2d2ab69841d7fbfb263",
+          "bytes": 2069
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-VEML7700-PCB",
+      "revision": "ab489f03c957f681ed0161fc6d2b786956556e23",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "a9882e8c83dcb4747dec796187359a030e71aa250ec93ed5c1ad3f48e0f9bdaa",
+      "files": [
+        {
+          "path": "Adafruit VEML7700 STEMMA QT.sch",
+          "sha256": "4028c7a6c7297eabceed690e8255fbd492f20a7443143668928aa9022324d9ea",
+          "bytes": 386561
+        },
+        {
+          "path": "Adafruit VEML7700.sch",
+          "sha256": "7a9892471dd96771470b4478f73579a42256d1a757b3d0074b12cf7a0eb87800",
+          "bytes": 101569
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "100e30b21a1476540f02dca8c5c902ea9c1883b9be509cecefa81af3e82d1201",
+          "bytes": 2863
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-VEML6075-UV-Sensor-PCB",
+      "revision": "3165308f9a23535ee0ace7843d7facc22f5181bb",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "725ba4d8bc1e55181496b9aa7f35effc7c8d3440287bb8925a1c0bbb499963ab",
+      "files": [
+        {
+          "path": "Adafruit VEML6075.sch",
+          "sha256": "71f24008e5ea7f217ebf5144f9fdcf027d615043246125d4d5cdaaeff487c82c",
+          "bytes": 97299
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "c70fc57fbd8e4f41b838f39b0bf78666db6836f4aa55ed093d7dff66730641a7",
+          "bytes": 1952
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-VEML6070-PCB",
+      "revision": "3dd13922832c37869195787b3112429c482605c8",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "6daca062ca3d30279ed609a751025960a09ff07f53aa877f99f5f93945363de5",
+      "files": [
+        {
+          "path": "Adafruit VEML6070.sch",
+          "sha256": "f73346e78714b766b4fffaebeac80f3887cee088d946d02bf96e82dd3d98c7c1",
+          "bytes": 298913
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "60244ad91e65541fde70d4335631d74a9e8db49b602f8eadc9b1daa96d578a17",
+          "bytes": 1972
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-VCNL4200-Breakout-PCB",
+      "revision": "461ffb1e80f5cb6555e25400d41db8b1a72ca58e",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "5f99f4b0d4894a555cf5c6810e28548f14feb05e6718cb262e7e9d23a6565d38",
+      "files": [
+        {
+          "path": "Adafruit VCNL4200 Long Distance IR Sensor Breakout.sch",
+          "sha256": "40b519bfd8cf4617df45118e914228c7b3e0f84539b362a0650a169e9dbe33c1",
+          "bytes": 432718
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "edba52585829f14a832fca4b633db73b48100d98a9533fd58051fc635e5f7f86",
+          "bytes": 3238
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-VCNL40X0-PCB",
+      "revision": "13e0c0867b66ae15eb1331880ccea30b83713467",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "b39f2c3907c393afed17a526e83652bbfc67138bb11e7f17c96eecf2803b4cf3",
+      "files": [
+        {
+          "path": "Adafruit VCNL4010.sch",
+          "sha256": "be05f3b00edd216144c9fb56141c6ef585da73662aa72f34e619edb836769bc9",
+          "bytes": 97631
+        },
+        {
+          "path": "VCNL4000.sch",
+          "sha256": "3e1319dbd4863c076da52353c46c94ad5ca8f06b0737a2c9de7731a4d58a20fe",
+          "bytes": 65082
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "e32b0abb48b6c1731e7755e27aafb9ba46d9eeaad13d289c08c580b2d19d4dad",
+          "bytes": 2075
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-VCNL4040-PCB",
+      "revision": "e64c08ed339dba5886b54a6e6c6c4c6cf95b25b8",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "071baf154c9ef3dd69ece715d1b6e4345b3d912677ac1e2f9af28aa1044930b7",
+      "files": [
+        {
+          "path": "Adafruit VCNL4040.sch",
+          "sha256": "5b6e87eeecd7fd58d5afa65e97985abf21e6be6866e91fa15a970952a63f07da",
+          "bytes": 395049
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "287f2cc5b3a16a4902923c5bc5141448f9d198ffaf81421679904a6696bad67c",
+          "bytes": 3634
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-VCNL4030-Proximity-and-Lux-Sensor-PCB",
+      "revision": "2cb43e92b39950b2a3431f76c197c378cac2ba3e",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "390ff5a47ec03278a215752fdef27c5194deb099c7b19554fbd11fd86ef93052",
+      "files": [
+        {
+          "path": "Adafruit VCNL4030 Proximity and Lux Breakout.sch",
+          "sha256": "53cdf58ff1535478227eec1dea11772df6bcdf3da6e5691dd4fda9a6cd2176ae",
+          "bytes": 427968
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "dbc369cc79d981d3bb66216f611e71a1aa48ebc4fa3b5e3146b5c4217ebe2f71",
+          "bytes": 3356
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-VCNL4020-Proximity-and-Light-Sensor-PCB",
+      "revision": "525a2aff1484aa23a424b656a5bf022d4b70a36e",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "0adab89465dbecea8b31b197120f0a570ad3e74e45c6f91606c16247377a6720",
+      "files": [
+        {
+          "path": "Adafruit VCNL4020 Proximity and Light Sensor.sch",
+          "sha256": "fd060fb698a5b08d0f0968eb6eb3690decf055698a37ca82907d042038d604c7",
+          "bytes": 406238
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "f187555bd64d4451916544e7ad65f129c3d46dd1731bbea6b32fedee51e08809",
+          "bytes": 2791
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-USB-Type-C-Vertical-Breakout-PCB",
+      "revision": "412fb33dba25c7b84994b1aa90161a8e67a379b2",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "04d3c8813b7fc24b219d771b06846cf046db135c023b8bfeeafdde4854d5438c",
+      "files": [
+        {
+          "path": "Adafruit USB Type C Vertical Breakout.sch",
+          "sha256": "b08eab884c2ea6f85eb0a648d3f319e76465d25c790904fff531c5a9149b1d5f",
+          "bytes": 109638
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "05124fdf3505eb6a7699a4af4ad7c0c5ae4fbf755779cd27c58e46cf2e909597",
+          "bytes": 2278
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-USB-Type-C-Power-Delivery-Dummy-Breakout-PCB",
+      "revision": "53c602e97d82ec5722f49521e3dbe6c71da10422",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "3aa8ead442ba6799d9991210d63a341a4f33acbf73a3cef57efe928b7109e856",
+      "files": [
+        {
+          "path": "Adafruit HUSB238 USB-C PD Breakout.sch",
+          "sha256": "168a2b2ddd13106b3bd2ce152771a7b43c39b9f6881d9f3ba6ca37db06dc9e96",
+          "bytes": 146798
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "0c91cfc399a96894af1a0dad794ec24ba928455e366e54968963db72a7c3e1bb",
+          "bytes": 3197
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-USB-Type-C-Plug-Breakout-PCB",
+      "revision": "11a5d518bac2d73989a15c8c9e2dcd97611ef6ab",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "5c964994e4f157fb9f6e20a51c4f20f9c1b909c56b4dc18ba7c224cb6499f900",
+      "files": [
+        {
+          "path": "Adafruit USB Type C Plug Breakout.sch",
+          "sha256": "b417ed13c1c357af47d92626c57effb6ec1cacc462be3bd32a5abf47ae53d0b1",
+          "bytes": 110896
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "31b95d5cb3bafd96d3a47b2fd8393ee3a3a1800b2ba4112e57bc554f41e0969f",
+          "bytes": 2234
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-USB-Type-C-PD-Switchable-PCB",
+      "revision": "d10701c22751842250420a06cf4d39d50d58c750",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "63c93dd47195ea64464b5212f15d15e6c41b4577deaef3487bda72d9a51b8408",
+      "files": [
+        {
+          "path": "Adafruit USB Type C PD Switchable.sch",
+          "sha256": "bb9cfcdf46b261ae724fe647bd7009bb0f4006350217cfcdb05921db0399670a",
+          "bytes": 207315
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "e32dfca76231ab09aa720574aaf73f7f1e8bf64c006d2d7b5b856f922975b2c8",
+          "bytes": 3808
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-USB-Type-C-CC-Resistor-Fixer-PCB",
+      "revision": "7ab085193a5180f3ebc9a4a0971910ae7ee4553b",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "b47e392a93ff649e2aa2c65f281ee94601f650d016e9fa7db47c99aeb2563379",
+      "files": [
+        {
+          "path": "Adafruit USB Type-C CC Resistor Fixer.sch",
+          "sha256": "d6effd0c45389c6c3eba1c698c5d1e2a451d2d2a53d30fc6fa4300b8e6738c23",
+          "bytes": 137460
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "7026221e81e9a3361a127152246f63ae1f1127a10c58c8dcd14e52be2dd43dc6",
+          "bytes": 1815
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-USB-Serial-RGB-Character-Backpack-PCB",
+      "revision": "7b570b683977344c6326c91de085fa2087e38a5d",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "e3bebbe0798f86cc5231589e60716d3c33d842894728452205bedbbd552e4940",
+      "files": [
+        {
+          "path": "Adafruit USB Serial Char LCD.sch",
+          "sha256": "d845ca1d6772b7814f0d6792fa02ba76abb163d17e31d71ba0ffcaa9ce849208",
+          "bytes": 266254
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "e11907f579d915883256fde370038f27624b47b56e52d5edd4fa6f3a371d5c59",
+          "bytes": 3081
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-USB-Power-Gauge-PCB",
+      "revision": "0dc263aaff419a6f150e74e4a9b6e94b6b4057be",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "418f382bc5bbcc5806f37f4e37648c7cec635ef517bea478bfbe4da399d0fe4e",
+      "files": [
+        {
+          "path": "Adafruit USB Power Gauge.sch",
+          "sha256": "e2724ca67c19637b70d3437235215b02900cf72da77d555e6af88a67c502d8b8",
+          "bytes": 136700
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "1d3decd13bca6af0c936a80e74769f8de75a5c4303b5de7ba04c9a63c5b2914f",
+          "bytes": 3180
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-USB-Isolator-PCB",
+      "revision": "826956acd5fa3ed2c04f8f39ebb1be42f8f25854",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "db245e3f0e8a60f5b74e63c99e08fe95457aec94e2ae14b4c474effd9d58202d",
+      "files": [
+        {
+          "path": "Adafruit USB Isolator.sch",
+          "sha256": "71d308c6f192a486cf7cc0e980c2c9607f4944b6b18ad35309334b399153aec0",
+          "bytes": 182332
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "8590f726ce3d4b0d6eca0a57e88ce6e9de8831e84a14356783b10d268d736c3e",
+          "bytes": 1147
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-USB-Host-FeatherWing-PCB",
+      "revision": "7011deb5316121374db87580ad3b03f22d8f676d",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "0ebfcd71ae73bde7c9ea6571e1b2bbccf63a787deb0ab0ec115552d78a204d83",
+      "files": [
+        {
+          "path": "Adafruit USB Host FeatherWing.sch",
+          "sha256": "4f7c1a85ea9f65994535e865aef3353420df58e2bbf0e7d14da67ad4d48e7c73",
+          "bytes": 653201
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "74c3f859f76972c9d5928decfc2efb9dbc1bf0671ab30941fa04e9b6c112595d",
+          "bytes": 2834
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-USB-Host-BFF-PCB",
+      "revision": "dc61b50d5ba04d7ba3a73dfa57c0a54d25154393",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "53a67a66534339825a0f474b70c4cc51f681bad9309623b35c784b6d03ca9d9d",
+      "files": [
+        {
+          "path": "Adafruit USB Host BFF.sch",
+          "sha256": "db91692a2ab8fd54ba774d3cef421151240249cad1c6a33a2c6ce31f314de9bd",
+          "bytes": 404360
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "c226bacb158306133f74138890f7ad1f2ce8834d71e433bcd38733e94f78a99d",
+          "bytes": 3347
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-USB-C-Downstream-Breakout",
+      "revision": "1484ecb56b369e177848e69de4b7b7e513399590",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "847900d9692bcbf3f4b8445b291196d544398355b3d3a12ae2bdb01393e79f36",
+      "files": [
+        {
+          "path": "Adafruit USB Type C Downstream Breakout rev B.sch",
+          "sha256": "ec14aee06c7a24546fcc6f6b1687ae85a13cadff955a721f458b125b70954330",
+          "bytes": 94850
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "6d594832648bfe9a8b0aa69ee21ce2c72f696170fcd3c21b82c3284174cd2c19",
+          "bytes": 1076
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "6c97cdad48475dcc3e5f9afc503fc9f8f0c39b69408462fcb088ef3159336193",
+          "bytes": 2008
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-UPDI-Friend-PCB",
+      "revision": "6063046738409ca77509f5ccce2f2b0ce72be210",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "238469e68c7454be5d86c3877677bac1378f812d16c94adeabc2ffdaa1425850",
+      "files": [
+        {
+          "path": "Adafruit UPDI Friend.sch",
+          "sha256": "6c404d8fa6e1a3cf5cc8e4bbb079280f04fecc000decad1cece731db5a24b027",
+          "bytes": 175323
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "f5d9ef01efa7c552b365d3d05e303173b47edf579f36280d9be0d9d6882a8044",
+          "bytes": 2383
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Ultimate-GPS-HAT-PCB",
+      "revision": "73b23e57b2c80f36aa1405aa67be887b5dabe68e",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "df1e989c39f16d2613695503033be85a785a34b1fe8a3f3cc4e9a5eff12d73db",
+      "files": [
+        {
+          "path": "Adafruit Ultimate GPS HAT.sch",
+          "sha256": "e1c773a53f381e3faa57109bf76f33ab8eb49c1b7b9a4f23e9d4427269546df8",
+          "bytes": 436512
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "a4a3643bdf08419abb5235e9d6e11fbbb2400ddaf639867097effe31c964f6f8",
+          "bytes": 2511
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Ultimate-GPS-FeatherWing-PCB",
+      "revision": "1b15a4f782c555903c0cfd7174d0616d2e128887",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "1d2bcdded3f368fc6ff80deb94d3a5a296522ef658bb0675893abfca4e48707a",
+      "files": [
+        {
+          "path": "Adafruit Ultimate GPS FeatherWing.sch",
+          "sha256": "e963167e65d1e0a404e20a6e7bfd678c3e19ad0f3bd6d557e4e7eb7f52a7ffac",
+          "bytes": 457427
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "f33472f95e648324da3281e9f7c154c399211ab13035565cf460bc35a421adee",
+          "bytes": 1242
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-UDA1334A-I2S-Stereo-DAC-PCB",
+      "revision": "e836025c26c8dcfa3fab3e9aa7756542770f4849",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "312082a95047bd2c0ae2069acffd846ba33f51462440d17daacbf987649e8d4e",
+      "files": [
+        {
+          "path": "Adafruit UDA1334 I2S DAC.sch",
+          "sha256": "ed5f22fd2b645d797d97316cc02a8872d747e7b37163ff7cb2b6bfcdabc89327",
+          "bytes": 152537
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "02272df32d3d5060974b4649f14434975c3e9f11214ff3206fb388e80a6028e0",
+          "bytes": 2194
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TXB0108-PCB",
+      "revision": "5c679fd745850ba429f5e903bb6589dcab2835ae",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "80678fc07bff66298b74dc6d68fd589c227c2193237100b99023f57279da2715",
+      "files": [
+        {
+          "path": "Adafruit TXB0108.sch",
+          "sha256": "3b23ae04cd324ef1fef2ac0998a2fcd65d25a6ecac4b0cf0f1ec0f8066888065",
+          "bytes": 269234
+        },
+        {
+          "path": "license.txt",
+          "sha256": "3f941b3b89cf7b8370ceb83cc76d2120d471b58735d8ca60238a751a48d7f72f",
+          "bytes": 22240
+        },
+        {
+          "path": "README.md",
+          "sha256": "52ac255dd78e70762af302dd5cd28279eca976d838420960aa633c379bb1e3e2",
+          "bytes": 2409
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TXB0104-Level-Shifter-Breakout-PCB",
+      "revision": "0dcd9500672a5b6ab652f9cbf9e01bccdd6a31b6",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "de2f80a2e2b8ba29c4440083903015c616380e3162a845cc4cf05bd9c9fc203e",
+      "files": [
+        {
+          "path": "Adafruit TXB0104.sch",
+          "sha256": "4c1c81074f41cdb5f1605571ed7885553fb833dff07caa16f2a6f705e4baad83",
+          "bytes": 75729
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "3d764e48345fb7d4ac387f3e1b2d3f0abe5a4447ea9f07d28b780ec1f361fbf6",
+          "bytes": 1757
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TSSP77038-IR-Demodulator-Breakout-PCB",
+      "revision": "6df204dc531804658d977a4f69bc873b863bb6ac",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "96e14ce245d417243e76552e39954d165ce1157c551695690593fc7aee12b692",
+      "files": [
+        {
+          "path": "Adafruit TSSP77038 IR Demodulator Breakout.sch",
+          "sha256": "a0f57d770559de2d949d328d2f27cf866584c56f7f30ef68af9bc27fd7380cd4",
+          "bytes": 352545
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "dfbc6fc520c7a2e8faea193dd8124fdacd314c8025c6de0cc8f5a393c9382723",
+          "bytes": 2345
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TSMP96000-Breakout-PCB",
+      "revision": "5d456214739128a6fc19903849618996ac3116b8",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "d5f37db5fe558e3b919451dccc52f3ba498ca8b72979370f9faa2af1c80ba904",
+      "files": [
+        {
+          "path": "Adafruit TSMP96000 Code Learning IR Breakout.sch",
+          "sha256": "33d756c16ba2ae29cde2c383421bebcbdc3036e47be6a36232b182aa4a21b3c8",
+          "bytes": 361340
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "ed27c9b7e6792ea4235cc5a5409052f0cf0ba03aa1900ae565f893beaa757bfb",
+          "bytes": 2550
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TSL2591-Breakout-PCB",
+      "revision": "22be4c7b8d53155dacedc18f3373ba8dbf95dc23",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "31fb1520bb5c31f9b1e90e971cb125e08b3405bba301ebb89277efae7c0dd7c3",
+      "files": [
+        {
+          "path": "Adafruit TSL2591 Original.sch",
+          "sha256": "5ffd7914ed127717ecd1b59f73f8cb5dc86ec8609e7d3f8955e79d7aaf8599db",
+          "bytes": 324123
+        },
+        {
+          "path": "Adafruit TSL2591.sch",
+          "sha256": "30350ca991df3c415fc84e9f3bef4bfab7f7add85e27b672f6081ad49f91f3bb",
+          "bytes": 384689
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "ce7918b7cd6ade15091f96ffbe0e91716a43f99bbff3362f89f2044b35b5cb92",
+          "bytes": 2188
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TSL2585-Digital-UVA-and-Ambient-Light-Sensor-PCB",
+      "revision": "44dec43c6e0927a54c2997a7a7390ba1acd15175",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "6ff50f1e93b25fdb6145b0e7ae301507a6af9eec0461412242d73d700da41f5d",
+      "files": [
+        {
+          "path": "Adafruit TSL2585 Digital UVA and Ambient Light Sensor - STEMMA QT.sch",
+          "sha256": "3f3e1cc1a61f33d3c0b5848bba50464906fdb542ae96742f8df28231094adbd3",
+          "bytes": 444494
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "05f9c9103566caedfa4b4b854fe14de55c83c6efa25163f19e3eed6da67148c3",
+          "bytes": 2655
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TSC2046-PCB",
+      "revision": "cf5b01b3b6ae479abf051a8d0d3e8ed5b05ba632",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "093cfe3031ff0574ccb2c83fabaa5439b2aa613927c655f33d5fa4667b24d0f2",
+      "files": [
+        {
+          "path": "Adafruit TSC2046 Breakout.sch",
+          "sha256": "d40c0313b3928b4fd6f7bf18ae79739f5670081665fb7e2270f808201319be15",
+          "bytes": 337141
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "2f5cb069b6789bc85bb8fa85dab2833d7f04b2b8bd075e5a29731bed56bdf503",
+          "bytes": 2628
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TSC2007-PCB",
+      "revision": "8d182929dfc27dcdb407a2769cf416f9f63b4a16",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "750c358a95d6aa4215a143c6290fe2b516adfc72fba117dd4c6856312838f76e",
+      "files": [
+        {
+          "path": "Adafruit TSC2007.sch",
+          "sha256": "d1269ed73db9e5c6404754869bcf3c8da73625cbff40382c9d8638ece942d9de",
+          "bytes": 419654
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "c17b46b064fa6cbec699444b39d7d333fe39f0a5504a445d263ed06be76c7829",
+          "bytes": 1253
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TS3USB30-PCB",
+      "revision": "7973099481a65c3ff5689a037ec01d45db234d2c",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "d5affba4b6dae528340da60e21a4de95791f5fac42ac142dca3b5377cf07dca6",
+      "files": [
+        {
+          "path": "Adafruit TS3USB30 USB 1 to 2 Switch.sch",
+          "sha256": "28d9cf4e936e40d1f6bd0c3a58a48464b4b245d8ef6620b09f381d2325a89fe0",
+          "bytes": 178433
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "97c9cee0fcf25c42786c8c743f48fa684ba23a6d8b18135259c4ef75b6c6aff9",
+          "bytes": 2440
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TRRS-Trinkey-PCB",
+      "revision": "d244f5b5658d5cd1b1bf62de57265185179cdf0f",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "e7841db480512f02ec3e919c76d6e4a99c1cbf21b620100ff151e6ec962e884b",
+      "files": [
+        {
+          "path": "Adafruit TRRS Trinkey.sch",
+          "sha256": "b4bc9eaa0775399e554c482ae540430ef019d0792d5bf79eab436aae5b089d8c",
+          "bytes": 734557
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "4a875e406ea97a3c49647bd71f780d2bfbd691af1d63f393215a528bd7edb693",
+          "bytes": 3246
+        },
+        {
+          "path": "factory-reset/README.md",
+          "sha256": "a4f184a10a4b8f4620b105bdabbf64e49cf0bfc946679640ac51606d524a614b",
+          "bytes": 160
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Triple-LED-Matrix-Bonnet-PCB",
+      "revision": "e08584d4753d574331288d4d4462254386a30d6d",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "e8a19cb8ae4949ea25c54d7effe8cd53683b7700d6f6a0a001b28701d877c8f4",
+      "files": [
+        {
+          "path": "Adafruit Triple LED Matrix Bonnet.sch",
+          "sha256": "c0ac41fe0141c93968a6cef70ec75f1d43305ff0b94e53b5138f96e4caed3485",
+          "bytes": 655382
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "d5c21ebb077a3d0a19a8d7533e99962cb6ab800babbba7493c6ef22e832b0239",
+          "bytes": 4687
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Trinkey-QT2040-PCB",
+      "revision": "496bdd10c670077e7107143e42b4fef8e3da07bb",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "734004d80742057c2a8cde7b2ac559fb6481d2f0da5451dc0c41445ada7e3cb1",
+      "files": [
+        {
+          "path": "Adafruit QT2040 Trinkey.sch",
+          "sha256": "5316af4e1ec5ce66aa516560018d8f54408f4dfa6dc152ceeb32543099fb92dc",
+          "bytes": 456710
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "67dfb9003baeb2ed5f3e1209a04a69b1b732bf87532dd47ee1ce0a3534bf9c53",
+          "bytes": 5325
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Trinket-PCB",
+      "revision": "3a2695463e52f72434d20daca6502fc62e8e2fcc",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "5bdd13bbd13ca80fb14ec7deeeaeee2a0a6b2a11da66e12ea0b4fdc9e2c7103e",
+      "files": [
+        {
+          "path": "Adafruit Trinket 3.3V.sch",
+          "sha256": "b26a5d99caa7515001b5fe315978942e2a8267df3f96978e9f84c076a2dbc1f4",
+          "bytes": 179112
+        },
+        {
+          "path": "Adafruit Trinket 3V microUSB.sch",
+          "sha256": "bd0d2ecb0b7d1bf2b65fba05e69582d7b40742781b52175fb1287aacf9a41d63",
+          "bytes": 207243
+        },
+        {
+          "path": "Adafruit Trinket 5V microUSB.sch",
+          "sha256": "f5916b1eb41104d944dcfcad060f4e5a9cd73c58613b5515e84a91ba9cda5851",
+          "bytes": 225063
+        },
+        {
+          "path": "Adafruit Trinket 5V.sch",
+          "sha256": "233beb9e219c53314b23a085e4a0f29075596d9f81988efab3c9b99c6bc2da55",
+          "bytes": 197371
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "de70b5ba80cbd42006e1924a624d3675e8e92690ebdfd76fcb82b1d4403e502a",
+          "bytes": 2037
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Trinket-M0-PCB",
+      "revision": "4103b9cd2722fadc28dc3969bbe067c6873e0540",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "7495f4946d8c248b52e302461e9417142e1854f6715eb3d2ec431a5a8d565245",
+      "files": [
+        {
+          "path": "Trinket M0 rev D.sch",
+          "sha256": "1d419f20aad342c8a8c792a2c2aa8dee3a5be90333e53874f60a85b8ab580307",
+          "bytes": 271478
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "341512702358d40cd519a3a23af2ecfa56d509d910daafc2dede50aecbd69178",
+          "bytes": 2307
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TPS65131-Split-Power-Supply-PCB",
+      "revision": "5c4644c7acc1e285870881ca24b7542121193ce7",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "aa951d0543bbad34e0557bbf89cdefc48cb4e0e6fa1983cc0ac4b35ee5dbad49",
+      "files": [
+        {
+          "path": "Adafruit TPS65131 Split Power Supply.sch",
+          "sha256": "58bffb22cb27734ed736aff751d068c77aa750e8dd2cd162a31451fda8980711",
+          "bytes": 423001
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "c419f6ccd83c5ad64ceb06d069c6050b9db9ce561f090a3c52d5a7df532c39e6",
+          "bytes": 2307
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TPS62827-PCB",
+      "revision": "441e9beed498f62705ee2df458a903a010eae4a2",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "a0602bc8de52d635b5f470e620defc50d3157ef45831a14e4f3fbf18ac250341",
+      "files": [
+        {
+          "path": "TPS62827 3.3V Buck Converter.sch",
+          "sha256": "73f9c23e79715fe56eefbf548d16cb91f7dc4884c57322fa010df602b2b2b42b",
+          "bytes": 147211
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "f447e117b06c4dfbaaf6dc9f8b17385d6ff125e93e764beee5af59abb3e207af",
+          "bytes": 1920
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TPS61169-Constant-Current-Boost-Converter-PCB",
+      "revision": "c538e5fd9950a652d65cf40744e51a227d458ab2",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "0e746a8d536e769ae11d70738e8fc36198ccc30950aa4382a9975375f13103dd",
+      "files": [
+        {
+          "path": "Adafruit TPS61169 Constant Current Boost Converter LED Driver.sch",
+          "sha256": "ff47770a3707bab19912902bb9874639dac18628e6445128d2aaea7655066b89",
+          "bytes": 405203
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "bb8f97a2626e0c0de5fa347f835f1711b3caa9733f0c0e541ef88b23aafdad17",
+          "bytes": 2845
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TPS61040-PCB",
+      "revision": "07958c909f40c45c5aea5cdd2cc96ca19461ec96",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "8a9922d9d2c2c0e703b5a198fedcb1fe7816b3197cae21be0b70c6afa67619ac",
+      "files": [
+        {
+          "path": "Adafruit TPS61040 Boost Converter.sch",
+          "sha256": "4fa563a3539d2d0bfcb613154f1e241a86d39f3fe55a575403c64f6fe14c0e1c",
+          "bytes": 141134
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "a3621f8148a3c628e436437fb6ee31d7aa223a0eaea009ac3ef79a29371e7f21",
+          "bytes": 1767
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TPS61023-PCB",
+      "revision": "82b5a33a1900a5c13849029bc84e7856a44086e0",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "c65b0dc4efe07069f31b4445c2a18d0812ba62861ba91d503637e501bb48ee17",
+      "files": [
+        {
+          "path": "Adafruit TPS61023.sch",
+          "sha256": "ae9f9e9f5587018ee950311ffd6f205caa244c6c4115db3b9d5b9ea5cfee9575",
+          "bytes": 112043
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "67f6d35e78f275f2191feff064096a47862ab3f0b6bfd21f01071bbbcac4708d",
+          "bytes": 2850
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TPL5111-Reset-Enable-Timer-PCB",
+      "revision": "7a19d15939cb776f1931c3b4b38ac35509f06bd3",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "bfe4aa06b4bb77cd4fecf8f37fdbb9cf82f18427b1e13cf8f6245c3f8ad1818a",
+      "files": [
+        {
+          "path": "Adafruit TPL5111 Reset Enable Timer.sch",
+          "sha256": "6cb7b9e1497613ad642e3fa8c6de5f224031c9b3340bc8683559862c3333eebb",
+          "bytes": 191596
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "6bc2488ac0735e2768b25165e8006f06561dd3e62bfe53b2c5fcb2858d99e023",
+          "bytes": 3143
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TPL5110-Power-Timer-Breakout-PCB",
+      "revision": "f1967694bc20333d31b167e4eeaff58742e37bba",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "7f1e8a1347c6f5985123a2fa3426a9964883504ad5f3a163ad8de83afd5ef5a2",
+      "files": [
+        {
+          "path": "Adafruit TPL5110.sch",
+          "sha256": "f41e4845063ce1f30fdd5daf840ca7827bef5a9b9b3b58f51b4b1c617aeab453",
+          "bytes": 387845
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "d512f0e2e3fad5ddda206dcae09e6d6ea0d3404dee2692a6b74229eb3293af25",
+          "bytes": 2927
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TPA2016-PCB",
+      "revision": "cad449b53378a89066d524a24f085207d74faf06",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "c3bd3deda4321f7cdf462334442f75138d91000f2759143bb67f8bf83799e2b1",
+      "files": [
+        {
+          "path": "Adafruit TPA2016D2.sch",
+          "sha256": "4074e4440da19e4926db94fda7a135198fbad2d5ed6dc3b987f2bae6b04c39b5",
+          "bytes": 338349
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "b1419c91cfa0b6e0acb3f8103ecb816f4f7d18c1d517cf8f26413c1d7526381d",
+          "bytes": 1921
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TPA2012-or-TS2012-Breakout-PCB",
+      "revision": "b099d41a3fb4cddce5f19a7a8bbdc7a2d68711d8",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "2938284e41f900c962cbbf7872340735e1a5260134a19cdabc4ddbb59cf5c443",
+      "files": [
+        {
+          "path": "Adafruit TS2012 TPA2012 Class D Audio Amp.sch",
+          "sha256": "91c9543e7305527060ab9b92e5949215a9b44d49a822db974918afb712f6ab3a",
+          "bytes": 356865
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "2f934349cc9ff0b419a46f3a33f6408bb5b0f3149175a49a48fa4b5229654363",
+          "bytes": 2234
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TMP235-PCB",
+      "revision": "05afa047f2324ed06268ded1c27b741c86acedc8",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "6873c5bc5ee8a384449db11364c1bc3f5a9c60daba8cbed91d726f285371503d",
+      "files": [
+        {
+          "path": "TMP235 Rev A.sch",
+          "sha256": "2faec9d78e0fb9e17ddf831c67ab98c63b1715b545c07d78e5f5d264ce0792a8",
+          "bytes": 339376
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "4b4a9db08b199ed04bdb6ea48cd42d7eeccc059237715bb10ebe52a92e50655b",
+          "bytes": 1579
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TMP119-Temperature-Sensor-PCB",
+      "revision": "fe8ae26b0f8362aa93a8074374984c1da7bf01aa",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "a0c4a5fe16cd5f37a58d82604a6e9d8863055a1fd962003ef078c1a3f0115c00",
+      "files": [
+        {
+          "path": "Adafruit TMP119 Temperature Sensor.sch",
+          "sha256": "438e19d1be9c30f7d8a4c94127d4679559369abfe0f5af59968014672e2d6a1f",
+          "bytes": 405256
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "487061eb520b404341098282727c2ab2ac0b03cdc8c279c24b3d41a91250c876",
+          "bytes": 3621
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TMP117-PCB",
+      "revision": "874b3a5b27792d4d166547bab075cb963e1bdb32",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "b2e25b102cb663d97c7cd2f91633cb762481446598111674f2636c68481bcfe1",
+      "files": [
+        {
+          "path": "Adafruit_TMP117.sch",
+          "sha256": "d6596edd16e09f383f30368340c19743fb794363b8ffb615773b3d2093d2f8d3",
+          "bytes": 383220
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "b14b1733d56b2e8d0c31b31566a835a9582acd0b72a4e207dda27482903272a2",
+          "bytes": 2236
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TMP006-and-TMP007-PCB",
+      "revision": "84323b3001cdc9efe614bf6d703c1444c3d275b8",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "0d70e79428f91a74d2036ffc208259e9e1dc7d4a143f905cb7f85b165f1bfec4",
+      "files": [
+        {
+          "path": "TMP006.sch",
+          "sha256": "853947a76d4badac8e48f8ddc7e61000908d50ad3ebf0a645e5a566bf36a8246",
+          "bytes": 299472
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "983cae2f78612beadc736004f57c19393ba07c020fa1e183cae68f2924f0ea42",
+          "bytes": 1783
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TMF8806-Time-of-Flight-Distance-Sensor-PCB",
+      "revision": "00602b9a3252e047cf1d8824c6d0e8f7dfc026cc",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "4930dfe1fb29c46e46a673c8eac3798f46c1b2716fd24713d2264c63ad8a095f",
+      "files": [
+        {
+          "path": "Adafruit TMF8806 Time of Flight Sensor rev B.sch",
+          "sha256": "02f970aec95b17537e620a63e55849051636ead71f10c28c0fccbd20e2cd53aa",
+          "bytes": 441114
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "72dae28396ca0814a6a29ce7f1a6475ac0cedaff5f1c17f9b0f0015d55b831e8",
+          "bytes": 3987
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TMF8801-Time-of-Flight-Distance-Sensor-PCB",
+      "revision": "274138c355638a4b1282ef5aafc4cb650fb32329",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "970d7f350359050a033a2cd0776d5c71dfee6f0413bf3528cb1c7cc8b69c8b34",
+      "files": [
+        {
+          "path": "Adafruit TMF8801 Time of Flight Sensor rev B.sch",
+          "sha256": "54d545cba32f032f4fd7b7d4925533efe978a2c667e7b91b84ae36881fd07850",
+          "bytes": 441533
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "f537be4634ae08c099bd4adc55cf46a698710b808198d646d8ba588dc77efc5c",
+          "bytes": 3427
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TMC2209-Breakout-PCB",
+      "revision": "227f79e2cda77b99653316692f8ec1975f58c6af",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "ebc2c2d5783b1e326766dea6c420895dc0b97760a50e7bc6f2f78240afddffcf",
+      "files": [
+        {
+          "path": "Adafruit TMC2209 Stepper Motor Driver.sch",
+          "sha256": "d16f9ce31349847d3f0f521ac99bbc7c3aab1e9166bc33b5c627018de2707e43",
+          "bytes": 333240
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "ffcfa45c6a6c648d51be868d26190d819d9471dab08b0a2f156893e7e4801acd",
+          "bytes": 5478
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TMAG5273-3D-Hall-Effect-Magnetometer-Breakout-PCB",
+      "revision": "543c3c93357a56703c6f33de5c8e277451bf9f1d",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "254711fde39b7791c7e625bfc29518273347a782d2accf842d30c6746804afa7",
+      "files": [
+        {
+          "path": "Adafruit TMAG5273A1 3D Hall Effect Magnetometer Breakout.sch",
+          "sha256": "e1edb87a98097c446191c6ac15eb80a2d79ca9c7dd85b76d8aac946cd128093d",
+          "bytes": 410957
+        },
+        {
+          "path": "Adafruit TMAG5273A2 3D Hall Effect Magnetometer Breakout.sch",
+          "sha256": "ce995133313d0d1c8b351d0682c50c3978abc3126d303dc626137523077c87db",
+          "bytes": 410957
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "81d365a9dfcb5752d25d09717bb6f03b7362eaab901af286104bd70883f339d4",
+          "bytes": 3564
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TLV493D-PCB",
+      "revision": "2450d66eef51807f25f6ce598fa7aa9f95d588aa",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "b71b1a224869bf46f3dcd84b3566fe7b2ed292ab6b7b8c9050a130080679ca8b",
+      "files": [
+        {
+          "path": "Adafruit_TLV493D.sch",
+          "sha256": "869ab980f3132b24d2bda798748b8a397cb85621f1d9107bf7467c14f5ee6449",
+          "bytes": 375151
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "7baec3ae21b1ab2c0558572c80f409588c47e44e24bd4e067cb025fd6c525ccd",
+          "bytes": 2766
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TLV320DAC3100-I2S-DAC-PCB",
+      "revision": "4456a62a418b1a25ce2500ce0335ab6fe1eceacf",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "6be5a5cd99af0a9de87efddf5b73d0df508b36db971b1dba282483bde02a5487",
+      "files": [
+        {
+          "path": "Adafruit TLV320DAC3100 I2S DAC.sch",
+          "sha256": "a2c674c71e6d4e79d8d08e8a2935f54dd02e1f58acd75078d13f6c436794db11",
+          "bytes": 706372
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "26835c6aefb3f46843cafdd85f9869b481cd67a4c24bc479db0bc2909114319c",
+          "bytes": 3177
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TLC59711-Breakout-PCB",
+      "revision": "db1aa65ded2fdca2fb8dca48995195abe2235a0f",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "6f3ffb2fc710d5e1cbdec1e23e48c73b5ebafd9fa47e2d03a905abf837170e9a",
+      "files": [
+        {
+          "path": "adafruit tlc59711 v1.sch",
+          "sha256": "4a6310089c3c6bccaa38528573948e9bc3a99718c157ffe8eda1bc46bb751b7f",
+          "bytes": 592156
+        },
+        {
+          "path": "license.txt",
+          "sha256": "3f941b3b89cf7b8370ceb83cc76d2120d471b58735d8ca60238a751a48d7f72f",
+          "bytes": 22240
+        },
+        {
+          "path": "README.md",
+          "sha256": "3bb20d2d6c541e2161dff4904c9244f45a874cbb006f7fb225809e618f538874",
+          "bytes": 2760
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TLC5947-PCB",
+      "revision": "696070c55d4fe90aaf5a990e6bc00d1e15d8fa9a",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "709a88707cd034fded72f50ec47bd1e4f52c336de0b4db52bb056f1f89870e3a",
+      "files": [
+        {
+          "path": "Adafruit TLC5947.sch",
+          "sha256": "bf75a1716f03100efd0586419bf40930596aef52e00e64eca61fdb6fe37e9224",
+          "bytes": 517539
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "701589a2861b8081cceb6ab76e8632b6a2da04a2166ea3d6dba460c146d6d249",
+          "bytes": 1846
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TFT-Gizmo-PCB",
+      "revision": "dc9a7479381c01421a630a93f891c7142f4dfde0",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "91f70764fa646edba9a4a4f7330a9e9b1e40fc0d362a3197da2fbc61b7a127fe",
+      "files": [
+        {
+          "path": "Adafruit Circuit Playground TFT Gizmo.sch",
+          "sha256": "0aa030e870380d9c2c1f313474d843709f97ce6f00bd9b22378197371c9b0cf7",
+          "bytes": 400758
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "e0483fc97b0498c7f9c9c7064a4411d4ad7aff6960a3ff5212924986935c7d44",
+          "bytes": 1910
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TFP401-HDMI-To-40Pin-TFT-PCB",
+      "revision": "41dcbc8f03c1b8e86d61f061a08a52dabeede7d3",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "36774e35156fa08dd0fe652951ae44cdc9b62b8be97030cc839faf4c7dd6ccc8",
+      "files": [
+        {
+          "path": "Adafruit TFP401 to 40pin TFT.sch",
+          "sha256": "d8160e36719d1105205d33701d0b2ac4c70a577cc29effa21d3d3e5d4401b6c6",
+          "bytes": 459010
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "8eb4c0e5365994f9acc2dbe0fa6eefb30414e57c53e3922248a8cf6df387318e",
+          "bytes": 2082
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Terminal-PiCowbell-for-Pico",
+      "revision": "38f512959eea28a4ae38c9ba7e700d3ac0d5618c",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "03deeb28a20c37f74fbd72c76ebca3235bc7972dbc005f946ff91b437a41d2e8",
+      "files": [
+        {
+          "path": "Adafruit Terminal PiCowbell for Pico.sch",
+          "sha256": "0cfb7ac859c9935d48f9a8ce4b55f1c1eed5700e8e22538fdfe40d6b305f5142",
+          "bytes": 406683
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "9297c61959a2cf8164ff0272832e39ea6bd94eeb0587df89873ecfeb2b184596",
+          "bytes": 3688
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Terminal-Block-BFF-PCB",
+      "revision": "6e2c47d43d37a4911910750956fb27c9459b2a57",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "dc83d1cd1f9636873a5f4ccc19c492ad0278e1d87c4217246dea8818acbb7c69",
+      "files": [
+        {
+          "path": "Adafruit Terminal Block BFF.sch",
+          "sha256": "c8a604dd5dde4cd64418c0e667b33b1a2ea9849c85062c47f7bc7271c0517278",
+          "bytes": 179545
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "9b914a7ea71c6bdd153c4de9dabc8ce842e0c4f4e32bfca6f6408229c66a5149",
+          "bytes": 2950
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Teensy-3.x-Feather-Adapter-PCB",
+      "revision": "e5267e93a24939f5f07c1e0ae2910dcc9821bb35",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "af8838fc14a2b1c2b2d3d7a40604d6ad4183437b7a77f6f25642e48ac13cb6f3",
+      "files": [
+        {
+          "path": "Adafruit Feather Teensy3 Adapter Original.sch",
+          "sha256": "9dfbcbe2f06d3adc5d4e81b0eb129a1912d145f558d8200dc28da439e657ed6e",
+          "bytes": 188945
+        },
+        {
+          "path": "Adafruit Feather Teensy3 Adapter.sch",
+          "sha256": "e663b9f7cb8c75f84d3463480d36b0ee9ff62a1a15daa5bbca252e71918e42a4",
+          "bytes": 189705
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "b1dfbdc13f791ce936aab582d63e7a23dd0512b6c765255070279c473e5d9e5c",
+          "bytes": 1379
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TCS34725-Color-Sensor-Breakout-PCB",
+      "revision": "a430372ce3aa9ca0184bd7354f9417ea0dc518a6",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "b8ebc59bb0af2f61359413a4db7687248eb120042491598753263444475eedbe",
+      "files": [
+        {
+          "path": "Adafruit Flora TCS34725.sch",
+          "sha256": "7acbafff5436066ef0677512ea49b012626a9c2ad79e965348e7cfef1f3fe283",
+          "bytes": 337921
+        },
+        {
+          "path": "Adafruit TCS34725.sch",
+          "sha256": "fac3ab5c362b8f4711f2d8ec27639ba5ffbb8e5e5c24b5dbe7a5a7860e74416a",
+          "bytes": 352979
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "8b3273bac17c2d6fc14bdec6b5128d30f28d39194681c48af0ecd2138fb6c478",
+          "bytes": 1544
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TCS3448-14-Channel-Light-Color-Sensor-Breakout-PCB",
+      "revision": "ff0a1a5f90e632625c85892d8cf30d9bbd2179b3",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "7833e452cb1e054380eb7a24e963aec860ef406e2dd20c46b1ecf42d230eeb04",
+      "files": [
+        {
+          "path": "Adafruit TCS3448 14-Channel Light Color Sensor Breakout rev E.sch",
+          "sha256": "bda7b4b6cfae0cb4bdd40666d84d847db167c371915ec6d3b6841b66ae526a72",
+          "bytes": 516470
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "b45f9b865ec40deb981af855e9ac7f6fa7b07803da3619920f6ace763f48dd55",
+          "bytes": 3837
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TCS3430-Ambient-Tri-Stimulus-Color-Sensor-PCB",
+      "revision": "66a56ff8cdb46158dbb87cbe5cc557d7ff14b6e1",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "3d03a20ded5dbed719d4630f5525543fa899495d81230cbaa075ca8a49d82161",
+      "files": [
+        {
+          "path": "Adafruit TCS3430 Ambient Tri-Stimulus Color Sensor.sch",
+          "sha256": "ca5f1220478254f326c1d1b31f056ca0a2359252ca2916c12fb9103c8e7c49a3",
+          "bytes": 417414
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "d64dda9c8afd0c76e79c28e1a8bc874285ab74dfdebd18fd6e9e8f0ca9bcc59f",
+          "bytes": 2420
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TCA9548A-I2C-Multiplexer-PCB",
+      "revision": "c5bdfe4c8e860cee7400539d6e45a235da7afcd2",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "32dd9f8e36703e43a64033ebacd4fa1014a412c81a8a8c458e752d2628eb8847",
+      "files": [
+        {
+          "path": "Adafruit TCA9548A.sch",
+          "sha256": "45e6787c46112056932781c802ffc76bf46c5f9c889b1e5e29078bef65df659d",
+          "bytes": 329175
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "16acac7d1ec65ea430f426d0a597bc543af8d30e5e850a730ffa0eebaa76323d",
+          "bytes": 1798
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TCA8418-PCB",
+      "revision": "e64ed84dd0fe144759e9d8ceb556d54c9df4e8c0",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "aafe751026fea0804213ae941409067bcb9877ebb0f5a7b00513f0ba3f7a8e13",
+      "files": [
+        {
+          "path": "Adafruit TCA8418.sch",
+          "sha256": "f597df58487a0f98d8e17dd11d9b7742868e70143e0fa2cafe63c270d8a23cd0",
+          "bytes": 422849
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "eced87b0ceee2ca655acf4d374c53c60d2467b5bde23b00095b4ac4c09a5b90c",
+          "bytes": 3871
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TCA4307-PCB",
+      "revision": "5b71f3b8aa3b892fa96e2a7e8e102f69f4f75ee1",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "1cefaf4d73e88aab0d2f6b4a00b7e8db1aba24e4eb4b46fb875bff64fe98424a",
+      "files": [
+        {
+          "path": "Adafruit TCA4307.sch",
+          "sha256": "f7727f5ab74d466f3e8ee89ed490eccce6e9da1d252a2e47aa8b5609d10073ea",
+          "bytes": 371976
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "f4751912db8b78fcc4b8c00b39df9af44dc454fd2e8b477dc86235226e50a62d",
+          "bytes": 2996
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-TB6612-Motor-Driver-Breakout-PCB",
+      "revision": "514d5ded1aade108d0698d0e718a92c22ff5496f",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "b08f4c02fd42b209851e047a0724f21ed2346cfd1bdff6b7bf9b5d9b31e50cf5",
+      "files": [
+        {
+          "path": "Adafruit TB6612.sch",
+          "sha256": "4c8976970f2cafd1cd7c197167bcac776834f63f695fe9d8b1be8c9b9b0d8f4b",
+          "bytes": 353350
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "2c45012ce9fe764a3e3394522d8a2a6a4140a811c8213db24cc302268f8e8c56",
+          "bytes": 2206
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Switchable-USB-Type-A-to-C-Breakout-Board-PCB",
+      "revision": "1566b53c2cd5469be964c5f8bf6cf9d399ec7730",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "11e2dd0aab12eb6c14c65626eda3f5b0d5096a699ad6cd205d0007692bad029b",
+      "files": [
+        {
+          "path": "Adafruit Switchable USB Type A to C Breakout Board.sch",
+          "sha256": "84892a15b4476b617317fae73108d447eb76be655dcc6b681c93eb370cfd6efe",
+          "bytes": 124824
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "f712224f7d456d627d7efccca6e4e7089713a2f541cc964ce82be230facaf2d5",
+          "bytes": 1822
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Sunken-USB-Type-C-Breakout-PCB",
+      "revision": "4cb1207ddd6eae864f4410d110bac38072e9b895",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "a7fb3edb7b4b88a83d708a6d88ae615ac006002a33ca73a3d7f38ca562921030",
+      "files": [
+        {
+          "path": "Adafruit Sunken USB Type C Breakout.sch",
+          "sha256": "25a4901c57038e8db23f1e998228b9e3a012f47aaa39c0f834d5bf01c662c7de",
+          "bytes": 116199
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "05431d8cca24b02ead00e4427afe1d110a0d10f50f8394552dde5f37dfbe55a8",
+          "bytes": 1831
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB",
+      "revision": "900c418203489887894b71debe1849a6df259c0f",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "d71e0e3aa00caeadc7263a3de5e0d50e85b3d85ae2bfd5ac427357fe45e4469c",
+      "files": [
+        {
+          "path": "Adafruit STSPIN220 Stepper Motor Driver.sch",
+          "sha256": "415fae4356e662691903323861136033042e0f929cfd6e92052b20f645635bde",
+          "bytes": 531740
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "7a0e6cf376a9666304ae6ace228762212a58e8be78120166bd89f8e778a39326",
+          "bytes": 4638
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-STMPE610-Breakout-PCB",
+      "revision": "8cf4f3cc9aaa31c6f5b90e661fa7ba99559052bb",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "7d3fb3239016d7168863a2150a50b002a8e08b71e1e8b003f31b41c427b81f70",
+      "files": [
+        {
+          "path": "Adafruit STMPE610.sch",
+          "sha256": "345815802bcdb2b61a55bc69b1fadbb33e7ca4fb24c7300e3c54635f6ad0f877",
+          "bytes": 342430
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "3827f67774829c494a3bbe34475131cc64fd991af0e94d3e7de42135fbfafd3f",
+          "bytes": 1293
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-STHS34PF80-IR-Presence-Sensor-PCB",
+      "revision": "df3aece9ec5e5ad5f1a1fe48835046ddb6b0a292",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "991886adfa89dd59ed5d1bcb3b603d96b1756925564323e86ab604a574ed71ce",
+      "files": [
+        {
+          "path": "Adafruit STHS34PF80 IR Presence Sensor.sch",
+          "sha256": "48e0b6d5f16e4d2f87913183ae9dc5fbdfb996500fb703c957abd08f743f2e52",
+          "bytes": 426080
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "b96021cff2826949f0e79da1c4b972c4a51990e48dbb70586e486f96b9ac6812",
+          "bytes": 2798
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Stereo-Speaker-Bonnet-PCB",
+      "revision": "7ba780f5f5c00274d3eeb395f444534189f13a0d",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "51f815d00f4d239928e16faa25ace1a5b6996236e2f533aa9f59a0f326e753b5",
+      "files": [
+        {
+          "path": "Adafruit Speaker Bonnet Original.sch",
+          "sha256": "79deea49aec222d7c7a1d6eedee71e34a8fb5b725d411fe0681a304f5cd7a61d",
+          "bytes": 468569
+        },
+        {
+          "path": "Adafruit Speaker Bonnet rev C.sch",
+          "sha256": "4cc1da7696fc9b4793cfc81aa525c15b5f01909cff4a567eb900d51a16ed6193",
+          "bytes": 514464
+        },
+        {
+          "path": "Adafruit Speaker Bonnet rev D.sch",
+          "sha256": "9da716c8d03261bc970ce2a95d517411d0d4f88f317e5746efe8c3dab4a7598c",
+          "bytes": 670338
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "76ca94ad5ef81fb1c86840c94718d6f5af8713267d0fa0f8fb90721327048349",
+          "bytes": 1710
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-STEMMA-Speaker-PCB",
+      "revision": "2f4a20b1411e8ead3160e6e89889f20311b248a1",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "459d4a366a522f5b4e630e6b7f55d21c69d4f3cd8aae9f67a70ccc4b08efbb54",
+      "files": [
+        {
+          "path": "Adafruit STEMMA Speaker.sch",
+          "sha256": "409c942e81f9fa23da2cc5ed94336c76376416c8f7574f276ba5837f0a66b384",
+          "bytes": 118245
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "ab9b3b851733ec33f377095ef9c9d7c16433fad94ddb85041b31d452a5f6cee2",
+          "bytes": 1807
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-STEMMA-Soil-Sensor-PCB",
+      "revision": "b20a708dd015cb81da8740460d47aae1555a1781",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "a75bdeea65dc305747353e9c032c40182819a9101205f8bf611b68a7f5fb1e2d",
+      "files": [
+        {
+          "path": "Adafruit STEMMA Soil Sensor.sch",
+          "sha256": "c03d0994b59640a89bd1d2da9967bbd47c6d52b1f6081118511fb2780a153624",
+          "bytes": 412284
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "0b969529faa32dea427aecc857bed58a1df811e05fdad5c0da74762235e11cc9",
+          "bytes": 2813
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-STEMMA-Reflective-Photo-Interrupt-Sensor-PCB",
+      "revision": "301c949dc5f3d4b045aca5ca94913a096af24918",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "a451aa28f50dbf164487aac243538bf1d51309d1252917680e5b496c36e078be",
+      "files": [
+        {
+          "path": "Adafruit STEMMA Reflective Photo Interrupt Sensor.sch",
+          "sha256": "1084d67e335e10aa61843802c19272dd3fcc434fc03702f7050d3854de9661fc",
+          "bytes": 460394
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "3d6d532b0b602aa3a5ea695bf435820f91b2bd0008cd45ee7a6a418b6a6a0d97",
+          "bytes": 2650
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-STEMMA-Piezo-Driver-Amp-PCB",
+      "revision": "678bf96ec53107bd831f84c2aebca380a3bd4157",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "35bf766ba4aee29a4a6cfe4bffd16387c9f1be0b822e7258dc4488f8b6cfec17",
+      "files": [
+        {
+          "path": "Adafruit STEMMA Piezo Driver Amp.sch",
+          "sha256": "eb4bbea6c221bd1130c648b93274529bcba9bd87894db7275220771184924bab",
+          "bytes": 387625
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "a7843e357b0f4d8eebdf88345393a302ab9a3ff641a5aab333a65a44d71205cb",
+          "bytes": 2517
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-STEMMA-Non-Latching-Mini-Relay-PCB",
+      "revision": "7559d509a129d1555af92d410a75b5d89673a9e4",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "5f434aac9634e9ee6e4b5617432bfe20d218be3bcfc5aa2dcaa0b59d68bb5e2b",
+      "files": [
+        {
+          "path": "Adafruit Non-Latching Relay Breakout.sch",
+          "sha256": "df5b0c510b6260334b034ffba7ef804a5cdd18dd194de1ba5ae2c5b1b0749fc8",
+          "bytes": 574739
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "5904f64f76e95de4263fa32a8993f5511bd3d98fce579ecf6adff26388f27611",
+          "bytes": 3244
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-STEMMA-Audio-Amp-PCB",
+      "revision": "12d0f77a674db2b356c9e6b385f3917d4eb3420a",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "1a5ea311eff8489326d769e336a5c0077c8ec0dbcb2ae49a1abfc69eaf16dcc6",
+      "files": [
+        {
+          "path": "Adafruit STEMMA Audio Amp.sch",
+          "sha256": "2aa9670d485c014258dc4ec5d057799a481161905ba09914b05a2650bbf3c0d8",
+          "bytes": 485036
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "573588a8b4066b13de63d8be2e74f0733f03b8dba6876cc9245674d895ec29f9",
+          "bytes": 2982
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-STEMMA-Analog-SPDT-Switch-PCB",
+      "revision": "0d377c1934aaadf3bcc8a9a89adf87b82d96726a",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "48ed27ea9fd0be8f55654525c438d25eac4c6f068da5b8f49f8afc8e1eca0f4b",
+      "files": [
+        {
+          "path": "Adafruit STEMMA Analog SPDT Switch.sch",
+          "sha256": "ae79729d14af5cf717b04d2fda145af04869fb7fe3df6c378ac933b59249902c",
+          "bytes": 400088
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "c8de2493563b00f7555fe249bcbdd9a4f854460afa7871b06d1568732e7133f9",
+          "bytes": 2803
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-STCC4-and-SHT41-CO2-Temperature-and-Humidity-Sensor-PCB",
+      "revision": "3bf8a8ea4042964af182c617ce1ab904cc4a7bd1",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "070227953d06b21dc44f919d0ad90955ce822612ae156a3b729952dd6c3cb108",
+      "files": [
+        {
+          "path": "Adafruit STCC4 and SHT41 CO2 Temperature and Humidity Sensor.sch",
+          "sha256": "8a77897acc9dd1eb3cd513a96f8db19d32bbd9589b30f03f1c024201707563c9",
+          "bytes": 432130
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "a2f14143a0c7d55a9645bcf371fb2484cdaddcb69b0775f3864630acc25e67f0",
+          "bytes": 4101
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Standalone-Capacitive-Sensor-PCB",
+      "revision": "efe89824b3574463ebca864a2494f7c86fb5c82b",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "e7172e719eb2aa03fb9e0ab2fbf81f1b8fe212396cd83e8b21a7e92aaafa4b73",
+      "files": [
+        {
+          "path": "Adafruit AT42QT1010 Breakout.sch",
+          "sha256": "6cd402529867a548062c5cf7dce449301a5ce20802f65547882e7e76c7b06e8e",
+          "bytes": 357325
+        },
+        {
+          "path": "Adafruit AT42QT1012 Breakout.sch",
+          "sha256": "4b9a8b23079139b25dcc9a43d7c508aacfc83af1511cfab56a03e018e6027282",
+          "bytes": 354350
+        },
+        {
+          "path": "Adafruit AT42QT1070 Breakout.sch",
+          "sha256": "8ff4ac542407d58e505088cb3154ec06dc9811125d331803a9f576e69408bd74",
+          "bytes": 412014
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "e05646fd4ca842e12af16e49af524caa41d81f3d1366dfcd81325104a053dad6",
+          "bytes": 1415
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-ST25DV16-PCB",
+      "revision": "217428893fc24414be4f14eb7e002b759bfcd0ba",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "5f0faf6e96d61cff93a518a4d0c2c8f0277f3dd7db121e827f73802d04493e5c",
+      "files": [
+        {
+          "path": "Adafruit ST25DV16.sch",
+          "sha256": "147a74ff9f1504f68c05629ef64e7b73b71ede1012ef7da7ca44b7041c37a9da",
+          "bytes": 364246
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "4055930d3e989a8a0b6384be428f0b01dc14ca314485f10a58cdd3bbe98aab25",
+          "bytes": 1344
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-SPW2430-PCB",
+      "revision": "929cb33e8e66308cb46321be057e7f0ad7111999",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "b971ed19c42ac2eee94121a19fcb4177d695426585162efe9a8d78764096008f",
+      "files": [
+        {
+          "path": "SPW2430-Silicon-Mic_Rev-B.sch",
+          "sha256": "633365f4e50f390f783b62a8c2f4e8af24097d57ff804ca14689d22dd96dae89",
+          "bytes": 80335
+        },
+        {
+          "path": "license.txt",
+          "sha256": "1f63e1f4676a433423b2c2ff1ccd9e80093f341f10b81f0ac0106342bc7bbe89",
+          "bytes": 22597
+        },
+        {
+          "path": "README.md",
+          "sha256": "cc869f3a0a294621389fef27f212a6bfb38925c095229161d6c2b00bd2d10159",
+          "bytes": 2399
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-SPI-Flash-SD-Card-PCB",
+      "revision": "8d985bd12f2732e94b4727e24874646f5911cd75",
+      "license": "CC-BY-SA-3.0",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "license_path": "license.txt",
+      "archive_sha256": "9c0d9111b165471a8047d67c72afe4d4ee9bf78a10fe1394dde40b8911d19b74",
+      "files": [
+        {
+          "path": "Adafruit SPI Flash SD Card.sch",
+          "sha256": "fb719a2fcc44f305d706a6e65499503d382a7957bf5ba3e0c3d281e04cb2bd78",
+          "bytes": 116486
+        },
+        {
+          "path": "license.txt",
+          "sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+          "bytes": 22239
+        },
+        {
+          "path": "README.md",
+          "sha256": "1babd1090b950857a59634963dea951a0a908986e004ceaf5bd6b288d4c49746",
+          "bytes": 2293
+        }
+      ]
+    }
+  ]
+}

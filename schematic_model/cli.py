@@ -12,6 +12,8 @@ COMMANDS = {
     "predict": "predict",
     "chat": "chat",
     "train": "schematic_model.training",
+    "inspect": "schematic_model.inspect",
+    "corpus": "schematic_model.corpus",
 }
 
 

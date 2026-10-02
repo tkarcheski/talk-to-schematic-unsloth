@@ -1,0 +1,33 @@
+{
+  "requested_designs": 120,
+  "distinct_source_schematics": 120,
+  "distinct_board_repositories": 120,
+  "conversations": 120,
+  "turns": 720,
+  "split_conversations": {
+    "train": 87,
+    "val": 13,
+    "test": 20
+  },
+  "image_only_conversations": 119,
+  "image_only_split_conversations": {
+    "train": 86,
+    "val": 13,
+    "test": 20
+  },
+  "rendered": true,
+  "status": "complete",
+  "claims": "Source-fact Q&A with native evidence supplied; not human-reviewed defect gold or image-only OCR evaluation",
+  "manifest": "corpora/adafruit-120.json",
+  "attribution": "Adafruit Industries; each source retains its original README and CC-BY-SA-3.0 license text.",
+  "split_unit": "GitHub board repository; all sheets and revisions stay together. Related products may still share subcircuits.",
+  "limitations": [
+    "Machine-extracted native facts, not human-verified electrical findings.",
+    "Derivative circuit-crop rendering uses original EAGLE geometry and a bounded renderer, not the vendor application. Frames/fiducials do not expand crop bounds; original notices remain in retained source files and an attribution footer is rendered. Unsupported primitives are rejected.",
+    "Evidence-assisted dialogues supply BOM/net facts in the prompt; image-only dialogues are separately located under vision/.",
+    "No claim of OCR accuracy or model performance follows from source parsing or gold-answer self-checks."
+  ],
+  "rebuild": "uv run python -m schematic_model.corpus --manifest corpora/adafruit-120.json --out data/real --limit 120",
+  "render_method": "eagle_xml_geometry_v2_circuit_crop",
+  "crop_policy": "electrical_symbols_and_source_nets_with_text_bounds; frames_and_fiducials_do_not_expand_view"
+}
