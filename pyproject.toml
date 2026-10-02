@@ -18,14 +18,27 @@ dependencies = [
 schematic-model = "schematic_model.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8,<10", "ruff>=0.12,<1", "coverage>=7,<8"]
+dev = [
+    "pytest>=8,<10",
+    "ruff>=0.12,<1",
+    "coverage>=7,<8",
+    "pre-commit>=4,<5",
+]
 
 [tool.setuptools]
 packages = ["schematic_model"]
 py-modules = ["hwsynth", "build_dataset", "evaluate", "make_mock_preds", "predict", "chat", "train_unsloth"]
 
 [tool.setuptools.package-data]
-schematic_model = ["skills/*/SKILL.md"]
+schematic_model = ["skills/*/SKILL.md", "web/*"]
+
+[tool.coverage.run]
+branch = true
+source = ["schematic_model", "build_dataset", "hwsynth", "evaluate", "predict", "chat"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

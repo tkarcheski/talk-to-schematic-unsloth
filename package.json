@@ -1,0 +1,12 @@
+{
+  "name": "talk-to-schematic-development",
+  "private": true,
+  "description": "Repository spelling checks; the application is a uv-managed Python package",
+  "scripts": {
+    "spellcheck": "cspell lint --no-progress --no-must-find-files --gitignore \"**/*.{md,py,yml,yaml,toml,js,css,html}\""
+  },
+  "devDependencies": {
+    "cspell": "10.3.6"
+  },
+  "engines": { "node": ">=22.18.0" }
+}
