@@ -12,7 +12,7 @@ The target is an RTX 4090 with 24 GB VRAM. The current base model is **Qwen3.5-4
 - [25 complete simulated conversations](docs/simulated_conversations.md), containing 150 user prompts. These are source-derived gold examples, **not model transcripts**.
 - A two-step 4090 training smoke run saved an adapter with finite loss and 9.55 GiB peak allocated VRAM at 768-pixel images. [Recorded evidence](docs/validation/4090-smoke.json).
 - A complete three-epoch real-data fine-tune saved and reloaded an adapter from 173 mixed-view training conversations, using 12.43 GiB peak allocated VRAM. [Training evidence](docs/validation/real-crop-v1-training.json).
-- The [experimental adapter on Hugging Face](https://huggingface.co/nutinspace/talk-to-schematic-qwen3.5-4b-lora-experimental/tree/04c0c2e3c708ef633d676ba770fac6725988ca7c) passes the evidence-assisted benchmark but **fails the image-only value-reading gate**. It is not a qualified release.
+- The [experimental adapter on Hugging Face](https://huggingface.co/nutinspace/talk-to-schematic-qwen3.5-4b-lora-experimental/tree/21ca688a65be235905a56ff7d4355bc08d02bab6) passes the evidence-assisted benchmark but **fails the image-only value-reading gate**. It is not a qualified release.
 - The base model's full benchmark exposed a nonterminating invented resistor list on an absent-component question. Failed generations remain failures in the benchmark denominator.
 
 This project currently supports native **EAGLE XML** extraction and PNG/JPEG/WebP model input. It does not contain a KiCad importer, a general electrical rules checker, or a human-reviewed real-board defect benchmark.
@@ -29,6 +29,8 @@ The first complete comparison used the same 20 held-out board families, 1,024-pi
 These are narrow deterministic metrics, not overall engineering accuracy. The manual audit found valid unit equivalents rejected by literal matching and unsupported extra claims in some otherwise passing base answers. Validation image-only values were 9/26 for the base and 12/26 for the adapter. Further data and model improvements use validation evidence while preserving this first benchmark. [Actual predictions and run summary](docs/validation/model-v1/summary.json) are retained for both models.
 
 A validation-only resolution comparison raised the first adapter from 12/26 correct values at 1,024 pixels to 22/26 at 1,536 and 24/26 at 2,048, with zero failed generations. The 2,048-pixel run used 18.0 GiB peak allocated VRAM and still missed the 95% literal-value gate. [Resolution evidence](docs/validation/model-v1/resolution-ablation.json). Source review identified overlapping labels in one remaining case and an incorrect component qualifier in the other; neither was silently scored as correct.
+
+The expanded training recipe contains 888 conversations and 1,409 supervised turns across the same 87 training board families, including 715 image-only component lookups and varied absent identifiers. Seven uncertain label groups are explicitly excluded; unreviewed labels remain identified as such. Validation and test bytes remain frozen. A two-step test on eight demanding rows at 2,048 pixels passed with 11.47 GiB peak reserved memory. [Snapshot](docs/validation/expanded-v3-snapshot.json), [fit evidence](docs/validation/expanded-v3-fit-2048.json), and [experiment plan](docs/validation/expanded-v3-experiment-plan.json) distinguish data integrity, hardware fit, and model qualification.
 
 ## Install and check
 

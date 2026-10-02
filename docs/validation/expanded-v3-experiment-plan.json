@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "purpose": "Explicit v3 render baseline, bounded 2048px fit gate, then fresh expanded-data training",
+  "snapshot": "data/training/real-expanded-v3",
+  "snapshot_sha256": "fffff610aa232ee034cfe46f65a764f7f06d21a2a583dd3ab16978298368a34c",
+  "expected_snapshot": {"combined_rows": 888, "combined_turns": 1409, "source_training_boards": 87, "expanded_value_rows": 715, "vision_refusal_rows": 86, "explicit_excluded_targets": 7},
+  "exclusions": "docs/validation/expanded-training-exclusions-v2.json",
+  "base_snapshot_sha256": "8b152832864cfd0eb78a8881b16eef8a47be1c050a091461f6366be067bf993c",
+  "base_model": "models/Qwen3.5-4B",
+  "base_revision": "3764fa359b9082ea5a1e4a5e3ac3aaf6e9671636",
+  "base_artifacts_sha256": "57c5730ea512a6270dc9cff33d3ce29a6b8792792b5b44f7419054541788f422",
+  "fixed_adapter": "outputs/real-crop-v1-r16-e3",
+  "fixed_adapter_artifacts_sha256": "27a9f5f7d0c8f373be83f698b51fc59516be3aed1de27524e837a993844c7846",
+  "render_validation": "data/real-v3/vision/val.jsonl",
+  "render_method": "eagle_xml_geometry_v3_text_alignment",
+  "render_baseline_predictions": "results/adapter-v1-v3-render-val-2048.jsonl",
+  "frozen_v2_validation": "data/training/real-crop-v1/vision/val.jsonl",
+  "frozen_v2_2048_report": "results/ablation-adapter-val-vision-2048.jsonl.report.json",
+  "training": {"four_bit": false, "max_seq": 8192, "max_image_size": 2048, "epochs": 3.0, "lr": 0.0001, "rank": 16, "gradient_accumulation": 4, "save_steps": 50, "seed": 3407, "finetune_vision": true, "min_free_vram_gb": 12.0, "local_files_only": true, "export_merged": false, "cache_dir": "models/huggingface"},
+  "fit": {"rows": 8, "max_steps": 2, "timeout_seconds": 900, "max_reserved_bytes": 23622320128, "selection": "deterministic extremes covering largest actual training grid area, maximum grid height/width, highest aspect ratio, longest native text and combined load; fill to eight by combined load; all eight trained over two gradient-accumulation steps"},
+  "preprocessing_audit": {
+    "training": "Unsloth process_vision_info smart-resizes original PIL image to32px grid with Pillow default resampling; collator downsizes max side2048 with Lanczos and snap_to_patch_size=False; Qwen processor smart-resizes again to32px grid.",
+    "serving": "Pillow thumbnail directly downsizes original image to max side2048 with Lanczos; Qwen processor then smart-resizes to32px grid.",
+    "v3_train_images_examined": 87,
+    "different_merged_grid_dimensions": 21,
+    "maximum_training_merged_grid": [64, 63],
+    "maximum_visual_tokens": 4032,
+    "maximum_grid_board": "real-2faec9d78e0fb9e1-p1",
+    "highest_aspect_ratio": 2.93040293040293,
+    "highest_aspect_board": "real-409c942e81f9fa23-p1",
+    "maximum_native_text_tokens": 4979,
+    "maximum_training_tokens_from_native_rows": 7794,
+    "maximum_text_and_combined_board": "real-d8160e36719d1105-p1",
+    "actual_cpu_processor_probes": [
+      {"board": "real-7ece18829034a474-p1", "training_grid_thw": [1, 76, 128], "serving_grid_thw": [1, 78, 128]},
+      {"board": "real-2faec9d78e0fb9e1-p1", "training_grid_thw": [1, 128, 126], "serving_grid_thw": [1, 128, 126]},
+      {"board": "real-409c942e81f9fa23-p1", "training_grid_thw": [1, 44, 128], "serving_grid_thw": [1, 44, 128]}
+    ],
+    "status": "Known pixel/grid preprocessing difference; recorded for review, no pipeline change performed"
+  },
+  "paths": {
+    "fit_data": "tmp/expanded-candidate-fit-data",
+    "fit_output": "outputs/expanded-v3-fit-2048",
+    "fit_log": "results/expanded-v3-fit-2048.log",
+    "fit_gate": "results/expanded-v3-fit-gate.json",
+    "full_output": "outputs/expanded-v3-r16-e3-2048",
+    "full_log": "results/expanded-v3-r16-e3-2048.log",
+    "binding": "results/expanded-v3-run-binding.json"
+  },
+  "stop_conditions": [
+    "Snapshot unavailable, changed, or not the reviewed 888-row composition",
+    "Any changed model, dataset, image, baseline prediction, report, or fit artifact binding",
+    "V3 baseline incomplete or settings differ; metrics may fail quality gates without blocking this experiment",
+    "Fit process fails, times out, runs other than two optimizer steps, loses a selected row, or reports nonfinite metrics",
+    "Fit peak reserved CUDA exceeds 22 GiB",
+    "Any OOM, context overflow, or other infrastructure exception; no fallback or automatic restart",
+    "Any requested output/log already exists without a verifiable completed fit; failed runs require explicit investigation and new paths"
+  ],
+  "limitations": [
+    "A two-step extreme-row fit test is bounded evidence, not proof every full-run allocation will fit.",
+    "Full training starts from pinned base weights, never the smoke adapter; full-run errors are reported without changing settings.",
+    "Expanded training uses v3 images; validation/test inside that snapshot remain frozen v2. The separate v3 baseline is explicitly labeled render comparison.",
+    "No quality-based selection or deployment/publication is performed by this runner."
+  ]
+}
