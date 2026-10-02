@@ -15,6 +15,7 @@ build/
 dist/
 data/external/
 data/real/
+data/real-v3/
 data/training/
 results/
 tmp/

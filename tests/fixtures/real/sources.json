@@ -28,5 +28,20 @@
     "fixture": "txb0104.sch",
     "license_file": "txb0104-LICENSE.txt",
     "original_readme": "txb0104-SOURCE-README.md"
+  },
+  {
+    "id": "real-7f2992ebf5d1fe9b",
+    "repository": "adafruit/Adafruit-VL53L4CX-PCB",
+    "commit": "8e287e0d06293984a3c2b4e14180830dda2e3acc",
+    "source_path": "Adafruit VL53L4CX.sch",
+    "source_url": "https://github.com/adafruit/Adafruit-VL53L4CX-PCB/blob/8e287e0d06293984a3c2b4e14180830dda2e3acc/Adafruit%20VL53L4CX.sch",
+    "sha256": "7f2992ebf5d1fe9b1a3863b040e0002245f74e66e19ad1339c6d10314c4e1391",
+    "license": "CC-BY-SA-3.0",
+    "render_method": "eagle_xml_geometry_v2_circuit_crop",
+    "source_kind": "real_hardware",
+    "image_kind": "derivative_render_of_original_source_geometry",
+    "fixture": "vl53l4cx.sch",
+    "license_file": "vl53l4cx-LICENSE.txt",
+    "original_readme": "vl53l4cx-SOURCE-README.md"
   }
 ]

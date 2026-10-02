@@ -85,7 +85,7 @@ class CorpusTests(unittest.TestCase):
         svg = source_svg(self.source, 1, attribution='Adafruit Industries | CC BY-SA 3.0')
         self.assertEqual(ET.fromstring(svg).get('viewBox'), initial)
         self.assertIn('Adafruit Industries | CC BY-SA 3.0', svg)
-        self.assertIn('eagle_xml_geometry_v2_circuit_crop', svg)
+        self.assertIn('eagle_xml_geometry_v3_text_alignment', svg)
         self.assertIn('circuit crop', svg)
 
     def test_crop_keeps_disconnected_electrical_symbols(self):
@@ -99,6 +99,53 @@ class CorpusTests(unittest.TestCase):
         drawing.text('VERTICAL VALUE', 0, 0, size=2, rotation='R90')
         self.assertLess(min(y for _, y in drawing.points), -20)
         self.assertLess(max(x for x, _ in drawing.points), 3)
+
+    def test_all_nine_text_alignments_keep_the_source_origin(self):
+        horizontal = {'left': 'start', 'center': 'middle', 'right': 'end'}
+        vertical = {'bottom': 'text-after-edge', 'center': 'central', 'top': 'text-before-edge'}
+        for y, baseline in vertical.items():
+            for x, anchor in horizontal.items():
+                alignment = 'center' if x == y == 'center' else f'{y}-{x}'
+                with self.subTest(alignment=alignment):
+                    drawing = _Drawing()
+                    drawing.text('Label', 12, 20, size=2, align=alignment)
+                    node = ET.fromstring(drawing.elements[0])
+                    self.assertEqual((node.get('x'), node.get('y')), ('12.0000', '-20.0000'))
+                    self.assertEqual(node.get('text-anchor'), anchor)
+                    self.assertEqual(node.get('dominant-baseline'), baseline)
+
+    def test_multiline_alignment_applies_to_the_whole_block(self):
+        for alignment, first_offset in [('bottom-left', '-2.5000'), ('center-left', '-1.2500'), ('top-left', '0.0000')]:
+            drawing = _Drawing()
+            drawing.text('First\nSecond', 0, 0, size=2, align=alignment)
+            spans = ET.fromstring(drawing.elements[0]).findall('tspan')
+            self.assertEqual([span.get('dy') for span in spans], [first_offset, '2.5000'])
+
+    def test_upright_rotation_reverses_both_alignment_axes(self):
+        drawing = _Drawing()
+        drawing.text('Label', 12, 20, rotation='R180', align='bottom-left')
+        node = ET.fromstring(drawing.elements[0])
+        self.assertEqual(node.get('text-anchor'), 'end')
+        self.assertEqual(node.get('dominant-baseline'), 'text-before-edge')
+        self.assertEqual(node.get('transform'), 'rotate(-0.0000 12.0000 -20.0000)')
+
+    def test_real_vl53_columns_preserve_distinct_left_and_right_alignment(self):
+        source = Path(__file__).parent / 'fixtures/real/vl53l4cx.sch'
+        svg = ET.fromstring(source_svg(source, 1))
+        ns = {'s': 'http://www.w3.org/2000/svg'}
+        texts = {'\n'.join(t.itertext()): t for t in svg.findall('.//s:text', ns)}
+        left = texts['VDD:\nOp. Temp:']
+        right = texts['2.6-3.5V\n-20~70°C']
+        self.assertEqual((left.get('x'), left.get('y'), left.get('text-anchor')), ('111.7600', '-86.3600', 'end'))
+        self.assertEqual((right.get('x'), right.get('y'), right.get('text-anchor')), ('114.3000', '-86.3600', 'start'))
+        self.assertEqual(left.get('dominant-baseline'), 'central')
+        self.assertEqual(right.get('dominant-baseline'), 'central')
+        # Frozen v2 electrical primitives, excluding text and page crop furniture.
+        geometry = [ET.tostring(node, encoding='utf-8') for node in svg.find('./s:g/s:g', ns)
+                    if node.tag != '{http://www.w3.org/2000/svg}text']
+        self.assertEqual(len(geometry), 3295)
+        self.assertEqual(hashlib.sha256(b''.join(geometry)).hexdigest(),
+                         'f19c2f5721ceb0f2cec9d4325d7f5c6acf7ddf922544e26b6067540e5ab62ec4')
 
     def test_chat_has_replayable_gold_and_explicit_evidence_scope(self):
         record = {'id': 'board-1', 'repository': 'adafruit/Example-PCB', 'sha256': 'a' * 64}

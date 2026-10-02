@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ET
 
 Transform = tuple[float, float, float, bool]
 IDENTITY: Transform = (0, 0, 0, False)
-RENDER_METHOD = "eagle_xml_geometry_v2_circuit_crop"
+RENDER_METHOD = "eagle_xml_geometry_v3_text_alignment"
 CROP_POLICY = "electrical_symbols_and_source_nets_with_text_bounds; frames_and_fiducials_do_not_expand_view"
 
 
@@ -52,7 +52,18 @@ class _Drawing:
         xx, yy = self.point(x, y, transform)
         local_angle, local_mirror = _rotation(rotation)
         angle = transform[2] + (-local_angle if transform[3] else local_angle)
-        anchor = "middle" if "center" in align else "end" if "right" in align else "start"
+        # EAGLE's first alignment axis is vertical, its second horizontal.
+        # In particular center-left and center-right are not centered on x.
+        alignments = {
+            "bottom-left": ("start", "bottom"), "bottom-center": ("middle", "bottom"),
+            "bottom-right": ("end", "bottom"), "center-left": ("start", "center"),
+            "center": ("middle", "center"), "center-right": ("end", "center"),
+            "top-left": ("start", "top"), "top-center": ("middle", "top"),
+            "top-right": ("end", "top"),
+        }
+        if align not in alignments:
+            raise ValueError(f"Unsupported EAGLE text alignment {align!r}")
+        anchor, vertical = alignments[align]
         mirrored = transform[3] != local_mirror
         if mirrored:
             anchor = {"start": "end", "end": "start", "middle": "middle"}[anchor]
@@ -60,21 +71,30 @@ class _Drawing:
         if 90 < angle <= 270:
             angle = (angle + 180) % 360
             anchor = {"start": "end", "end": "start", "middle": "middle"}[anchor]
+            vertical = {"bottom": "top", "top": "bottom", "center": "center"}[vertical]
         size = float(size)
         lines = str(value).splitlines() or [""]
         # Conservative glyph bounds are rotated with the rendered text. Ignoring
         # text rotation clips long vertical values in tightly cropped drawings.
         extent = max(map(len, lines)) * size
         left = -extent if anchor == "end" else -extent / 2 if anchor == "middle" else 0
-        top, bottom = -size * 1.1, size * ((len(lines) - 1) * 1.25 + .35)
+        line_span = (len(lines) - 1) * size * 1.25
+        first_line_offset = {"bottom": -line_span, "center": -line_span / 2, "top": 0}[vertical]
+        baseline = {"bottom": "text-after-edge", "center": "central", "top": "text-before-edge"}[vertical]
+        # Conservative crop bounds, not a claim about measured glyph extents.
+        top, bottom = {
+            "bottom": (-line_span - size * 1.3, size * .1),
+            "center": (-line_span / 2 - size * .7, line_span / 2 + size * .7),
+            "top": (-size * .1, line_span + size * 1.3),
+        }[vertical]
         radians = math.radians(-angle)
         for dx, dy in ((left, top), (left + extent, top), (left, bottom), (left + extent, bottom)):
             self.points.append((xx + dx * math.cos(radians) - dy * math.sin(radians),
                                 yy + dx * math.sin(radians) + dy * math.cos(radians)))
-        spans = "".join(f'<tspan x="{xx:.4f}" dy="{0 if i == 0 else size * 1.25:.4f}">{html.escape(line)}</tspan>'
+        spans = "".join(f'<tspan x="{xx:.4f}" dy="{first_line_offset if i == 0 else size * 1.25:.4f}">{html.escape(line)}</tspan>'
                         for i, line in enumerate(lines))
         self.elements.append(f'<text x="{xx:.4f}" y="{yy:.4f}" font-size="{size:.4f}" '
-                             f'text-anchor="{anchor}" fill="{color}" stroke="none" '
+                             f'text-anchor="{anchor}" dominant-baseline="{baseline}" fill="{color}" stroke="none" '
                              f'transform="rotate({-angle:.4f} {xx:.4f} {yy:.4f})">{spans}</text>')
 
     def wire(self, node, transform, color):
