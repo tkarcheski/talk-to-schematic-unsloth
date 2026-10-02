@@ -4,3 +4,17 @@ outputs/
 preds*.jsonl
 p.jsonl
 n.jsonl
+.venv/
+.cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.json
+*.egg-info/
+build/
+dist/
+data/external/
+data/real/
+results/
+tmp/
+.ai-pilled/
