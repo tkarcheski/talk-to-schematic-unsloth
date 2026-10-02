@@ -6,6 +6,7 @@ import copy
 import io
 import json
 from pathlib import Path
+import socket
 import subprocess
 import sys
 import threading
@@ -274,3 +275,137 @@ def test_http_rejects_oversized_body_before_generation(server, monkeypatch):
     monkeypatch.setattr(deploy, "MAX_BODY_BYTES", 10)
     assert request(server, "/v1/chat/completions", {"model": "schematic", "messages": messages()})[0] == 413
     assert not server[1].calls
+
+
+def test_idle_socket_does_not_block_health(server):
+    instance, _ = server
+    with socket.create_connection(instance.server_address, timeout=2) as idle:
+        idle.sendall(b"POST /v1/chat/completions HTTP/1.1\r\n")
+        assert request(server, "/health")[0] == 200
+
+
+def test_connection_limit_returns_busy_and_recovers(server):
+    instance, _ = server
+    for _ in range(deploy.MAX_HTTP_CONNECTIONS):
+        assert instance.connection_slots.acquire(blocking=False)
+    try:
+        with pytest.raises(HTTPError) as error:
+            urlopen(f"http://127.0.0.1:{instance.server_port}/health", timeout=2)
+        assert error.value.code == 503
+    finally:
+        for _ in range(deploy.MAX_HTTP_CONNECTIONS):
+            instance.connection_slots.release()
+    assert request(server, "/health")[0] == 200
+
+
+def test_gpu_requests_are_serialized_without_blocking_health(server, monkeypatch):
+    instance, engine = server
+    started, release = threading.Event(), threading.Event()
+    original = engine.complete
+
+    def waiting(*args, **kwargs):
+        started.set()
+        assert release.wait(3)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(engine, "complete", waiting)
+    results = []
+    body = {"model": "schematic", "messages": messages()}
+    worker = threading.Thread(target=lambda: results.append(request(server, "/v1/chat/completions", body)))
+    worker.start()
+    try:
+        assert started.wait(2)
+        assert request(server, "/health")[0] == 200
+        status, reply = request(server, "/v1/chat/completions", body)
+        assert status == 503 and "busy" in reply["error"]["message"]
+    finally:
+        release.set()
+        worker.join(timeout=3)
+    assert results[0][0] == 200
+    assert len(engine.calls) == 1
+
+
+@pytest.mark.parametrize("failure,status", [(RuntimeError("gpu failure"), 503), (InferenceError("incomplete"), 422)])
+def test_generation_failure_releases_slot_and_preserves_server(server, monkeypatch, failure, status):
+    engine = server[1]
+    original = engine.complete
+
+    def broken(*args, **kwargs):
+        raise failure
+
+    monkeypatch.setattr(engine, "complete", broken)
+    body = {"model": "schematic", "messages": messages()}
+    assert request(server, "/v1/chat/completions", body)[0] == status
+    monkeypatch.setattr(engine, "complete", original)
+    assert request(server, "/health")[0] == 200
+    assert request(server, "/v1/chat/completions", body)[0] == 200
+
+
+@pytest.mark.parametrize("extra", [b"Content-Length: 2\r\n", b"Host: example.com\r\n", b"Transfer-Encoding:\r\n"])
+def test_ambiguous_http_framing_is_rejected_without_generation(server, extra):
+    instance, engine = server
+    with socket.create_connection(instance.server_address, timeout=2) as client:
+        client.sendall(b"POST /v1/chat/completions HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+                       b"Content-Type: application/json\r\nContent-Length: 2\r\n" + extra + b"\r\n{}")
+        assert client.recv(4096).startswith(b"HTTP/1.0 400")
+    assert not engine.calls
+    assert request(server, "/health")[0] == 200
+
+
+def make_adapter(tmp_path):
+    adapter = tmp_path / "adapter"
+    adapter.mkdir()
+    (adapter / "adapter_config.json").write_text('{"base_model_name_or_path":"upstream/model"}')
+    (adapter / "adapter_model.safetensors").write_bytes(b"adapter weights")
+    return adapter
+
+
+def test_failed_bundle_is_not_published_and_can_be_retried(config, tmp_path, monkeypatch):
+    adapter = make_adapter(tmp_path)
+    destination = tmp_path / "bundle"
+    original = deploy.shutil.copyfile
+
+    def failed_copy(source, target):
+        Path(target).write_bytes(b"partial")
+        raise OSError("simulated disk failure")
+
+    monkeypatch.setattr(deploy.shutil, "copyfile", failed_copy)
+    with pytest.raises(OSError, match="disk failure"):
+        deploy.prepare_bundle(str(adapter), config.model, str(destination))
+    assert not destination.exists()
+    assert not list(tmp_path.glob(".bundle.partial-*"))
+    monkeypatch.setattr(deploy.shutil, "copyfile", original)
+    result = deploy.prepare_bundle(str(adapter), config.model, str(destination))
+    assert result["bundle"]["path"] == str(destination)
+    assert result["bundle"] == deploy.model_artifacts(destination)
+
+
+@pytest.mark.parametrize("parent", ["adapter", "base"])
+def test_bundle_cannot_modify_input_artifact_directories(config, tmp_path, parent):
+    adapter = make_adapter(tmp_path)
+    destination = (adapter if parent == "adapter" else Path(config.model)) / "bundle"
+    with pytest.raises(ValueError, match="outside"):
+        deploy.prepare_bundle(str(adapter), config.model, str(destination))
+    assert not destination.exists()
+
+
+@pytest.mark.parametrize("mapping", [{}, {"tensor": "missing.safetensors"}, {"tensor": "../model.safetensors"}, {"tensor": 3}])
+def test_missing_or_invalid_weight_shards_fail_before_gpu_import(config, mapping):
+    Path(config.model, "model.safetensors.index.json").write_text(json.dumps({"weight_map": mapping}))
+    with pytest.raises(ValueError, match="Safetensors index"):
+        deploy.LocalModel(config)
+
+
+@pytest.mark.parametrize("metadata", [[], {}, {"base_model_name_or_path": None}])
+def test_invalid_adapter_metadata_is_a_validation_error(config, metadata):
+    Path(config.model, "adapter_config.json").write_text(json.dumps(metadata))
+    with pytest.raises(ValueError):
+        deploy.LocalModel(config)
+
+
+def test_prediction_sidecars_cannot_pollute_model_fingerprint(config, tmp_path):
+    dataset = write_dataset(tmp_path)
+    output = Path(config.model) / "predictions.jsonl"
+    with pytest.raises(ValueError, match="outside model"):
+        deploy.batch_predict(config, str(dataset), str(output), engine=FakeEngine(config))
+    assert not list(Path(config.model).glob("predictions*"))

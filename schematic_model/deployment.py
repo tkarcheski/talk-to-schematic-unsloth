@@ -17,7 +17,10 @@ import json
 import math
 from pathlib import Path
 import shutil
+from socketserver import ThreadingMixIn
 import sys
+import tempfile
+import threading
 import time
 from typing import Any
 import uuid
@@ -31,6 +34,7 @@ MAX_IMAGE_PIXELS = 40_000_000
 MAX_MESSAGES = 64
 MAX_IMAGES = 4
 MAX_TEXT_CHARS = 200_000
+MAX_HTTP_CONNECTIONS = 8
 
 
 @dataclass(frozen=True)
@@ -61,6 +65,13 @@ def _digest_json(value: Any) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
 
 
+def _read_object(path: Path) -> dict[str, Any]:
+    value = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_unique_object)
+    if not isinstance(value, dict):
+        raise ValueError(f"Model metadata must be an object: {path.name}")
+    return value
+
+
 def model_artifacts(path: Path) -> dict[str, Any]:
     """Hash all top-level weights, processor and tokenizer files once per process."""
     path = path.resolve()
@@ -71,12 +82,27 @@ def model_artifacts(path: Path) -> dict[str, Any]:
              and item.name not in {"training_manifest.json", "trainer_state.json", "deployment_manifest.json"}]
     if not any(item.suffix == ".safetensors" for item in files):
         raise ValueError("local model directory contains no safetensors weights")
+    for item in files:
+        if item.suffix == ".safetensors" and not item.stat().st_size:
+            raise ValueError(f"Empty model weights: {item.name}")
+        if item.name.endswith(".safetensors.index.json"):
+            mapping = _read_object(item).get("weight_map")
+            if not isinstance(mapping, dict) or not mapping:
+                raise ValueError("Safetensors index requires a nonempty weight_map")
+            for tensor, shard in mapping.items():
+                if (not isinstance(tensor, str) or not tensor or not isinstance(shard, str)
+                        or Path(shard).name != shard or not shard.endswith(".safetensors")
+                        or not (path / shard).is_file()):
+                    raise ValueError("Safetensors index references an invalid or missing local shard")
     hashes = [{"name": item.name, "bytes": item.stat().st_size, "sha256": sha256(item)} for item in files]
     result = {"path": str(path), "files": hashes, "sha256": _digest_json(hashes)}
     adapter = path / "adapter_config.json"
     if adapter.is_file():
-        config = json.loads(adapter.read_text(encoding="utf-8"))
-        base = Path(config.get("base_model_name_or_path", ""))
+        config = _read_object(adapter)
+        reference = config.get("base_model_name_or_path")
+        if not isinstance(reference, str) or not reference.strip():
+            raise ValueError("adapter must specify a local base_model_name_or_path")
+        base = Path(reference)
         if not base.is_dir() or base.resolve() == path or (base / "adapter_config.json").exists():
             raise ValueError("adapter must reference a local base model; create a deployment bundle with --base-model")
         result["base_model"] = model_artifacts(base)
@@ -90,23 +116,34 @@ def prepare_bundle(adapter: str, base_model: str, output: str) -> dict[str, Any]
         raise ValueError("bundle requires adapter_config.json and adapter_model.safetensors")
     if destination.exists():
         raise ValueError("bundle output already exists; choose a new directory")
+    if destination.is_relative_to(source) or destination.is_relative_to(base):
+        raise ValueError("bundle output must be outside the source adapter and base model")
     base_manifest = model_artifacts(base)
     if "base_model" in base_manifest:
         raise ValueError("base-model must contain full model weights, not another adapter")
-    adapter_config = json.loads((source / "adapter_config.json").read_text(encoding="utf-8"))
+    adapter_config = _read_object(source / "adapter_config.json")
     adapter_config["base_model_name_or_path"] = str(base)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.mkdir()
-    for path in source.iterdir():
-        if path.is_file() and path.suffix in {".safetensors", ".json", ".jinja", ".txt"} and path.name not in {
-            "adapter_config.json", "training_manifest.json", "trainer_state.json", "deployment_manifest.json"
-        }:
-            shutil.copyfile(path, destination / path.name)
-    (destination / "adapter_config.json").write_text(json.dumps(adapter_config, indent=2) + "\n", encoding="utf-8")
-    manifest = {"schema_version": 1, "source_adapter": str(source), "base_model": base_manifest,
-                "bundle": model_artifacts(destination)}
-    write_manifest(destination / "deployment_manifest.json", manifest)
-    return manifest
+    staging = Path(tempfile.mkdtemp(prefix=f".{destination.name}.partial-", dir=destination.parent))
+    try:
+        for path in source.iterdir():
+            if path.is_file() and path.suffix in {".safetensors", ".json", ".jinja", ".txt"} and path.name not in {
+                "adapter_config.json", "training_manifest.json", "trainer_state.json", "deployment_manifest.json"
+            }:
+                shutil.copyfile(path, staging / path.name)
+        (staging / "adapter_config.json").write_text(json.dumps(adapter_config, indent=2) + "\n", encoding="utf-8")
+        bundled = model_artifacts(staging)
+        bundled["path"] = str(destination)
+        manifest = {"schema_version": 1, "source_adapter": str(source), "base_model": base_manifest,
+                    "bundle": bundled}
+        write_manifest(staging / "deployment_manifest.json", manifest)
+        if destination.exists():
+            raise ValueError("bundle output already exists; choose a new directory")
+        staging.rename(destination)
+        return manifest
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging)
 
 
 def decode_image(value: str, max_side: int):
@@ -296,6 +333,14 @@ def batch_predict(config: DeploymentConfig, dataset: str, output: str, *, resume
                 if block["type"] == "image_url":
                     image_inputs.append(hashlib.sha256(block["image_url"]["url"].encode()).hexdigest())
     client = engine if engine is not None else LocalModel(config)
+    protected = [Path(config.model).resolve()]
+    artifact = client.provenance.get("model")
+    while isinstance(artifact, dict):
+        if isinstance(artifact.get("path"), str):
+            protected.append(Path(artifact["path"]).resolve())
+        artifact = artifact.get("base_model")
+    if any(output_path.resolve().is_relative_to(directory) for directory in protected):
+        raise ValueError("Prediction output must be outside model and base-model artifact directories")
     binding = {"deployment": client.provenance, "dataset_sha256": sha256(dataset_path),
                "image_input_hashes": image_inputs, "history": history}
     client.base_url = "local-unsloth://" + _digest_json(binding)
@@ -317,7 +362,38 @@ def batch_predict(config: DeploymentConfig, dataset: str, output: str, *, resume
 
 
 def make_server(engine, port: int = 8891) -> HTTPServer:
-    """Create a loopback-only single-threaded server; the caller owns its lifetime."""
+    """Bound concurrent connections while serializing GPU work; caller owns lifetime."""
+    generation_lock = threading.Lock()
+
+    class BoundedServer(ThreadingMixIn, HTTPServer):
+        daemon_threads = True
+
+        def __init__(self, *args):
+            self.connection_slots = threading.BoundedSemaphore(MAX_HTTP_CONNECTIONS)
+            super().__init__(*args)
+
+        def process_request(self, request, client_address):
+            if not self.connection_slots.acquire(blocking=False):
+                try:
+                    request.settimeout(1)
+                    request.sendall(b"HTTP/1.0 503 Service Unavailable\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+                except OSError:
+                    pass
+                finally:
+                    self.shutdown_request(request)
+                return
+            try:
+                super().process_request(request, client_address)
+            except Exception:
+                self.connection_slots.release()
+                raise
+
+        def process_request_thread(self, request, client_address):
+            try:
+                super().process_request_thread(request, client_address)
+            finally:
+                self.connection_slots.release()
+
     class Handler(BaseHTTPRequestHandler):
         server_version = "SchematicLocal/1"
 
@@ -331,12 +407,16 @@ def make_server(engine, port: int = 8891) -> HTTPServer:
 
         def send_json(self, code, value):
             body = json.dumps(value, allow_nan=False).encode()
-            self.send_response(code)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(body)))
-            self.send_header("Cache-Control", "no-store")
-            self.end_headers()
-            self.wfile.write(body)
+            try:
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(body)
+            except OSError:
+                # A disconnected client cannot consume or poison the next request.
+                self.close_connection = True
 
         def do_GET(self):
             if self.path == "/health":
@@ -352,17 +432,21 @@ def make_server(engine, port: int = 8891) -> HTTPServer:
                 self.send_json(404, {"error": {"message": "Unknown endpoint"}})
                 return
             expected_hosts = {"localhost", "127.0.0.1", f"localhost:{self.server.server_port}", f"127.0.0.1:{self.server.server_port}"}
-            if self.headers.get("Host") not in expected_hosts:
+            if len(self.headers.get_all("Host", [])) != 1 or self.headers.get("Host") not in expected_hosts:
                 self.send_json(400, {"error": {"message": "Host must name this loopback server"}})
                 return
-            if self.headers.get("Origin") or self.headers.get("Transfer-Encoding"):
+            if self.headers.get("Origin") is not None or self.headers.get("Transfer-Encoding") is not None:
                 self.send_json(400, {"error": {"message": "Browser-origin and chunked requests are not supported"}})
                 return
-            if self.headers.get("Content-Type", "").split(";", 1)[0].strip() != "application/json":
+            if (len(self.headers.get_all("Content-Type", [])) != 1
+                    or self.headers.get("Content-Type", "").split(";", 1)[0].strip() != "application/json"):
                 self.send_json(415, {"error": {"message": "Content-Type must be application/json"}})
                 return
             try:
-                length = int(self.headers.get("Content-Length", "0"))
+                lengths = self.headers.get_all("Content-Length", [])
+                if len(lengths) != 1 or not lengths[0].isascii() or not lengths[0].isdecimal():
+                    raise ValueError("exactly one decimal Content-Length is required")
+                length = int(lengths[0])
                 if not 0 < length <= MAX_BODY_BYTES:
                     self.send_json(413, {"error": {"message": "Request body is missing or exceeds size limit"}})
                     return
@@ -371,8 +455,14 @@ def make_server(engine, port: int = 8891) -> HTTPServer:
                     raise ValueError("incomplete request body")
                 payload = json.loads(body, object_pairs_hook=_unique_object)
                 request = validate_request(payload, engine.config)
-                result = engine.complete(payload["model"], payload["messages"],
-                                         max_tokens=request["max_tokens"], temperature=request["temperature"])
+                if not generation_lock.acquire(blocking=False):
+                    self.send_json(503, {"error": {"message": "Local generation is busy; retry when idle"}})
+                    return
+                try:
+                    result = engine.complete(payload["model"], payload["messages"],
+                                             max_tokens=request["max_tokens"], temperature=request["temperature"])
+                finally:
+                    generation_lock.release()
                 self.send_json(200, {"id": "chatcmpl-" + uuid.uuid4().hex, "object": "chat.completion",
                                      "created": int(time.time()), "model": engine.config.served_model_name,
                                      "choices": [{"index": 0, "message": {"role": "assistant", "content": result["output"]}, "finish_reason": "stop"}],
@@ -388,7 +478,7 @@ def make_server(engine, port: int = 8891) -> HTTPServer:
 
     if type(port) is not int or not 0 <= port <= 65535:
         raise ValueError("port must be between 0 and 65535")
-    return HTTPServer(("127.0.0.1", port), Handler)
+    return BoundedServer(("127.0.0.1", port), Handler)
 
 
 def _unique_object(pairs):
