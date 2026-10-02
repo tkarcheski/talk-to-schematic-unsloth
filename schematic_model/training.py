@@ -12,6 +12,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 import hashlib
 from importlib import metadata
+import io
 import json
 import math
 from pathlib import Path
@@ -98,10 +99,14 @@ def resolve_image(path: str, dataset_path: Path) -> Path:
     return existing.pop()
 
 
-def read_rows(path: Path) -> list[dict[str, Any]]:
+def read_rows(path: Path, *, expected_sha256: str | None = None) -> list[dict[str, Any]]:
+    data = path.read_bytes()
+    if expected_sha256 is not None and hashlib.sha256(data).hexdigest() != expected_sha256:
+        raise ValueError(f"Training dataset changed since preflight: {path}")
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
-    with path.open(encoding="utf-8") as stream:
+    # Parse the exact bytes that were checked, rather than reopening a path.
+    with io.StringIO(data.decode("utf-8")) as stream:
         for line_number, line in enumerate(stream, 1):
             if not line.strip():
                 continue
@@ -160,10 +165,14 @@ def image_paths(rows: list[dict[str, Any]]) -> set[Path]:
             for part in message["content"] if part["type"] == "image"}
 
 
-def _read_data(config: TrainingConfig) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def _read_data(config: TrainingConfig, *, expected_hashes: dict[str, str] | None = None
+               ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     data = Path(config.data).resolve()
-    train, validation = read_rows(data / "train.jsonl"), read_rows(data / "val.jsonl")
-    for field in ("id", "design_id", "source_id"):
+    if expected_hashes is not None and set(expected_hashes) != {"train", "validation"}:
+        raise ValueError("Preflight hashes are required for both train and validation datasets")
+    train = read_rows(data / "train.jsonl", expected_sha256=expected_hashes["train"] if expected_hashes else None)
+    validation = read_rows(data / "val.jsonl", expected_sha256=expected_hashes["validation"] if expected_hashes else None)
+    for field in ("id", "design_id", "source_id", "family_id"):
         overlap = {row[field] for row in train if row.get(field)} & {row[field] for row in validation if row.get(field)}
         if overlap:
             raise ValueError(f"train/validation leakage in {field}: {sorted(overlap)[:5]}")
@@ -183,7 +192,9 @@ def installed_versions() -> dict[str, str | None]:
 def preflight(config: TrainingConfig) -> dict[str, Any]:
     """Check complete data splits on CPU, without modifying any files."""
     config.validate()
-    train, validation = _read_data(config)
+    dataset_hashes = {split: sha256(Path(config.data, filename))
+                      for split, filename in (("train", "train.jsonl"), ("validation", "val.jsonl"))}
+    train, validation = _read_data(config, expected_hashes=dataset_hashes)
     from PIL import Image
 
     records, hashes = [], {}
@@ -204,7 +215,7 @@ def preflight(config: TrainingConfig) -> dict[str, Any]:
         "model_revision": config.effective_revision, "python": platform.python_version(),
         "packages": installed_versions(),
         "datasets": {
-            split: {"path": str(Path(config.data, filename).resolve()), "sha256": sha256(Path(config.data, filename)),
+            split: {"path": str(Path(config.data, filename).resolve()), "sha256": dataset_hashes[split],
                     "rows": len(rows), "assistant_turns": sum(m["role"] == "assistant" for r in rows for m in r["messages"])}
             for split, filename, rows in (("train", "train.jsonl", train), ("validation", "val.jsonl", validation))
         },
@@ -245,8 +256,9 @@ def validate_metrics(metrics: dict[str, Any]) -> None:
 class CheckedVisionCollator:
     """Decode batch images only; reject truncation and empty supervision."""
 
-    def __init__(self, collator: Any, max_seq: int):
+    def __init__(self, collator: Any, max_seq: int, *, image_hashes: dict[str, str]):
         self.collator, self.max_seq = collator, max_seq
+        self.image_hashes = {str(Path(path).resolve()): digest for path, digest in image_hashes.items()}
         collator.max_seq_length, collator.truncation = None, False
 
     def __call__(self, examples: list[dict[str, Any]]) -> dict[str, Any]:
@@ -258,7 +270,16 @@ class CheckedVisionCollator:
             for message in row["messages"]:
                 for part in message["content"]:
                     if part["type"] == "image":
-                        with Image.open(part["image"]) as image:
+                        path = Path(part["image"]).resolve()
+                        expected_hash = self.image_hashes.get(str(path))
+                        if expected_hash is None:
+                            raise ValueError(f"Training image was not recorded at preflight: {path}")
+                        data = path.read_bytes()
+                        if hashlib.sha256(data).hexdigest() != expected_hash:
+                            raise ValueError(f"Training image changed since preflight: {path}")
+                        # Decode the verified bytes instead of reopening a path
+                        # that could change between validation and decoding.
+                        with Image.open(io.BytesIO(data)) as image:
                             part["image"] = image.convert("RGB")
             converted.append(row)
         batch = self.collator(converted)
@@ -295,7 +316,8 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
         if free_bytes < config.min_free_vram_gb * 1024**3:
             raise RuntimeError("The selected CUDA device does not have the requested free VRAM")
         torch.cuda.reset_peak_memory_stats()
-        train, validation = _read_data(config)
+        train, validation = _read_data(config, expected_hashes={split: record["sha256"]
+                                                               for split, record in manifest["datasets"].items()})
         random.Random(config.seed).shuffle(train)
         if config.max_train_rows:
             train = train[:config.max_train_rows]
@@ -320,7 +342,7 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
             model, processor, resize=config.max_image_size, resize_dimension="max",
             train_on_responses_only=True, instruction_part="<|im_start|>user\n",
             response_part="<|im_start|>assistant\n",
-        ), config.max_seq)
+        ), config.max_seq, image_hashes={record["path"]: record["sha256"] for record in manifest["images"]})
         collator([train_data[0]])
         trainer = SFTTrainer(
             model=model, processing_class=processor, data_collator=collator,
