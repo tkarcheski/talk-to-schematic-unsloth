@@ -15,8 +15,10 @@ build/
 dist/
 data/external/
 data/real/
+data/training/
 results/
 tmp/
 .ai-pilled/
 models/
 unsloth_compiled_cache/
+.aws
