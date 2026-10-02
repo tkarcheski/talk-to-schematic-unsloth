@@ -1,9 +1,12 @@
 """CPU contracts for training; actual GPU smoke results live with run artifacts."""
 
 from dataclasses import replace
+import builtins
+from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 import subprocess
+import signal
 import sys
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -195,6 +198,77 @@ def test_existing_output_is_preserved(dataset):
     with pytest.raises(ValueError, match="not empty"):
         training.run_training(dataset)
     assert sentinel.read_text() == "existing weights"
+
+
+def test_sigterm_records_interruption_and_cli_exits_143_without_gpu_imports(dataset):
+    script = """
+import builtins, os, signal, sys
+from schematic_model import training
+
+def previous_handler(signum, frame):
+    raise AssertionError('previous handler must not run during training')
+
+signal.signal(signal.SIGTERM, previous_handler)
+training.gpu_inventory = lambda: [{'free_mib': 16384}]
+original_import = builtins.__import__
+def cpu_only_import(name, *args, **kwargs):
+    if name == 'unsloth':
+        os.kill(os.getpid(), signal.SIGTERM)
+        raise AssertionError('SIGTERM did not unwind training')
+    if name.split('.')[0] in {'torch', 'transformers', 'trl'}:
+        raise AssertionError('unexpected GPU import: ' + name)
+    return original_import(name, *args, **kwargs)
+builtins.__import__ = cpu_only_import
+code = training.main(['--data', sys.argv[1], '--out', sys.argv[2]])
+assert signal.getsignal(signal.SIGTERM) is previous_handler
+raise SystemExit(code)
+"""
+    result = subprocess.run([sys.executable, "-B", "-c", script, dataset.data, dataset.out],
+                            capture_output=True, text=True, timeout=15)
+    assert result.returncode == 143, result.stderr
+    assert "interrupted by SIGTERM" in result.stderr and "Traceback" not in result.stderr
+    manifest = json.loads(Path(dataset.out, "training_manifest.json").read_text())
+    assert manifest["status"] == "interrupted"
+    assert manifest["signal"] == "SIGTERM" and manifest["signal_number"] == 15
+    assert manifest["elapsed_seconds"] >= 0
+    assert "training_metrics" not in manifest
+
+
+def test_sigterm_guard_restores_handler_after_normal_exit():
+    previous = signal.getsignal(signal.SIGTERM)
+    with training._interrupt_on_sigterm():
+        assert signal.getsignal(signal.SIGTERM) != previous
+    assert signal.getsignal(signal.SIGTERM) == previous
+
+
+def test_worker_thread_does_not_try_to_register_process_signal_handler():
+    previous = signal.getsignal(signal.SIGTERM)
+
+    def worker():
+        with training._interrupt_on_sigterm():
+            return signal.getsignal(signal.SIGTERM)
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        assert executor.submit(worker).result(timeout=5) == previous
+    assert signal.getsignal(signal.SIGTERM) == previous
+
+
+def test_training_failure_stays_failed_and_restores_signal_handler(dataset, monkeypatch):
+    previous = signal.getsignal(signal.SIGTERM)
+    monkeypatch.setattr(training, "gpu_inventory", lambda: [{"free_mib": 16384}])
+    original_import = builtins.__import__
+
+    def unavailable_backend(name, *args, **kwargs):
+        if name == "unsloth":
+            raise ImportError("CPU-only simulated missing backend")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", unavailable_backend)
+    assert training.main(["--data", dataset.data, "--out", dataset.out]) == 2
+    assert signal.getsignal(signal.SIGTERM) == previous
+    manifest = json.loads(Path(dataset.out, "training_manifest.json").read_text())
+    assert manifest["status"] == "failed" and manifest["error_type"] == "ImportError"
+    assert "signal" not in manifest and "signal_number" not in manifest
 
 
 class Labels:

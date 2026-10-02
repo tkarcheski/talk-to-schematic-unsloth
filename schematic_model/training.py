@@ -7,6 +7,7 @@ isolated training environment or the installed Studio Python for actual runs.
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import copy
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -18,13 +19,40 @@ import math
 from pathlib import Path
 import platform
 import random
+import signal
 import subprocess
 import sys
+import threading
 import time
 from typing import Any
 
 DEFAULT_MODEL = "unsloth/Qwen3.5-4B"
 DEFAULT_REVISION = "3764fa359b9082ea5a1e4a5e3ac3aaf6e9671636"
+
+
+class _TerminationRequested(BaseException):
+    """Unwind training on SIGTERM so its manifest can record the interruption."""
+
+    def __init__(self, signum: int):
+        self.signum = signum
+        super().__init__(f"Received {signal.Signals(signum).name}")
+
+
+@contextmanager
+def _interrupt_on_sigterm():
+    """Guard CLI/main-thread training; Python cannot register signals in a worker."""
+    if threading.current_thread() is not threading.main_thread():
+        yield
+        return
+
+    def interrupt(signum, _frame):
+        raise _TerminationRequested(signum)
+
+    previous = signal.signal(signal.SIGTERM, interrupt)
+    try:
+        yield
+    finally:
+        signal.signal(signal.SIGTERM, previous)
 
 
 @dataclass(frozen=True)
@@ -290,6 +318,7 @@ class CheckedVisionCollator:
         return batch
 
 
+@_interrupt_on_sigterm()
 def run_training(config: TrainingConfig) -> dict[str, Any]:
     manifest = preflight(config)
     output = Path(config.out).resolve()
@@ -301,9 +330,9 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
     output.mkdir(parents=True, exist_ok=True)
     manifest.update(status="starting", gpu_before=devices)
     manifest_path = output / "training_manifest.json"
-    write_manifest(manifest_path, manifest)
     started = time.monotonic()
     try:
+        write_manifest(manifest_path, manifest)
         # Unsloth must patch Transformers before TRL imports it.
         from unsloth import FastVisionModel, is_bf16_supported
         from unsloth.trainer import UnslothVisionDataCollator
@@ -388,8 +417,11 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
         write_manifest(manifest_path, manifest)
         return manifest
     except BaseException as exc:
-        manifest.update(status="interrupted" if isinstance(exc, KeyboardInterrupt) else "failed",
+        interrupted = isinstance(exc, (KeyboardInterrupt, _TerminationRequested))
+        manifest.update(status="interrupted" if interrupted else "failed",
                         error_type=type(exc).__name__, elapsed_seconds=round(time.monotonic() - started, 3))
+        if isinstance(exc, _TerminationRequested):
+            manifest.update(signal=signal.Signals(exc.signum).name, signal_number=exc.signum)
         write_manifest(manifest_path, manifest)
         raise
 
@@ -425,6 +457,9 @@ def main(argv: list[str] | None = None) -> int:
         report = preflight(config) if dry_run else run_training(config)
         print(json.dumps(report, indent=2, allow_nan=False))
         return 0
+    except _TerminationRequested as exc:
+        print(f"training: interrupted by {signal.Signals(exc.signum).name}", file=sys.stderr)
+        return 128 + exc.signum
     except (ValueError, OSError, ImportError, RuntimeError) as exc:
         print(f"training: {exc}", file=sys.stderr)
         return 2
