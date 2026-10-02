@@ -24,14 +24,21 @@ Usage:
 from __future__ import annotations
 
 import argparse
+from contextlib import ExitStack
+import hashlib
 import json
+import math
 import os
+from pathlib import Path
 import random
-import re
+import shutil
+import tempfile
+import warnings
 
 from PIL import Image, ImageFilter
 
 import hwsynth as hs
+from evaluate import validate_gold_rows
 
 SYSTEM = (
     "You are a hardware engineer's schematic assistant. Answer only from the schematic image and the "
@@ -90,7 +97,8 @@ def canonical_pairs(nets):
 
 
 def augment(src, dst, rng):
-    im = Image.open(src).convert("RGB")
+    with Image.open(src) as source:
+        im = source.convert("RGB")
     if rng.random() < 0.5:
         im = im.rotate(rng.uniform(-2.5, 2.5), expand=True, fillcolor=(255, 255, 255))
     if rng.random() < 0.4:
@@ -126,10 +134,12 @@ def t_fix(d, ctx, rng):
     if not f:
         return None
     x = rng.choice(f)
-    q = rng.choice([f"How would you fix the {', '.join(x['refdes'])} issue?", f"What should I change for {x['refdes'][0]}?"])
-    a = FIX[x["code"]]
-    named = re.findall(r"\b([A-Z]{1,2}\d)\b", a)
-    gold = [r for r in x["refdes"] if r in named] or named[:1]
+    refs = ", ".join(x["refdes"])
+    q = rng.choice([f"How would you fix the {refs} issue?", f"What should I change for {refs}?"])
+    # A component can have several faults; identify which one is being fixed.
+    q += f" Specifically: {x['why']}"
+    a = f"For {refs}: {FIX[x['code']]}"
+    gold = list(x["refdes"])
     return q, a, f"The issue: {x['why']} Fix it at the source.", {"type": "refdes", "refdes": gold}
 
 
@@ -200,37 +210,42 @@ def t_calc(d, ctx, rng):
     vmin = hs.VIN_MIN[d.vin]
     kind = rng.choice(["led", "pd", "dropout", "sink"])
     if kind == "led":
-        v = 1.3 / d.r3 * 1000
+        forward = 1.3 / d.r3 * 1000
+        v = 0.0 if d.led_reversed else forward
+        unit = "mA"
         q = "What's the LED current?"
-        a = (f"I = (3.3 - 2.0) V / {hs.fmt_ohm(d.r3)} = {v:.2f} mA, assuming 2.0 V Vf."
-             + (" But D2 is drawn reversed, so it won't conduct." if d.led_reversed else ""))
+        a = f"Forward-biased, I = (3.3 - 2.0) V / {hs.fmt_ohm(d.r3)} = {forward:.4f} mA, assuming 2.0 V Vf."
         if d.led_reversed:
-            v = 0.0
+            a += " But D2 is drawn reversed, so the idealized current as drawn is I = 0.0000 mA."
     elif kind == "pd":
         v = (d.vin - 3.3) * d.i_load
+        unit = "W"
         q = "How much power does U1 dissipate?"
-        a = f"Pd = ({d.vin:g} - 3.3) V x {d.i_load*1000:.0f} mA = {v:.2f} W; the {d.ldo} limit is {ldo['pd_max']:.2f} W."
+        a = f"Pd = ({d.vin:g} - 3.3) V x {d.i_load*1000:.0f} mA = {v:.4f} W; the {d.ldo} limit is {ldo['pd_max']:.2f} W."
     elif kind == "dropout":
         v = vmin - ldo["dropout"]
+        unit = "V"
         q = "Does U1 have enough headroom at minimum input?"
-        a = (f"At {vmin:g} V min, {vmin:g} - {ldo['dropout']:g} V dropout = {v:.2f} V available. "
+        a = (f"At {vmin:g} V min, {vmin:g} - {ldo['dropout']:g} V dropout = {v:.4f} V available. "
              + ("That's enough for 3.3 V." if v >= 3.4 else "That's not enough to hold 3.3 V."))
     else:
         r = min(d.r1, d.r2)
         v = 3.3 / r * 1000
+        unit = "mA"
         q = "How much current do the I2C pull-ups sink when the line is low?"
-        a = f"Worst case is the {hs.fmt_ohm(r)} pull-up: 3.3 V / {hs.fmt_ohm(r)} = {v:.2f} mA (I2C limit 3 mA)."
-    return q, a, "Pull the inputs from the sheet and the reference data, then compute. " + a, {"type": "number", "value": round(v, 3)}
+        a = f"Worst case is the {hs.fmt_ohm(r)} pull-up: 3.3 V / {hs.fmt_ohm(r)} = {v:.4f} mA (I2C limit 3 mA)."
+    return q, a, "Pull the inputs from the sheet and the reference data, then compute. " + a, {"type": "number", "value": round(v, 4), "unit": unit}
 
 
 def t_whatif(d, ctx, rng):
     new = rng.choice([v for v in (150, 330, 1000, 2200) if v != d.r3])
-    v = 1.3 / new * 1000
+    forward = 1.3 / new * 1000
+    v = 0.0 if d.led_reversed else forward
     q = f"If I change R3 to {hs.fmt_ohm(new)}, what's the LED current?"
-    a = f"I = (3.3 - 2.0) V / {hs.fmt_ohm(new)} = {v:.2f} mA."
+    a = f"Forward-biased, I = (3.3 - 2.0) V / {hs.fmt_ohm(new)} = {forward:.4f} mA."
     if d.led_reversed:
-        a += " D2 is still reversed though, so fix its polarity first."
-    return q, a, f"Keep the 2.0 V Vf and 3.3 V rail, swap in the new resistor. {a}", {"type": "number", "value": round(v, 3)}
+        a += " D2 is still reversed, so changing only R3 leaves the idealized current at I = 0.0000 mA. Fix D2's polarity first."
+    return q, a, f"Keep the 2.0 V Vf and 3.3 V rail, swap in the new resistor. {a}", {"type": "number", "value": round(v, 4), "unit": "mA"}
 
 
 GENERATORS = [t_net, t_pin, t_lookup, t_calc, t_whatif, t_presence, t_missing_part, t_not_on_sheet]
@@ -246,8 +261,8 @@ def build_conversation(d, rng):
     for g in rng.sample(GENERATORS, rng.randint(2, 4)):
         turns.append(g(d, ctx, rng))
     turns = [t for t in turns if t]
-    if rng.random() < 0.3:
-        rng.shuffle(turns)
+    # The review and its dependent fix stay first. rng.sample already varies
+    # the independent question order without moving a fix ahead of its review.
     return turns[:6], ctx
 
 
@@ -267,47 +282,172 @@ def to_messages(img, d, turns, use_think):
     return msgs
 
 
-def main():
-    ap = argparse.ArgumentParser()
+def _validate_settings(n_designs, seed, chats_per_design, think_ratio, dpi):
+    for name, value, minimum in (("n_designs", n_designs, 3),
+                                 ("chats_per_design", chats_per_design, 1), ("dpi", dpi, 1)):
+        if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+            raise ValueError(f"{name} must be an integer >= {minimum}")
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise ValueError("seed must be an integer")
+    if isinstance(think_ratio, bool) or not isinstance(think_ratio, (int, float)) or not math.isfinite(think_ratio) or not 0 <= think_ratio <= 1:
+        raise ValueError("think_ratio must be between 0 and 1")
+
+
+def _check_destination(out, overwrite):
+    if out.is_symlink():
+        raise ValueError("output must not be a symbolic link")
+    if out.exists():
+        if not out.is_dir():
+            raise ValueError("output must be a directory")
+        if not overwrite:
+            raise FileExistsError(f"{out} exists; use --overwrite to replace a generated dataset")
+        if any(out.iterdir()) and not (
+            all((out / f"{split}.jsonl").is_file() for split in ("train", "val", "test"))
+            and (out / "images").is_dir()
+        ):
+            raise ValueError("refusing to replace a non-dataset directory; choose a new --out directory")
+        owned = {"train.jsonl", "val.jsonl", "test.jsonl", "manifest.json", "images"}
+        unexpected = sorted(path.name for path in out.iterdir() if path.name not in owned)
+        if unexpected:
+            raise ValueError(f"output contains unrelated paths {unexpected}; generate into a dedicated dataset directory")
+
+
+def _seeded_rng(seed, *parts):
+    # Separate sampling from chat generation so changing the chat count or
+    # augmentation does not silently change every later schematic.
+    value = json.dumps([seed, *parts], separators=(",", ":")).encode("utf-8")
+    return random.Random(int.from_bytes(hashlib.sha256(value).digest(), "big"))
+
+
+def _write_dataset(stage, *, n_designs, seed, chats_per_design, think_ratio, dpi):
+    rng = random.Random(seed)
+    img_dir = stage / "images"
+    img_dir.mkdir()
+    ids = [f"D{i:04d}" for i in range(n_designs)]
+    rng.shuffle(ids)
+    n = max(1, n_designs // 10)
+    split_of = {**{i: "test" for i in ids[:n]}, **{i: "val" for i in ids[n:2 * n]}, **{i: "train" for i in ids[2 * n:]}}
+    stats = {split: {"designs": 0, "conversations": 0, "turns": 0, "clean_designs": 0}
+             for split in ("train", "val", "test")}
+    designs = []
+    with ExitStack() as stack:
+        files = {split: stack.enter_context((stage / f"{split}.jsonl").open("w", encoding="utf-8"))
+                 for split in stats}
+        for did in sorted(ids):
+            split = split_of[did]
+            design_rng = _seeded_rng(seed, "design", did)
+            rate = design_rng.choice([0.0, 0.3, 0.3, 0.45])
+            design = hs.sample_design(did, design_rng, fault_rate=rate)
+            base = img_dir / f"{did}.png"
+            hs.render(design, str(base), dpi=dpi)
+            context = {"findings": hs.check_design(design), "nets": hs.netlist(design), "bom": hs.bom(design)}
+            designs.append({"design_id": did, "split": split, "parameters": design.to_dict(),
+                            "image": base.relative_to(stage).as_posix(), "fault_rate": rate,
+                            "netlist": context["nets"], "bom": context["bom"], "findings": context["findings"]})
+            stats[split]["designs"] += 1
+            stats[split]["clean_designs"] += int(not context["findings"])
+            for chat_index in range(chats_per_design if split == "train" else 1):
+                chat_rng = _seeded_rng(seed, "chat", did, chat_index)
+                image_path = base
+                if split == "train" and chat_rng.random() < 0.35:
+                    image_path = base.with_name(f"{did}_aug{chat_index}.jpg")
+                    augment(base, image_path, chat_rng)
+                turns, ctx = build_conversation(design, chat_rng)
+                use_think = split != "train" or chat_rng.random() < think_ratio
+                row = {"schema_version": 2, "id": f"{did}-c{chat_index}", "design_id": did, "split": split,
+                       "messages": to_messages(image_path.relative_to(stage).as_posix(), design, turns, use_think),
+                       "gold": [turn[3] for turn in turns],
+                       "design_truth": {"findings": ctx["findings"], "pairs": canonical_pairs(ctx["nets"])}}
+                validate_gold_rows([row])
+                files[split].write(json.dumps(row, sort_keys=True) + "\n")
+                stats[split]["conversations"] += 1
+                stats[split]["turns"] += len(turns)
+    hashes = {path.relative_to(stage).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+              for path in sorted(stage.rglob("*")) if path.is_file()}
+    manifest = {
+        "schema_version": 2,
+        "kind": "synthetic_schematic_conversations",
+        "generator": "build_dataset.py",
+        "image_path_base": "dataset_directory",
+        "seed": seed,
+        "settings": {"n_designs": n_designs, "chats_per_design": chats_per_design,
+                     "think_ratio": think_ratio, "dpi": dpi},
+        "limitations": ["One synthetic topology with simplified component rules; not a verified hardware design.",
+                        "Numerical answers use the stated idealized supply, load, and diode assumptions."],
+        "splits": stats,
+        "designs": designs,
+        "sha256": hashes,
+    }
+    (stage / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return manifest
+
+
+def generate_dataset(out, *, n_designs=3000, seed=7, chats_per_design=2,
+                     think_ratio=0.8, dpi=110, overwrite=False):
+    """Stage a complete dataset, then replace the destination with rollback.
+
+    Existing data survives rendering/validation failures. Overwrite explicitly
+    replaces the whole dataset directory, including old augmented images.
+    """
+    _validate_settings(n_designs, seed, chats_per_design, think_ratio, dpi)
+    if not isinstance(overwrite, bool):
+        raise ValueError("overwrite must be a boolean")
+    destination = Path(out).expanduser().absolute()
+    _check_destination(destination, overwrite)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=f".{destination.name}.staging-", dir=destination.parent) as temporary:
+        temporary = Path(temporary)
+        stage = temporary / "dataset"
+        stage.mkdir()
+        manifest = _write_dataset(stage, n_designs=n_designs, seed=seed, chats_per_design=chats_per_design,
+                                  think_ratio=think_ratio, dpi=dpi)
+        # Recheck after generation in case another writer created the target.
+        _check_destination(destination, overwrite)
+        existed = destination.exists()
+        backup_container = None
+        if existed:
+            # Keep the backup outside automatic stage cleanup so a failed
+            # rollback never deletes the user's previous dataset.
+            backup_container = Path(tempfile.mkdtemp(prefix=f".{destination.name}.backup-", dir=destination.parent))
+            backup = backup_container / "dataset"
+            os.replace(destination, backup)
+        try:
+            os.replace(stage, destination)
+        except BaseException:
+            if existed:
+                try:
+                    os.replace(backup, destination)
+                except OSError as restore_error:
+                    raise OSError(f"dataset publish and rollback failed; previous data preserved at {backup}") from restore_error
+                backup_container.rmdir()
+            raise
+        if backup_container is not None:
+            try:
+                shutil.rmtree(backup_container)
+            except OSError:
+                warnings.warn(f"dataset published, but old backup remains at {backup_container}", stacklevel=2)
+    return manifest
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description="Generate validated synthetic schematic conversations.")
     ap.add_argument("--n-designs", type=int, default=3000)
     ap.add_argument("--out", default="data")
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--chats-per-design", type=int, default=2)
     ap.add_argument("--think-ratio", type=float, default=0.8,
-                    help="Unsloth recommends >=75%% reasoning examples to keep Qwen3.8 thinking")
-    args = ap.parse_args()
-
-    rng = random.Random(args.seed)
-    img_dir = os.path.join(args.out, "images")
-    os.makedirs(img_dir, exist_ok=True)
-    ids = [f"D{i:04d}" for i in range(args.n_designs)]
-    rng.shuffle(ids)
-    n = max(1, args.n_designs // 10)
-    split_of = {**{i: "test" for i in ids[:n]}, **{i: "val" for i in ids[n:2 * n]}, **{i: "train" for i in ids[2 * n:]}}
-
-    files = {s: open(os.path.join(args.out, f"{s}.jsonl"), "w") for s in ("train", "val", "test")}
-    counts = {}
-    for did in sorted(ids):
-        split = split_of[did]
-        d = hs.sample_design(did, rng, fault_rate=rng.choice([0.0, 0.3, 0.3, 0.45]))
-        base = os.path.join(img_dir, f"{did}.png")
-        hs.render(d, base)
-        for k in range(args.chats_per_design if split == "train" else 1):
-            img = base
-            if split == "train" and rng.random() < 0.35:
-                img = base.replace(".png", f"_aug{k}.jpg")
-                augment(base, img, rng)
-            turns, ctx = build_conversation(d, rng)
-            use_think = split != "train" or rng.random() < args.think_ratio
-            row = {"id": f"{did}-c{k}", "design_id": did, "split": split,
-                   "messages": to_messages(img, d, turns, use_think),
-                   "gold": [t[3] for t in turns],
-                   "design_truth": {"findings": ctx["findings"], "pairs": canonical_pairs(ctx["nets"])}}
-            files[split].write(json.dumps(row) + "\n")
-            counts[split] = counts.get(split, 0) + 1
-    for f in files.values():
-        f.close()
-    print(counts)
+                    help="fraction of training conversations with final-turn reasoning (0..1)")
+    ap.add_argument("--dpi", type=int, default=110)
+    ap.add_argument("--overwrite", action="store_true", help="replace an existing generated dataset after staging succeeds")
+    args = ap.parse_args(argv)
+    try:
+        manifest = generate_dataset(args.out, n_designs=args.n_designs, seed=args.seed,
+                                    chats_per_design=args.chats_per_design, think_ratio=args.think_ratio,
+                                    dpi=args.dpi, overwrite=args.overwrite)
+    except (ValueError, OSError) as exc:
+        ap.error(str(exc))
+    print({split: stats["conversations"] for split, stats in manifest["splits"].items()})
+    return 0
 
 
 if __name__ == "__main__":

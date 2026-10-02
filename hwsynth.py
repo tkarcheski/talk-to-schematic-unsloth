@@ -19,7 +19,9 @@ Design fault library (v2, 17 codes) - chosen from common real-world misses:
 """
 from __future__ import annotations
 
+import math
 import random
+import re
 from dataclasses import dataclass, asdict
 
 import matplotlib
@@ -81,7 +83,39 @@ class Design:
     led_reversed: bool = False
     sda_label_mismatch: bool = False
 
+    def __post_init__(self):
+        self.validate()
+
+    def validate(self):
+        """Reject unsupported configurations before generating truth or images."""
+        if not isinstance(self.design_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", self.design_id):
+            raise ValueError("design_id must be a nonempty filename-safe identifier")
+        if not isinstance(self.rev, str) or not self.rev.strip():
+            raise ValueError("rev must be a nonempty string")
+        for field in ("vin", "i_load", "fuse_a", "c1_uf", "c1_v", "c2_uf", "c2_v", "r1", "r2", "r3", "c3_nf"):
+            value = getattr(self, field)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                raise ValueError(f"{field} must be a finite number")
+            if value < 0 or (value == 0 and field != "i_load"):
+                raise ValueError(f"{field} must be {'nonnegative' if field == 'i_load' else 'positive'}")
+        for field in ("r1", "r2", "r3", "c3_nf"):
+            if not isinstance(getattr(self, field), int):
+                raise ValueError(f"{field} must be an integer")
+        if self.vin not in VIN_MIN:
+            raise ValueError(f"vin must be one of {list(VIN_MIN)}")
+        if self.i2c_khz not in (100, 400) or isinstance(self.i2c_khz, bool):
+            raise ValueError("i2c_khz must be 100 or 400")
+        for field, choices in (("ldo", LDOS), ("tvs", TVS), ("sensor", SENSORS),
+                               ("addr_tie", ("GND", "3V3", "float"))):
+            value = getattr(self, field)
+            if not isinstance(value, str) or value not in choices:
+                raise ValueError(f"unsupported {field}: {value!r}")
+        for field in ("has_tvs", "has_c3", "i2c_swapped", "led_reversed", "sda_label_mismatch"):
+            if not isinstance(getattr(self, field), bool):
+                raise ValueError(f"{field} must be a boolean")
+
     def to_dict(self):
+        self.validate()
         return asdict(self)
 
 
@@ -97,8 +131,9 @@ def fmt_cap_nf(nf: int) -> str:
 # Sampling
 # --------------------------------------------------------------------------
 def sample_design(design_id: str, rng: random.Random, fault_rate: float = 0.30) -> Design:
-    """Each fault knob flips independently with probability ~fault_rate/4,
-    so roughly a quarter of designs come out clean."""
+    """Sample this teaching topology; each fault knob has probability ~rate/4."""
+    if isinstance(fault_rate, bool) or not isinstance(fault_rate, (int, float)) or not math.isfinite(fault_rate) or not 0 <= fault_rate <= 1:
+        raise ValueError("fault_rate must be between 0 and 1")
     d = Design(design_id=design_id)
     d.vin = rng.choice([5.0, 12.0, 12.0])
     d.i_load = rng.choice([0.03, 0.05, 0.08, 0.1] if d.vin > 6 else [0.05, 0.1, 0.15, 0.2])
@@ -159,6 +194,7 @@ def sample_design(design_id: str, rng: random.Random, fault_rate: float = 0.30) 
         d.sda_label_mismatch = True
     elif rng.random() < p * 0.7:
         d.i2c_swapped = True
+    d.validate()
     return d
 
 
@@ -166,6 +202,7 @@ def sample_design(design_id: str, rng: random.Random, fault_rate: float = 0.30) 
 # Rules engine = ground-truth design findings
 # --------------------------------------------------------------------------
 def check_design(d: Design) -> list[dict]:
+    d.validate()
     f = []
     ldo = LDOS[d.ldo]
     vmin = VIN_MIN[d.vin]
@@ -232,6 +269,7 @@ def check_design(d: Design) -> list[dict]:
 # Netlist + BOM
 # --------------------------------------------------------------------------
 def bom(d: Design) -> list[dict]:
+    d.validate()
     items = [
         {"refdes": "J1", "type": "connector", "value": "2-pin", "rating": ""},
         {"refdes": "F1", "type": "fuse", "value": f"{d.fuse_a:g} A", "rating": ""},
@@ -252,6 +290,7 @@ def bom(d: Design) -> list[dict]:
 
 
 def netlist(d: Design) -> dict[str, list[str]]:
+    d.validate()
     gnd = ["J1.2", "C1.2", "U1.GND", "C2.2", "U2.GND"]
     v33 = ["U1.VOUT", "C2.1", "R1.1", "R2.1", "U2.VDD", "R3.1"]
     vin = ["F1.2", "C1.1", "U1.VIN"]
@@ -284,6 +323,9 @@ def netlist(d: Design) -> dict[str, list[str]]:
 # Rendering
 # --------------------------------------------------------------------------
 def render(d: Design, path: str, dpi: int = 110) -> None:
+    d.validate()
+    if not isinstance(dpi, int) or isinstance(dpi, bool) or dpi <= 0:
+        raise ValueError("dpi must be a positive integer")
     sd = schemdraw.Drawing(show=False)
     sd.config(fontsize=10, unit=2.2)
 
@@ -338,7 +380,7 @@ def render(d: Design, path: str, dpi: int = 110) -> None:
     sd.pop()
     if d.has_c3:
         sd += elm.Line().right(3.8)
-        sd += elm.Capacitor().down().label(f"C3\n{fmt_cap_nf(d.c3_nf)}", loc="bottom")
+        sd += elm.Capacitor().down().label(f"C3\n{fmt_cap_nf(d.c3_nf)}\n10V", loc="bottom")
         sd += elm.Ground()
     # ADDR strap
     sd += elm.Line().right(0.9).at(u2.ADDR)
@@ -384,6 +426,8 @@ def datasheet_context(*designs: Design) -> str:
     """Datasheet excerpts for the parts on the sheet. In production this comes
     from your parts DB / RAG over datasheets - the model reasons from these
     numbers, not from memory."""
+    for design in designs:
+        design.validate()
     lines = []
     for ldo in sorted({x.ldo for x in designs}):
         p = LDOS[ldo]
@@ -396,5 +440,4 @@ def datasheet_context(*designs: Design) -> str:
     lines.append("Design rules: caps >= 1.5x applied voltage; fuse >= 1.5x input current; I2C pull-up >= 1.1k (3 mA sink), "
                  "<= 4.7k at 400 kHz or <= 10k at 100 kHz; LED Vf 2.0 V, 1-20 mA; regulator needs Vin_min - dropout >= 3.4 V.")
     return "\n".join("- " + l for l in lines)
-
 
