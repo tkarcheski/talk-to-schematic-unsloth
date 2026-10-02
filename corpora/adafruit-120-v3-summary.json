@@ -1,0 +1,24 @@
+{
+  "requested_designs": 120,
+  "distinct_source_schematics": 120,
+  "distinct_board_repositories": 120,
+  "conversations": 120,
+  "turns": 720,
+  "split_conversations": {
+    "train": 87,
+    "val": 13,
+    "test": 20
+  },
+  "image_only_conversations": 119,
+  "image_only_split_conversations": {
+    "train": 86,
+    "val": 13,
+    "test": 20
+  },
+  "rendered": true,
+  "status": "complete",
+  "render_method": "eagle_xml_geometry_v3_text_alignment",
+  "crop_policy": "electrical_symbols_and_source_nets_with_text_bounds; frames_and_fiducials_do_not_expand_view",
+  "claims": "Source-fact Q&A with native evidence supplied; not human-reviewed defect gold or image-only OCR evaluation",
+  "excluded": []
+}
