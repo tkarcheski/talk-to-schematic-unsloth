@@ -141,11 +141,16 @@ class CorpusTests(unittest.TestCase):
         self.assertEqual(left.get('dominant-baseline'), 'central')
         self.assertEqual(right.get('dominant-baseline'), 'central')
         # Frozen v2 electrical primitives, excluding text and page crop furniture.
-        geometry = [ET.tostring(node, encoding='utf-8') for node in svg.find('./s:g/s:g', ns)
-                    if node.tag != '{http://www.w3.org/2000/svg}text']
+        primitives = [node for node in svg.find('./s:g/s:g', ns)
+                      if node.tag != '{http://www.w3.org/2000/svg}text']
+        self.assertTrue(all(not list(node) and not node.text for node in primitives))
+        # ElementTree namespace registration is process-global. Compare actual
+        # tags and attributes, not serializer-selected namespace prefixes.
+        geometry = [(node.tag, sorted(node.attrib.items())) for node in primitives]
         self.assertEqual(len(geometry), 3295)
-        self.assertEqual(hashlib.sha256(b''.join(geometry)).hexdigest(),
-                         'f19c2f5721ceb0f2cec9d4325d7f5c6acf7ddf922544e26b6067540e5ab62ec4')
+        canonical = json.dumps(geometry, separators=(',', ':')).encode()
+        self.assertEqual(hashlib.sha256(canonical).hexdigest(),
+                         '4359fc8b2553b42c87696f37a484f2561721fe62094ad06c80055ce5d2f547f0')
 
     def test_chat_has_replayable_gold_and_explicit_evidence_scope(self):
         record = {'id': 'board-1', 'repository': 'adafruit/Example-PCB', 'sha256': 'a' * 64}
