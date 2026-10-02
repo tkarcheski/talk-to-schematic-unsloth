@@ -16,6 +16,7 @@ COMMANDS = {
     "corpus": "schematic_model.corpus",
     "skills": "schematic_model.skill_bundle",
     "deploy": "schematic_model.deployment",
+    "benchmark": "schematic_model.benchmark",
 }
 
 
