@@ -192,6 +192,54 @@ def test_model_change_between_preflight_and_engine_is_rejected(case):
     assert engines.calls == 0
 
 
+@pytest.mark.parametrize("changed", ["dataset", "image", "manifest"])
+def test_source_change_during_engine_construction_stops_before_generation(case, changed):
+    case = replace(case, views=("vision",), splits=("val",), generated_smoke=0)
+    engines = Engines()
+
+    def changed_engine(config):
+        path = Path(case.snapshot) / {"dataset": "vision/val.jsonl", "image": "sheet.png",
+                                      "manifest": "manifest.json"}[changed]
+        path.write_bytes(path.read_bytes() + b" ")
+        return engines(config)
+
+    with pytest.raises(ValueError, match="source changed after preflight"):
+        run_experiments(case, engine_factory=changed_engine)
+    state = json.loads((Path(case.out) / "progress.json").read_text())
+    assert state["status"] == "failed"
+    assert next(iter(state["jobs"].values()))["status"] == "failed"
+    assert engines.calls == 0
+    assert not list(Path(case.out).glob("*.jsonl"))
+
+
+def test_completed_report_must_match_plan_before_job_is_completed(case, monkeypatch):
+    import scripts.run_experiments as runner
+
+    case = replace(case, views=("vision",), splits=("val",), generated_smoke=0)
+    actual_benchmark = runner.run_benchmark
+
+    def mismatched_report(config, data, output, **kwargs):
+        result = actual_benchmark(config, data, output, **kwargs)
+        metadata_path = Path(output + ".meta.json")
+        metadata = json.loads(metadata_path.read_text())
+        metadata["dataset_sha256"] = "0" * 64
+        metadata_path.write_text(json.dumps(metadata))
+        result["provenance"] = metadata
+        Path(output + ".report.json").write_text(json.dumps(result))
+        return result
+
+    monkeypatch.setattr(runner, "run_benchmark", mismatched_report)
+    with pytest.raises(ValueError, match="provenance disagrees"):
+        run_experiments(case, engine_factory=Engines())
+    state = json.loads((Path(case.out) / "progress.json").read_text())
+    assert state["status"] == "failed"
+    assert next(iter(state["jobs"].values()))["status"] == "failed"
+    # Keep the attempted answers and mismatched metadata as failure evidence.
+    output = Path(state["plan"]["jobs"][0]["output"])
+    assert len(output.read_text().splitlines()) == 3
+    assert json.loads(Path(str(output) + ".meta.json").read_text())["dataset_sha256"] == "0" * 64
+
+
 def test_smoke_selection_and_hash_are_repeatable(case):
     first, _, generated = build_plan(case)
     second, _, again = build_plan(case)

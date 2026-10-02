@@ -178,7 +178,14 @@ def _write_smoke(path: Path, content: str) -> None:
             temporary.unlink(missing_ok=True)
 
 
-def _verify_completed(job: dict, record: dict) -> None:
+def _verify_sources(plan: dict, job: dict) -> None:
+    if (sha256(Path(job["data"])) != job["dataset_sha256"]
+            or any(sha256(Path(path)) != digest for path, digest in plan["sources_sha256"].items())
+            or sha256(Path(plan["snapshot"])) != plan["manifest_file_sha256"]):
+        raise ValueError("Queued snapshot source changed after preflight")
+
+
+def _verify_completed(job: dict, record: dict, model: dict) -> dict:
     paths = _artifacts(Path(job["output"]))
     hashes = record.get("artifacts_sha256")
     if not isinstance(hashes, dict) or set(hashes) != {str(path) for path in paths}:
@@ -191,8 +198,10 @@ def _verify_completed(job: dict, record: dict) -> None:
             or report.get("provenance") != metadata
             or metadata.get("dataset_sha256") != job["dataset_sha256"]
             or metadata.get("profile") != job["profile"] or metadata.get("history") != job["history"]
-            or metadata.get("deployment", {}).get("settings") != job["settings"]):
+            or metadata.get("deployment", {}).get("settings") != job["settings"]
+            or metadata.get("deployment", {}).get("model") != model):
         raise ValueError("Completed job provenance disagrees with its queue binding")
+    return report
 
 
 def run_experiments(config: ExperimentConfig, *, resume=False, dry_run=False, engine_factory=LocalModel) -> dict:
@@ -220,7 +229,7 @@ def run_experiments(config: ExperimentConfig, *, resume=False, dry_run=False, en
                 if record.get("status") not in {"pending", "running", "failed", "completed"}:
                     raise ValueError("Invalid queue job status")
                 if record["status"] == "completed":
-                    _verify_completed(job, record)
+                    _verify_completed(job, record, plan["models"][job["model"]])
         else:
             if any(path.name != ".queue.lock" for path in out.iterdir()):
                 raise ValueError("Fresh queue output changed while acquiring its lock")
@@ -245,10 +254,7 @@ def run_experiments(config: ExperimentConfig, *, resume=False, dry_run=False, en
                 record = state["jobs"][job["id"]]
                 if record["status"] == "completed":
                     continue
-                if (sha256(Path(job["data"])) != job["dataset_sha256"]
-                        or any(sha256(Path(path)) != digest for path, digest in plan["sources_sha256"].items())
-                        or sha256(Path(plan["snapshot"])) != plan["manifest_file_sha256"]):
-                    raise ValueError("Queued snapshot source changed after preflight")
+                _verify_sources(plan, job)
                 if active_settings != job["settings"]:
                     torch = getattr(engine, "torch", None)
                     engine = None
@@ -259,16 +265,20 @@ def run_experiments(config: ExperimentConfig, *, resume=False, dry_run=False, en
                     if engine.provenance.get("model") != plan["models"][job["model"]]:
                         raise ValueError("Model artifacts changed after queue preflight")
                     active_settings = job["settings"]
+                _verify_sources(plan, job)
                 state["status"] = record["status"] = "running"
                 record["started_at_unix"] = time.time()
                 _write_report(state_path, state, protected)
                 print(json.dumps({"event": "job_start", "id": job["id"]}), flush=True)
                 output = Path(job["output"])
-                report = run_benchmark(DeploymentConfig(**job["settings"]), job["data"], str(output),
-                                       profile=job["profile"], history=job["history"], engine=engine,
-                                       resume=output.exists() or _artifacts(output)[1].exists())
+                run_benchmark(DeploymentConfig(**job["settings"]), job["data"], str(output),
+                              profile=job["profile"], history=job["history"], engine=engine,
+                              resume=output.exists() or _artifacts(output)[1].exists())
+                hashes = {str(path): sha256(path) for path in _artifacts(output)}
+                report = _verify_completed(job, {"artifacts_sha256": hashes}, plan["models"][job["model"]])
+                _verify_sources(plan, job)
                 record.update(status="completed", finished_at_unix=time.time(),
-                              artifacts_sha256={str(path): sha256(path) for path in _artifacts(output)},
+                              artifacts_sha256=hashes,
                               metrics=report["metrics"], counts=report["counts"],
                               failed_turns=report["failed_turns"], turns=report["turns"],
                               release_passed=report["release_passed"])
