@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-10-02T10:00:44.081401-05:00",
+  "commit": "180d7d5ca4f2b3ea777b9595792ed90da58de853",
+  "run_url": "https://github.com/tkarcheski/talk-to-schematic-unsloth/actions/runs/37022994096",
+  "event": "pull_request",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "name": "cpu (3.13)",
+      "conclusion": "success",
+      "url": "https://github.com/tkarcheski/talk-to-schematic-unsloth/actions/runs/37022994096/job/110890491798",
+      "completed_at": "2026-10-02T14:53:56Z",
+      "checks": [
+        {
+          "name": "Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm ci --ignore-scripts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run test:browser-state",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run sudo apt-get update && sudo apt-get install -y librsvg2-bin",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv sync --locked",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run --locked ruff check .",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run --locked pre-commit run --all-files --show-diff-on-failure",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run --locked coverage run -m pytest -q",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run --locked coverage report",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv build",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "cpu (3.11)",
+      "conclusion": "success",
+      "url": "https://github.com/tkarcheski/talk-to-schematic-unsloth/actions/runs/37022994096/job/110890492074",
+      "completed_at": "2026-10-02T14:53:55Z",
+      "checks": [
+        {
+          "name": "Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm ci --ignore-scripts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run test:browser-state",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run sudo apt-get update && sudo apt-get install -y librsvg2-bin",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv sync --locked",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run --locked ruff check .",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run --locked pre-commit run --all-files --show-diff-on-failure",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run --locked coverage run -m pytest -q",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run --locked coverage report",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv build",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "cpu (3.12)",
+      "conclusion": "success",
+      "url": "https://github.com/tkarcheski/talk-to-schematic-unsloth/actions/runs/37022994096/job/110890492157",
+      "completed_at": "2026-10-02T14:54:04Z",
+      "checks": [
+        {
+          "name": "Run astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm ci --ignore-scripts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run test:browser-state",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run sudo apt-get update && sudo apt-get install -y librsvg2-bin",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv sync --locked",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run --locked ruff check .",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run --locked pre-commit run --all-files --show-diff-on-failure",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run --locked coverage run -m pytest -q",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv run --locked coverage report",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run uv build",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}

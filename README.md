@@ -211,6 +211,6 @@ Exported directories can be installed in your agent's skill directory. Export re
 
 ## Development loop
 
-Make one focused change, run the relevant tests, review the result, commit, and push. `.ai-pilled.json` runs the actual uv test and lint commands; it does not invent model-quality evidence. The [prepared CI workflow](docs/ci-checks-template.yml) repeats the hooks, CPU checks, application branch coverage, and wheel build on Python 3.11–3.13. CI activation is pending: the current GitHub OAuth login cannot push `.github/workflows/` without the `workflow` scope. Local hooks and checks are active independently.
+Make one focused change, run the relevant tests, review the result, commit, and push. `.ai-pilled.json` runs the actual uv test and lint commands; it does not invent model-quality evidence. The [CI workflow](.github/workflows/checks.yml) repeats the browser state tests, hooks, CPU checks, application branch coverage, and package build on Python 3.11–3.13. All three versions passed in the [first verified run](https://github.com/tkarcheski/talk-to-schematic-unsloth/actions/runs/37022994096). [Recorded CI evidence](docs/validation/ci-first-pass.json) identifies the exact checked commit.
 
 Keep model results and source-derived gold separate. Use validation data for tuning, preserve the held-out test split, and record every candidate's settings and failures. A saved checkpoint becomes a deployable candidate only after reload and complete-response checks; passing a small benchmark does not establish general schematic-review competence.
