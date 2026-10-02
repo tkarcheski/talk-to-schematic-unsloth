@@ -71,6 +71,7 @@
     "pullups",
     "pyproject",
     "pytest",
+    "pythonpath",
     "Qwen",
     "refdes",
     "replayable",
