@@ -14,6 +14,8 @@ import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 
+from .eagle_source import load_eagle
+
 Transform = tuple[float, float, float, bool]
 IDENTITY: Transform = (0, 0, 0, False)
 RENDER_METHOD = "eagle_xml_geometry_v3_text_alignment"
@@ -200,13 +202,7 @@ class _Drawing:
 
 
 def source_svg(path: Path, page: int, *, attribution: str = "") -> str:
-    content = path.read_bytes()
-    if len(content) > 12 * 1024 * 1024 or b"<!ENTITY" in content.upper():
-        raise ValueError("Unsafe or oversized EAGLE source")
-    root = ET.fromstring(content)
-    schematic = root.find("./drawing/schematic")
-    if schematic is None:
-        raise ValueError("Not an EAGLE schematic")
+    _, schematic = load_eagle(path)
     sheets = schematic.findall("./sheets/sheet")
     if not 1 <= page <= len(sheets):
         raise ValueError("Requested sheet does not exist")

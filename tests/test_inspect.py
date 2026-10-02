@@ -57,6 +57,21 @@ def test_render_requires_png_destination(source, tmp_path):
     assert not (tmp_path / "drawing.svg").exists()
 
 
+@pytest.mark.parametrize("content", [
+    b'<?xml version="1.0"?><eagle><drawing>',
+    b'<?xml version="1.0" encoding="unsupported_encoding"?><eagle/>',
+])
+def test_malformed_xml_is_reported_without_traceback_or_outputs(tmp_path, capsys, content):
+    source = tmp_path / "broken.sch"
+    source.write_bytes(content)
+    assert main([str(source), "--render", str(tmp_path / "drawing.png"),
+                 "--out", str(tmp_path / "facts.json")]) == 2
+    captured = capsys.readouterr()
+    assert "Malformed EAGLE XML" in captured.err
+    assert "Traceback" not in captured.err and captured.out == ""
+    assert {path.name for path in tmp_path.iterdir()} == {"broken.sch"}
+
+
 def test_failed_renderer_publishes_no_partial_files(source, tmp_path, monkeypatch):
     def fail_after_writing(source, page, output):
         output.write_bytes(b"partial PNG")

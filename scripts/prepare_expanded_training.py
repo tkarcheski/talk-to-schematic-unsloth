@@ -78,15 +78,6 @@ def _without_image_paths(row: dict):
     return result["messages"]
 
 
-@dataclass(frozen=True)
-class _SourceBytes:
-    """Give the native parser the exact bytes already bound to provenance."""
-    data: bytes
-
-    def read_bytes(self) -> bytes:
-        return self.data
-
-
 @dataclass
 class ExpandedPlan:
     train_views: dict[str, list[dict]]
@@ -257,7 +248,7 @@ def plan_snapshot(corpus: str, base_snapshot: str, source_root: str, *, seed: in
             if digest(data) != provenance["sha256"]:
                 raise ValueError("Native source hash differs from row provenance")
             inputs[str(source)] = digest(data)
-            parsed = parse_eagle(_SourceBytes(data))
+            parsed = parse_eagle(data)
             refs = {part.get("name") for part in ET.fromstring(data).findall("./drawing/schematic/parts/part")}
             source_cache[source] = (parsed, refs)
         parsed, source_refs = source_cache[source]

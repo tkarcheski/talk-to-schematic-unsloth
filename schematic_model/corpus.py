@@ -17,10 +17,10 @@ import tarfile
 import tempfile
 import urllib.parse
 import urllib.request
-import xml.etree.ElementTree as ET
+
+from .eagle_source import MAX_SOURCE, load_eagle
 
 MAX_DOWNLOAD = 40 * 1024 * 1024
-MAX_SOURCE = 12 * 1024 * 1024
 SYSTEM = (
     "You answer factual questions about the attached schematic and its extracted source evidence. "
     "Use only the supplied evidence. Identify connections as REFDES.PAD, where PAD is the physical "
@@ -44,17 +44,9 @@ def _fetch(url: str) -> bytes:
     return data
 
 
-def parse_eagle(path: Path) -> dict:
+def parse_eagle(path: Path | bytes) -> dict:
     """Extract physical-pad nets and visible-sheet parts, rejecting unsupported files."""
-    content = path.read_bytes()
-    if len(content) > MAX_SOURCE or b"<!ENTITY" in content.upper():
-        raise ValueError("Oversized XML or entity declarations are not supported")
-    if not content.lstrip().startswith(b"<?xml"):
-        raise ValueError("Only XML EAGLE schematics are supported; binary/KiCad files are excluded")
-    root = ET.fromstring(content)
-    schematic = root.find("./drawing/schematic")
-    if root.tag != "eagle" or schematic is None:
-        raise ValueError("Not an EAGLE schematic")
+    content, schematic = load_eagle(path)
     if schematic.find("./modules/module") is not None:
         raise ValueError("Hierarchical EAGLE modules require an explicit hierarchy resolver")
     libraries = {x.get("name"): x for x in schematic.findall("./libraries/library")}
@@ -367,7 +359,7 @@ def build_corpus(output: Path, *, limit: int = 120, manifest: Path | None = None
                 fingerprints.add(item["sha256"])
                 used.append(source)
                 break  # one source design per board repository; revisions remain together
-            except (OSError, ValueError, ET.ParseError) as error:
+            except (OSError, ValueError) as error:
                 failures.append({"repository": source["repository"], "path": item["path"], "reason": str(error)})
         if len(records) >= limit:
             break
