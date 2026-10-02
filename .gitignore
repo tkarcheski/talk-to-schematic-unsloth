@@ -17,6 +17,7 @@ data/external/
 data/real/
 data/real-v3/
 data/training/
+data/validation/
 results/
 tmp/
 .ai-pilled/

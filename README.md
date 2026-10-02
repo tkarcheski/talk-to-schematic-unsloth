@@ -167,6 +167,16 @@ Default `--history gold` evaluates each answer with the correct earlier answers.
 
 Missing, duplicate, malformed, or incomplete evidence blocks evaluation. A failed run replaces an old passing report with an explicit incomplete report. Deterministic value/pin/refusal scoring is limited: review actual answers and adjudicate lexical false positives and negatives. The `synthetic` profile additionally checks the fixed teaching circuit's review and calculation labels.
 
+A separate [25-prompt validation set](docs/validation/generalization-snapshot-v2.json) uses new targets and wording on the existing 13 validation boards. Its 13 image-only value targets were visually reviewed at the 2,048-pixel serving resize; the remaining cases cover absent components, unavailable measurements, and native connections. It adds no independent test boards and changes no original benchmark. Rebuild it from the pinned corpus and original training snapshot:
+
+```sh
+uv run --locked python -m scripts.prepare_generalization_eval \
+  --overrides docs/validation/generalization-eval-plan-v2.json \
+  --write --out data/validation/generalization-v2
+```
+
+The builder refuses an existing destination. Keep the two evidence modes separate and manually review answers alongside category scores: the six native connection cases alone do not satisfy a complete qualification profile.
+
 ## Load the adapter and chat
 
 ```sh
