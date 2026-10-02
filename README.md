@@ -11,10 +11,24 @@ The target is an RTX 4090 with 24 GB VRAM. The current base model is **Qwen3.5-4
 - A regenerated synthetic teaching set: 200 designs, 360 conversations, and 1,368 turns.
 - [25 complete simulated conversations](docs/simulated_conversations.md), containing 150 user prompts. These are source-derived gold examples, **not model transcripts**.
 - A two-step 4090 training smoke run saved an adapter with finite loss and 9.55 GiB peak allocated VRAM at 768-pixel images. [Recorded evidence](docs/validation/4090-smoke.json).
-- A complete three-epoch real-data fine-tune has saved a candidate adapter from 173 mixed-view training conversations. Reload and benchmark qualification are in progress; this is not yet a qualified release.
+- A complete three-epoch real-data fine-tune saved and reloaded an adapter from 173 mixed-view training conversations, using 12.43 GiB peak allocated VRAM. [Training evidence](docs/validation/real-crop-v1-training.json).
+- The [experimental adapter on Hugging Face](https://huggingface.co/nutinspace/talk-to-schematic-qwen3.5-4b-lora-experimental/tree/04c0c2e3c708ef633d676ba770fac6725988ca7c) passes the evidence-assisted benchmark but **fails the image-only value-reading gate**. It is not a qualified release.
 - The base model's full benchmark exposed a nonterminating invented resistor list on an absent-component question. Failed generations remain failures in the benchmark denominator.
 
 This project currently supports native **EAGLE XML** extraction and PNG/JPEG/WebP model input. It does not contain a KiCad importer, a general electrical rules checker, or a human-reviewed real-board defect benchmark.
+
+The first complete comparison used the same 20 held-out board families, 1,024-pixel image limit, 1,024-token answer budget, and gold conversation history for both models:
+
+| Held-out task | Base | First adapter | Cases |
+|---|---:|---:|---:|
+| Values with native evidence | 100% | 100% | 40 |
+| Physical-pad connectivity with native evidence | 100% | 100% | 40 |
+| Image-only literal values | 65% | 67.5% | 40 |
+| Completed answers across both views | 199/200 | 200/200 | 200 |
+
+These are narrow deterministic metrics, not overall engineering accuracy. The manual audit found valid unit equivalents rejected by literal matching and unsupported extra claims in some otherwise passing base answers. Validation image-only values were 9/26 for the base and 12/26 for the adapter. Further data and model improvements use validation evidence while preserving this first benchmark. [Actual predictions and run summary](docs/validation/model-v1/summary.json) are retained for both models.
+
+A validation-only resolution comparison raised the first adapter from 12/26 correct values at 1,024 pixels to 22/26 at 1,536 and 24/26 at 2,048, with zero failed generations. The 2,048-pixel run used 18.0 GiB peak allocated VRAM and still missed the 95% literal-value gate. [Resolution evidence](docs/validation/model-v1/resolution-ablation.json). Source review identified overlapping labels in one remaining case and an incorrect component qualifier in the other; neither was silently scored as correct.
 
 ## Install and check
 
@@ -104,10 +118,15 @@ Use the installed Unsloth environment, or a separate environment matching the [U
 # CPU-only data validation; no model load or output writes.
 uv run --locked schematic-model train --data data/real --dry-run
 
+# Freeze both views for the first real-data training recipe.
+uv run --locked python scripts/prepare_training.py \
+  --evidence data/real --vision data/real/vision \
+  --out data/training/real-crop-v1
+
 # Run these two commands with your Unsloth environment's Python.
 python scripts/download_model.py --out models/Qwen3.5-4B
 python train_unsloth.py \
-  --data data/real --out outputs/schematic-lora \
+  --data data/training/real-crop-v1 --out outputs/schematic-lora \
   --model models/Qwen3.5-4B \
   --revision 3764fa359b9082ea5a1e4a5e3ac3aaf6e9671636 \
   --max-seq 8192 --max-image-size 1024 \
@@ -120,25 +139,27 @@ Adapters are saved by default. `--resume CHECKPOINT` resumes trainer state; `--e
 
 ## Compare actual model answers
 
-Local batch inference uses the same resumable prediction format as the HTTP client:
+Use the failure-accounting benchmark for qualification. Every requested turn remains in the denominator; incomplete generations get explicit failed records with empty answers. Resource or data failures stop the run and invalidate its report. Ordinary deployment prediction continues to require complete answers.
 
 ```sh
 # Run with your Unsloth environment's Python.
-python -m schematic_model.deployment predict \
-  --model models/Qwen3.5-4B --data data/real/test.jsonl \
-  --out results/base.jsonl --max-image-size 1024 --max-tokens 512
+python -m schematic_model.benchmark \
+  --model models/Qwen3.5-4B --data data/training/real-crop-v1/evidence/test.jsonl \
+  --out results/base.jsonl --profile real-grounding \
+  --max-image-size 1024 --max-tokens 1024
 
-python -m schematic_model.deployment predict \
-  --model outputs/schematic-lora --data data/real/test.jsonl \
-  --out results/adapter.jsonl --max-image-size 1024 --max-tokens 512
+python -m schematic_model.benchmark \
+  --model outputs/schematic-lora --data data/training/real-crop-v1/evidence/test.jsonl \
+  --out results/adapter.jsonl --profile real-grounding \
+  --max-image-size 1024 --max-tokens 1024
 
 uv run --locked schematic-model evaluate \
-  --gold data/real/test.jsonl --pred results/adapter.jsonl \
+  --gold data/training/real-crop-v1/evidence/test.jsonl --pred results/adapter.jsonl \
   --pred-base results/base.jsonl --profile real-grounding \
   --report results/real-grounding-report.json
 ```
 
-Repeat with `data/real/vision/test.jsonl` and `--profile real-vision` for the image-only benchmark. Do not compare results from different images or prompt evidence.
+Repeat with `data/training/real-crop-v1/vision/test.jsonl` and `--profile real-vision` for the image-only benchmark. Do not compare results from different images or prompt evidence.
 
 Default `--history gold` evaluates each answer with the correct earlier answers. Also run `--history generated` to measure accumulated conversation errors. Resume metadata binds the dataset, all referenced images, model artifacts, and inference settings.
 
@@ -153,7 +174,8 @@ python -m schematic_model.deployment bundle \
   --out outputs/deploy-schematic
 
 python -m schematic_model.deployment serve \
-  --model outputs/deploy-schematic --port 8891
+  --model outputs/deploy-schematic --port 8891 \
+  --examples data/real --max-tokens 1024
 
 # A separate terminal can use the CPU uv environment.
 uv run --locked schematic-model chat tmp/txb0104.png \
@@ -162,7 +184,11 @@ uv run --locked schematic-model chat tmp/txb0104.png \
   --question 'What is connected to the OE net?'
 ```
 
-The local server binds only to `127.0.0.1`. It exposes `/health`, `/v1/models`, and `/v1/chat/completions`, serializes GPU generation, bounds inputs and output lengths, and accepts image data URLs rather than server filesystem paths or remote image URLs. It is a local inference service, not a public multi-user hosting platform.
+Open **http://127.0.0.1:8891/** for the chat workspace. Its dropdown contains the 120 real product schematics, with original source links and attribution. Choose native evidence plus image or image-only mode, then ask questions. The UI displays actual model availability and preserves failed questions for retry; it never substitutes stored gold answers.
+
+The local server binds only to `127.0.0.1`. It exposes `/health`, `/v1/models`, and `/v1/chat/completions`, uses bounded concurrent HTTP handlers with one serialized GPU generation, bounds inputs and output lengths, and accepts image data URLs rather than server filesystem paths or remote image URLs. It is a local inference service, not a public multi-user hosting platform.
+
+Run `npm run browser:smoke -- --url http://127.0.0.1:8891 --out results/browser-smoke` to check the real catalog and desktop/mobile layout. Add `--question 'What value is shown for R1?'` for a real model request. This check requires Chromium at `/usr/bin/chromium`; screenshots and a JSON report are saved separately from the simulated reference conversations.
 
 The HTTP client also supports a compatible Studio endpoint. It reads an existing `UNSLOTH_API_KEY` environment variable when authentication is required. It does not change Studio authentication or automatically switch its resident model.
 
