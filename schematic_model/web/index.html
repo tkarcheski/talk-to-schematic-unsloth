@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Schematic · grounded circuit conversations</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/style.css" />
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#question">Skip to chat</a>
+    <header class="masthead">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">⌁</span
+        ><span
+          >Schematic<span class="brand-note">READ · TRACE · ASK</span></span
+        >
+      </div>
+      <div id="model-status" class="status" role="status">
+        Connecting to local model…
+      </div>
+    </header>
+    <main>
+      <section class="intro">
+        <p class="eyebrow">FROM THE SOURCE</p>
+        <h1>A closer look at your circuit.</h1>
+        <p>
+          Explore a real schematic. Ask a question. Keep the evidence in view.
+        </p>
+      </section>
+      <div id="error" class="error" role="alert" hidden></div>
+      <section class="workspace" aria-label="Schematic and conversation">
+        <section class="drawing-panel" aria-labelledby="drawing-heading">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">01 / SCHEMATIC</p>
+              <h2 id="drawing-heading">Choose a board</h2>
+            </div>
+            <span id="sheet-label" class="tag">Original source</span>
+          </div>
+          <div class="selector">
+            <label for="example">Example product</label
+            ><select id="example" disabled>
+              <option>Loading examples…</option>
+            </select>
+          </div>
+          <div class="image-stage">
+            <p id="image-placeholder">Loading source schematics…</p>
+            <a
+              id="image-link"
+              target="_blank"
+              rel="noopener"
+              hidden
+              aria-label="Open full resolution schematic"
+              ><img id="schematic-image" alt="" hidden
+            /></a>
+          </div>
+          <div id="source" class="source" hidden>
+            <div>
+              <a id="source-link" target="_blank" rel="noopener"
+                >View pinned source ↗</a
+              ><span id="source-meta"></span>
+            </div>
+            <p>
+              Source geometry rendered for viewing. Peripheral notes may be
+              cropped; inspect the original for the complete sheet.
+            </p>
+          </div>
+        </section>
+        <section class="chat-panel" aria-labelledby="chat-heading">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">02 / CONVERSATION</p>
+              <h2 id="chat-heading">Ask the schematic</h2>
+            </div>
+            <button id="reset" type="button" class="text-button" disabled>
+              New chat
+            </button>
+          </div>
+          <div class="mode-control">
+            <label for="mode">Evidence mode</label
+            ><select id="mode">
+              <option value="evidence">Native evidence + image</option>
+              <option value="vision">Image only</option>
+            </select>
+            <p id="mode-note">
+              The model receives source-extracted values and connections with
+              the image.
+            </p>
+          </div>
+          <div
+            id="conversation"
+            class="conversation"
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions text"
+            aria-label="Conversation"
+          >
+            <div id="empty-state" class="empty-state">
+              <span class="empty-icon" aria-hidden="true">⌁</span>
+              <h3>Start with what is on the page.</h3>
+              <p>
+                Read a component value, trace a connection, or ask what the
+                drawing cannot tell you.
+              </p>
+            </div>
+          </div>
+          <div
+            id="suggestions"
+            class="suggestions"
+            aria-label="Suggested questions"
+          ></div>
+          <form id="chat-form">
+            <label class="sr-only" for="question">Your schematic question</label
+            ><textarea
+              id="question"
+              rows="3"
+              maxlength="10000"
+              placeholder="What would you like to understand?"
+              required
+              disabled
+            ></textarea>
+            <div class="composer-bottom">
+              <span id="chat-status" role="status">Waiting for a schematic</span
+              ><button id="send" type="submit" disabled>
+                Send question <span aria-hidden="true">↗</span>
+              </button>
+            </div>
+          </form>
+          <p class="chat-footnote">
+            Answers come from the local model. Check source evidence before
+            making design decisions.
+          </p>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

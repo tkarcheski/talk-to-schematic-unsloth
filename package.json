@@ -1,12 +1,18 @@
 {
   "name": "talk-to-schematic-development",
   "private": true,
-  "description": "Repository spelling checks; the application is a uv-managed Python package",
+  "description": "Repository spelling, formatting and browser checks; the application is a uv-managed Python package",
   "scripts": {
-    "spellcheck": "cspell lint --no-progress --no-must-find-files --gitignore \"**/*.{md,py,yml,yaml,toml,js,css,html}\""
+    "spellcheck": "cspell lint --no-progress --no-must-find-files --gitignore \"**/*.{md,py,yml,yaml,toml,js,mjs,css,html}\"",
+    "format:check": "prettier --check \"schematic_model/web/*.{html,css,js,svg}\" \"scripts/*.mjs\"",
+    "browser:smoke": "node scripts/browser_smoke.mjs"
   },
   "devDependencies": {
-    "cspell": "10.3.6"
+    "@playwright/test": "1.63.0",
+    "cspell": "10.3.6",
+    "prettier": "3.9.9"
   },
-  "engines": { "node": ">=22.18.0" }
+  "engines": {
+    "node": ">=22.18.0"
+  }
 }

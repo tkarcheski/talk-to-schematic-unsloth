@@ -361,7 +361,7 @@ def batch_predict(config: DeploymentConfig, dataset: str, output: str, *, resume
                    resume=resume, history=history, max_tokens=config.max_tokens)
 
 
-def make_server(engine, port: int = 8891) -> HTTPServer:
+def make_server(engine, port: int = 8891, *, examples=None) -> HTTPServer:
     """Bound concurrent connections while serializing GPU work; caller owns lifetime."""
     generation_lock = threading.Lock()
 
@@ -405,38 +405,76 @@ def make_server(engine, port: int = 8891) -> HTTPServer:
             # Never log prompts, image data or paths. Status counters belong to callers.
             pass
 
-        def send_json(self, code, value):
-            body = json.dumps(value, allow_nan=False).encode()
+        def send_bytes(self, code, body, content_type):
             try:
                 self.send_response(code)
-                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Type", content_type)
                 self.send_header("Content-Length", str(len(body)))
                 self.send_header("Cache-Control", "no-store")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+                self.send_header("Referrer-Policy", "no-referrer")
                 self.end_headers()
                 self.wfile.write(body)
             except OSError:
                 # A disconnected client cannot consume or poison the next request.
                 self.close_connection = True
 
+        def send_json(self, code, value):
+            self.send_bytes(code, json.dumps(value, allow_nan=False).encode(), "application/json")
+
+        def valid_host(self):
+            expected = {"localhost", "127.0.0.1", f"localhost:{self.server.server_port}", f"127.0.0.1:{self.server.server_port}"}
+            return len(self.headers.get_all("Host", [])) == 1 and self.headers.get("Host") in expected
+
         def do_GET(self):
+            if not self.valid_host():
+                self.send_json(400, {"error": {"message": "Host must name this loopback server"}})
+                return
             if self.path == "/health":
                 self.send_json(200, {"status": "ok", "model": engine.config.served_model_name,
-                                     "model_fingerprint": engine.fingerprint})
+                                     "model_fingerprint": engine.fingerprint,
+                                     "loaded": getattr(engine, "model", None) is not None,
+                                     "busy": generation_lock.locked()})
             elif self.path == "/v1/models":
                 self.send_json(200, {"object": "list", "data": [{"id": engine.config.served_model_name, "object": "model", "owned_by": "local"}]})
             else:
-                self.send_json(404, {"error": {"message": "Unknown endpoint"}})
+                from .web_ui import static_asset
+
+                if self.path == "/api/examples":
+                    self.send_json(200, {"examples": examples.index() if examples else []})
+                    return
+                if self.path.startswith("/api/examples/") and examples is not None:
+                    route = self.path.removeprefix("/api/examples/").split("/")
+                    try:
+                        if len(route) == 1 and examples.details(route[0]) is not None:
+                            self.send_json(200, examples.details(route[0]))
+                            return
+                        if len(route) == 2 and route[1] == "image":
+                            content = examples.image(route[0])
+                            if content is not None:
+                                self.send_bytes(200, content, "image/png")
+                                return
+                    except (ValueError, OSError):
+                        self.send_json(503, {"error": {"message": "Example integrity check failed; restart with verified data"}})
+                        return
+                asset = static_asset(self.path)
+                if asset is not None:
+                    self.send_bytes(200, *asset)
+                else:
+                    self.send_json(404, {"error": {"message": "Unknown endpoint"}})
 
         def do_POST(self):
             if self.path != "/v1/chat/completions":
                 self.send_json(404, {"error": {"message": "Unknown endpoint"}})
                 return
-            expected_hosts = {"localhost", "127.0.0.1", f"localhost:{self.server.server_port}", f"127.0.0.1:{self.server.server_port}"}
-            if len(self.headers.get_all("Host", [])) != 1 or self.headers.get("Host") not in expected_hosts:
+            if not self.valid_host():
                 self.send_json(400, {"error": {"message": "Host must name this loopback server"}})
                 return
-            if self.headers.get("Origin") is not None or self.headers.get("Transfer-Encoding") is not None:
-                self.send_json(400, {"error": {"message": "Browser-origin and chunked requests are not supported"}})
+            origins = self.headers.get_all("Origin", [])
+            if (len(origins) > 1 or origins and origins[0] != f"http://{self.headers.get('Host')}"
+                    or self.headers.get("Transfer-Encoding") is not None):
+                self.send_json(400, {"error": {"message": "Cross-origin and chunked requests are not supported"}})
                 return
             if (len(self.headers.get_all("Content-Type", [])) != 1
                     or self.headers.get("Content-Type", "").split(";", 1)[0].strip() != "application/json"):
@@ -510,6 +548,7 @@ def main(argv=None):
             command.add_argument("--history", choices=("gold", "generated"), default="gold")
         else:
             command.add_argument("--port", type=int, default=8891)
+            command.add_argument("--examples", help="verified real corpus directory for the browser example catalog")
     bundle = commands.add_parser("bundle", help="copy an adapter and bind it to a local base model")
     bundle.add_argument("--model", required=True)
     bundle.add_argument("--base-model", required=True)
@@ -524,9 +563,13 @@ def main(argv=None):
             result = batch_predict(DeploymentConfig(**args), dataset, output, resume=resume, history=history)
         else:
             port = args.pop("port")
+            examples = args.pop("examples")
+            if examples is not None:
+                from .web_ui import ExampleCatalog
+                examples = ExampleCatalog(examples)
             engine = LocalModel(DeploymentConfig(**args))
             engine.load()
-            with make_server(engine, port) as server:
+            with make_server(engine, port, examples=examples) as server:
                 print(json.dumps({"url": f"http://127.0.0.1:{server.server_port}/v1", "provenance": engine.provenance}), flush=True)
                 try:
                     server.serve_forever()

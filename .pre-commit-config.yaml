@@ -23,7 +23,12 @@ repos:
         entry: npm exec --no -- cspell lint --no-progress --no-must-find-files --gitignore
         language: system
         types: [text]
-        files: \.(md|py|yml|yaml|toml|js|css|html)$
+        files: \.(md|py|yml|yaml|toml|js|mjs|css|html)$
+      - id: prettier
+        name: Browser source formatting
+        entry: npm exec --no -- prettier --check
+        language: system
+        files: ^(schematic_model/web/.*\.(html|css|js|svg)|scripts/.*\.mjs)$
       - id: tests
         name: CPU regression suite
         entry: uv run --locked pytest -q
