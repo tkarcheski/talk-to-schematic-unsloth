@@ -11,6 +11,7 @@ COMMANDS = {
     "synthetic": "build_dataset",
     "predict": "predict",
     "chat": "chat",
+    "train": "schematic_model.training",
 }
 
 

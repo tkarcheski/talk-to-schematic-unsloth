@@ -18,3 +18,5 @@ data/real/
 results/
 tmp/
 .ai-pilled/
+models/
+unsloth_compiled_cache/
