@@ -3,9 +3,11 @@ import contextlib
 import io
 import json
 import math
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import evaluate
 
@@ -99,6 +101,23 @@ class GradingTests(unittest.TestCase):
         self.assertEqual(evaluate.grade(label, "U2.SDA connects to R101.2.")["pins.f1"], 1)
         self.assertAlmostEqual(evaluate.grade(label, "R101.2 and R2.2.")["pins.f1"], 2 / 3)
 
+    def test_real_eda_reference_and_pad_names(self):
+        label = {"type": "pins", "pins": ["USB.VBUS", "U$1.P$2", "CN_2.D+"]}
+        rows = [gold_row(label)]
+        metrics, _ = evaluate.score(rows, {"design-c0#0": "USB.VBUS, U$1.P$2, CN_2.D+."})
+        self.assertEqual(metrics["pins.f1"], 1)
+
+    def test_literal_net_name_is_not_an_extra_pin(self):
+        label = {"type": "pins", "pins": ["JP2.5", "U5.6"], "net": "MISO_3.3V"}
+        self.assertEqual(evaluate.grade(label, "On this sheet, MISO_3.3V connects JP2.5, U5.6.")["pins.f1"], 1)
+        trace = {"type": "pins", "pins": ["JP2.5"], "query": "U5.6", "net": "MISO_3.3V"}
+        self.assertEqual(evaluate.grade(trace, "U5.6 is on MISO_3.3V with JP2.5.")["pins.f1"], 1)
+        self.assertLess(evaluate.grade(label, "MISO_3.3V connects JP2.5, U5.6, U9.2.")["pins.f1"], 1)
+
+    def test_net_metadata_does_not_hide_an_expected_endpoint(self):
+        label = {"type": "pins", "pins": ["U5.6"], "net": "U5.6"}
+        self.assertEqual(evaluate.grade(label, "U5.6.")["pins.f1"], 1)
+
     def test_reasoning_does_not_supply_the_answer(self):
         label = {"type": "yesno", "yes": True}
         self.assertFalse(evaluate.grade(label, "<think>Yes, C3 is present.</think>Uncertain.")["yesno.acc"])
@@ -134,6 +153,7 @@ class ValidationTests(unittest.TestCase):
             {"type": "number", "value": 1, "unit": "bananas"},
             {"type": "refdes", "refdes": []}, {"type": "value", "value": ""},
             {"type": "pins", "pins": ["not-a-pin"]},
+            {"type": "pins", "pins": ["U2.SDA"], "net": None},
             {"type": "pins", "pins": ["U2.SDA"], "query": "U2.SDA"},
             {"type": "codes", "codes": ["IMAGINARY_FAULT"]},
             {"type": "codes", "codes": ["LDO_THERMAL", "LDO_THERMAL"]},
@@ -162,6 +182,13 @@ class ValidationTests(unittest.TestCase):
         counts["pins.f1"] = 1
         metrics["pins.f1"] = math.nan
         self.assertIn("pins.f1 (invalid score)", evaluate.gate_failures(metrics, counts))
+
+    def test_profile_specific_missing_evidence(self):
+        metrics = {"value.acc": 1, "refuse.acc": 1}
+        counts = {name: 1 for name in metrics}
+        self.assertEqual(evaluate.gate_failures(metrics, counts, evaluate.PROFILES["real-vision"]), [])
+        self.assertEqual(evaluate.gate_failures(metrics, counts, evaluate.PROFILES["real-grounding"]),
+                         ["pins.f1 (no evidence)"])
 
 
 class JsonlAndCliTests(unittest.TestCase):
@@ -225,6 +252,118 @@ class JsonlAndCliTests(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertIn("all gates passed", stdout.getvalue())
         self.assertIn("1 legacy numeric labels lack units", stdout.getvalue())
+
+    def test_json_report_records_profile_denominators_and_failures(self):
+        labels = [{"type": "value", "value": "100 nF"}, {"type": "refuse"}]
+        gold = self.write("gold.jsonl", [gold_row(*labels)])
+        pred = self.write("pred.jsonl", [{"key": "design-c0#0", "output": "C3 is 100 nF."},
+                                         {"key": "design-c0#1", "output": "Not on the schematic."}])
+        report_path = self.path / "report.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            status = evaluate.main(["--gold", gold, "--pred", pred, "--profile", "real-grounding",
+                                    "--report", str(report_path)])
+        self.assertEqual(status, 1)
+        report = json.loads(report_path.read_text())
+        self.assertEqual(report["profile"], "real-grounding")
+        self.assertEqual(report["status"], "fail")
+        self.assertEqual(report["failures"], ["pins.f1 (no evidence)"])
+        self.assertEqual(report["counts"], {"value.acc": 1, "refuse.acc": 1})
+        self.assertEqual(len(report["gold_sha256"]), 64)
+
+    def report_fixture(self):
+        gold = self.write("gold.jsonl", [gold_row({"type": "value", "value": "10k"}, {"type": "refuse"})])
+        predictions = [{"key": "design-c0#0", "output": "R1 is 10k."},
+                       {"key": "design-c0#1", "output": "Not shown on the schematic."}]
+        pred = self.write("pred.jsonl", predictions)
+        return gold, pred, predictions
+
+    def run_report(self, gold, pred, report, *extra):
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            return evaluate.main(["--gold", gold, "--pred", pred, "--profile", "real-vision",
+                                  "--report", str(report), *extra])
+
+    def test_incomplete_predictions_replace_a_stale_passing_report(self):
+        gold, pred, predictions = self.report_fixture()
+        report = self.path / "report.json"
+        self.assertEqual(self.run_report(gold, pred, report), 0)
+        self.assertEqual(json.loads(report.read_text())["status"], "pass")
+        self.write("pred.jsonl", predictions[:-1])
+        self.assertEqual(self.run_report(gold, pred, report), 2)
+        incomplete = json.loads(report.read_text())
+        self.assertEqual(incomplete["status"], "incomplete")
+        self.assertIn("missing 1 keys", incomplete["failures"][0])
+        self.assertEqual(incomplete["metrics"], {})
+        self.assertEqual(incomplete["counts"], {})
+
+    def test_malformed_or_missing_inputs_replace_stale_report(self):
+        gold, pred, _ = self.report_fixture()
+        report = self.path / "report.json"
+        for invalid in (b"broken JSON\n", b"\xff\n", b""):
+            report.write_text('{"status":"pass"}\n')
+            Path(pred).write_bytes(invalid)
+            self.assertEqual(self.run_report(gold, pred, report), 2)
+            self.assertEqual(json.loads(report.read_text())["status"], "incomplete")
+        Path(pred).unlink()
+        report.write_text('{"status":"pass"}\n')
+        self.assertEqual(self.run_report(gold, pred, report), 2)
+        self.assertEqual(json.loads(report.read_text())["status"], "incomplete")
+
+    def test_report_cannot_alias_gold_predictions_or_baseline(self):
+        gold, pred, _ = self.report_fixture()
+        baseline = self.path / "baseline.jsonl"
+        baseline.write_bytes(Path(pred).read_bytes())
+        inputs = [Path(gold), Path(pred), baseline]
+        original = {path: path.read_bytes() for path in inputs}
+        for source in inputs:
+            for alias_kind in ("direct", "symlink", "hardlink"):
+                with self.subTest(source=source.name, alias=alias_kind):
+                    if alias_kind == "direct":
+                        report = source
+                    else:
+                        report = self.path / f"{source.name}.{alias_kind}"
+                        if alias_kind == "symlink":
+                            report.symlink_to(source)
+                        else:
+                            os.link(source, report)
+                    self.assertEqual(self.run_report(gold, pred, report, "--pred-base", str(baseline)), 2)
+                    self.assertEqual({path: path.read_bytes() for path in inputs}, original)
+
+    def test_unsafe_report_path_is_rejected_even_when_input_is_invalid(self):
+        gold, pred, _ = self.report_fixture()
+        Path(pred).write_text("malformed\n")
+        original = Path(gold).read_bytes()
+        self.assertEqual(self.run_report(gold, pred, gold), 2)
+        self.assertEqual(Path(gold).read_bytes(), original)
+
+    def test_failed_atomic_report_replacement_preserves_previous_output(self):
+        gold, pred, _ = self.report_fixture()
+        report = self.path / "report.json"
+        original = b'{"status":"incomplete","failures":["previous run"]}\n'
+        report.write_bytes(original)
+        gold_before, pred_before = Path(gold).read_bytes(), Path(pred).read_bytes()
+        with patch("evaluate.os.replace", side_effect=OSError("simulated publish failure")):
+            self.assertEqual(self.run_report(gold, pred, report), 2)
+        self.assertEqual(report.read_bytes(), original)
+        self.assertEqual((Path(gold).read_bytes(), Path(pred).read_bytes()), (gold_before, pred_before))
+        self.assertFalse(list(self.path.glob(".report.json.*.tmp")))
+
+    def test_report_is_complete_before_atomic_publication(self):
+        gold, pred, _ = self.report_fixture()
+        report = self.path / "report.json"
+        replace = os.replace
+        publications = []
+
+        def inspect_publication(source, target):
+            payload = json.loads(Path(source).read_text())
+            self.assertEqual(payload["status"], "pass")
+            self.assertEqual(Path(source).parent, report.parent)
+            publications.append(payload)
+            return replace(source, target)
+
+        with patch("evaluate.os.replace", side_effect=inspect_publication):
+            self.assertEqual(self.run_report(gold, pred, report), 0)
+        self.assertEqual(len(publications), 1)
+        self.assertEqual(json.loads(report.read_text()), publications[0])
 
 
 if __name__ == "__main__":

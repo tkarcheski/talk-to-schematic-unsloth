@@ -8,13 +8,23 @@ from pathlib import Path
 import sys
 
 from evaluate import EvaluationError, load, load_gold
-from schematic_model.inference import Client, InferenceError, convert_messages
+from schematic_model.inference import Client, InferenceError, convert_messages, image_fingerprints
 
 
 def predict(dataset, output, model, client, *, resume=False, history="gold", max_tokens=1024):
     dataset, output = Path(dataset), Path(output)
     rows = load_gold(dataset)
-    binding = {"dataset_sha256": hashlib.sha256(dataset.read_bytes()).hexdigest(),
+    if history not in {"gold", "generated"} or max_tokens < 1:
+        raise ValueError("History must be gold or generated; max_tokens must be positive")
+    images = {}
+    for row in rows:
+        for reference, digest in image_fingerprints(row["messages"], dataset).items():
+            if reference in images and images[reference] != digest:
+                raise ValueError(f"Image bytes changed during prediction preflight: {reference}")
+            images[reference] = digest
+        convert_messages(row["messages"], dataset, image_hashes=images)
+    binding = {"schema_version": 2, "dataset_sha256": hashlib.sha256(dataset.read_bytes()).hexdigest(),
+               "images_sha256": images,
                "model": model, "base_url": client.base_url, "history": history,
                "max_tokens": max_tokens, "temperature": 0.0}
     metadata = output.with_suffix(output.suffix + ".meta.json")
@@ -23,16 +33,12 @@ def predict(dataset, output, model, client, *, resume=False, history="gold", max
         if not resume:
             raise ValueError("Output already exists; use --resume with the same dataset and settings")
         if not metadata.is_file() or json.loads(metadata.read_text()) != binding:
-            raise ValueError("Resume metadata does not match dataset/model/settings")
+            raise ValueError("Resume metadata does not match dataset/images/model/settings")
         if output.exists() and output.stat().st_size:
             existing = load(output)
     expected = {f"{row['id']}#{i}" for row in rows for i in range(len(row["gold"]))}
     if set(existing) - expected:
         raise ValueError("Existing predictions contain keys outside this dataset")
-    if history not in {"gold", "generated"} or max_tokens < 1:
-        raise ValueError("History must be gold or generated; max_tokens must be positive")
-    for row in rows:
-        convert_messages(row["messages"], dataset)
     output.parent.mkdir(parents=True, exist_ok=True)
     if not metadata.exists():
         with metadata.open("x", encoding="utf-8") as handle:
@@ -40,7 +46,7 @@ def predict(dataset, output, model, client, *, resume=False, history="gold", max
             handle.write("\n")
     with output.open("a" if resume else "x", encoding="utf-8") as handle:
         for row in rows:
-            messages = convert_messages(row["messages"], dataset)
+            messages = convert_messages(row["messages"], dataset, image_hashes=images)
             turn, conversation = 0, []
             for message in messages:
                 if message["role"] != "assistant":

@@ -20,11 +20,15 @@ reports their count. Missing predictions and missing release-gate evidence
 are errors, never passing scores.
 """
 import argparse
+import hashlib
 import json
 import math
+import os
 import re
 import sys
+import tempfile
 from collections.abc import Mapping
+from pathlib import Path
 
 KEYWORDS = {  # code -> regex that a correct prose finding should match
     "LDO_VIN_EXCEEDED": r"abs.?max|exceed|input.*(rating|max)|rated",
@@ -51,7 +55,8 @@ REFDES_OF = {"LDO_VIN_EXCEEDED": "U1", "LDO_DROPOUT": "U1", "LDO_CURRENT": "U1",
              "DECOUPLING_VALUE": "C3", "FLOATING_INPUT": "U2", "I2C_PULLUP_VALUE": "R1|R2",
              "I2C_PIN_SWAP": "U2", "NET_LABEL_MISMATCH": "R1|U2", "LED_REVERSED": "D2", "LED_CURRENT": "R3|D2"}
 REFUSE = r"(no|not|isn't|doesn't|don't|aren't)\b.{0,40}\b(on|in|shown|show|drawn|specified|marked|state|sheet|schematic)"
-PIN = r"\b([A-Z]{1,2}\d+)\.([A-Z0-9_]+)\b"
+REFDES = r"[A-Z][A-Z0-9_$-]*"
+PIN = rf"(?<![\w$-])({REFDES})\.([A-Z0-9_$+-]+)(?![\w$+-])"
 
 UNITS = {
     "A": ("current", 1.0), "mA": ("current", 1e-3),
@@ -86,6 +91,11 @@ GATES = {
     "pins.f1": (">=", 0.95),
     "number.acc": (">=", 0.95),
     "refuse.acc": (">=", 0.98),      # must not hallucinate parts or layout facts
+}
+PROFILES = {
+    "synthetic": GATES,
+    "real-grounding": {"value.acc": (">=", 0.95), "pins.f1": (">=", 0.95), "refuse.acc": (">=", 0.98)},
+    "real-vision": {"value.acc": (">=", 0.95), "refuse.acc": (">=", 0.98)},
 }
 
 
@@ -152,6 +162,10 @@ def grade(g, ans):
     if t == "pins":
         pred = {f"{a}.{b}" for a, b in re.findall(PIN, ans)} - {g.get("query")}
         gold = set(g["pins"])
+        # Source net names such as MISO_3.3V resemble physical pin tokens.
+        # Exclude only the declared literal net, never an expected endpoint.
+        if g.get("net") not in gold:
+            pred.discard(g.get("net"))
         if not gold:
             return {"pins.f1": float(not pred and bool(re.search(
                 r"isn't connected|not connected|floating|nothing", ans, re.I)))}
@@ -204,6 +218,8 @@ def _validate_label(label, location):
             raise EvaluationError(f"{location}: unknown finding codes {sorted(unknown)}")
     elif kind == "pins":
         _string_list(label.get("pins"), f"{location}.pins")
+        if "net" in label and (not isinstance(label["net"], str) or not label["net"].strip()):
+            raise EvaluationError(f"{location}.net must be a nonempty string")
         pins = label["pins"] + ([label["query"]] if "query" in label else [])
         if any(not isinstance(pin, str) or not re.fullmatch(PIN, pin) for pin in pins):
             raise EvaluationError(f"{location}: pins must use REFDES.PIN syntax")
@@ -223,7 +239,7 @@ def _validate_label(label, location):
             raise EvaluationError(f"{location}.yes must be a boolean")
     elif kind == "refdes":
         _string_list(label.get("refdes"), f"{location}.refdes", allow_empty=False)
-        if any(not re.fullmatch(r"[A-Z]{1,2}\d+", ref) for ref in label["refdes"]):
+        if any(not re.fullmatch(REFDES, ref) for ref in label["refdes"]):
             raise EvaluationError(f"{location}.refdes contains invalid reference designators")
     elif kind != "refuse":
         raise EvaluationError(f"{location}: unknown gold type {kind!r}")
@@ -333,10 +349,10 @@ def load(path):
     return predictions
 
 
-def gate_failures(metrics, counts):
+def gate_failures(metrics, counts, gates=None):
     """Every required metric needs evidence and a finite passing score."""
     failed = []
-    for name, (operator, threshold) in GATES.items():
+    for name, (operator, threshold) in (GATES if gates is None else gates).items():
         if name not in metrics or counts.get(name, 0) < 1:
             failed.append(f"{name} (no evidence)")
             continue
@@ -348,33 +364,111 @@ def gate_failures(metrics, counts):
     return failed
 
 
+def _validate_report_destination(path, inputs):
+    """Reports may replace previous reports, but must never replace evidence."""
+    path = Path(path)
+    for source in inputs:
+        source = Path(source)
+        if path.resolve() == source.resolve() or (
+            path.exists() and source.exists() and path.samefile(source)
+        ):
+            raise EvaluationError(f"Report path aliases an input file: {source}")
+
+
+def _write_report(path, report, inputs):
+    """Publish one complete JSON object atomically; keep old output on failure."""
+    path = Path(path)
+    _validate_report_destination(path, inputs)
+    encoded = json.dumps(report, indent=2, allow_nan=False) + "\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
+                                         prefix=f".{path.name}.", suffix=".tmp", delete=False) as handle:
+            temporary = Path(handle.name)
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+        _validate_report_destination(path, inputs)
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def _file_hash(path):
+    if path is None:
+        return None
+    try:
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+def _report_evidence(args):
+    return {"schema_version": 1, "profile": args.profile,
+            "gold_sha256": _file_hash(args.gold),
+            "predictions_sha256": _file_hash(args.pred),
+            "baseline_predictions_sha256": _file_hash(args.pred_base),
+            "limitations": "Deterministic format/keyword scoring; not a semantic or hardware safety certification."}
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--gold", default="data/test.jsonl")
     ap.add_argument("--pred", required=True)
     ap.add_argument("--pred-base")
+    ap.add_argument("--profile", choices=PROFILES, default="synthetic")
+    ap.add_argument("--report", type=Path, help="write machine-readable benchmark evidence")
     a = ap.parse_args(argv)
+    inputs = [path for path in (a.gold, a.pred, a.pred_base) if path is not None]
+    # Keep this separate from the scoring-error handler: an unsafe destination
+    # must not receive even an 'incomplete' report.
+    if a.report:
+        try:
+            _validate_report_destination(a.report, inputs)
+        except (ValueError, OSError) as exc:
+            print(f"RELEASE: BLOCKED: {exc}", file=sys.stderr)
+            return 2
     try:
         gold = load_gold(a.gold)
         ft, n = score(gold, load(a.pred))
         base = score(gold, load(a.pred_base))[0] if a.pred_base else None
-    except (EvaluationError, OSError) as exc:
+    except (ValueError, OSError) as exc:
+        if a.report:
+            report = {**_report_evidence(a), "metrics": {}, "counts": {}, "baseline_metrics": None,
+                      "failures": [str(exc)], "status": "incomplete"}
+            try:
+                _write_report(a.report, report, inputs)
+            except (ValueError, OSError) as write_error:
+                print(f"Report was not updated: {write_error}", file=sys.stderr)
         print(f"RELEASE: BLOCKED: {exc}", file=sys.stderr)
         return 2
+    gates = PROFILES[a.profile]
+    failed = gate_failures(ft, n, gates)
+    if a.report:
+        report = {**_report_evidence(a), "metrics": ft, "counts": n,
+                  "baseline_metrics": base, "failures": failed,
+                  "status": "fail" if failed else "pass"}
+        try:
+            _write_report(a.report, report, inputs)
+        except (ValueError, OSError) as exc:
+            print(f"RELEASE: BLOCKED: Report was not updated: {exc}", file=sys.stderr)
+            return 2
     legacy_numbers = sum(label["type"] == "number" and "unit" not in label
                          for row in gold for label in row["gold"])
     if legacy_numbers:
         print(f"LIMITATION: {legacy_numbers} legacy numeric labels lack units; these receive magnitude-only grading.")
     print("Grading uses format and keyword heuristics; it does not establish semantic correctness.")
     print(f"{'metric':32s} {'n':>5s} {'model':>8s}" + (f" {'base':>8s}" if base else "") + "  gate")
-    failed = gate_failures(ft, n)
     for k, v in ft.items():
-        gate, mark = GATES.get(k), ""
+        gate, mark = gates.get(k), ""
         if gate:
             ok = v >= gate[1] if gate[0] == ">=" else v <= gate[1]
             mark = f"{'PASS' if ok else 'FAIL'} ({gate[0]}{gate[1]})"
         print(f"{k:32s} {n[k]:5d} {v:8.3f}" + (f" {base.get(k, float('nan')):8.3f}" if base else "") + f"  {mark}")
     print("\nRELEASE:", "BLOCKED by " + ", ".join(failed) if failed else "all gates passed")
+    print(f"Scope: {a.profile} benchmark only; passing does not establish general engineering reliability.")
     return 1 if failed else 0
 
 
