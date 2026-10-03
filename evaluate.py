@@ -519,7 +519,7 @@ def _report_evidence(args):
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--gold", default="data/test.jsonl")
+    ap.add_argument("--gold", required=True)
     ap.add_argument("--pred", required=True)
     ap.add_argument("--pred-base")
     ap.add_argument("--profile", choices=PROFILES, default="synthetic")

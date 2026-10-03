@@ -453,7 +453,7 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--data", default="data", help="directory with train.jsonl and val.jsonl")
+    parser.add_argument("--data", required=True, help="directory with train.jsonl and val.jsonl")
     parser.add_argument("--out", default="outputs/schematic-lora")
     parser.add_argument("--model", default=DEFAULT_MODEL, help="safetensors model ID or local snapshot directory")
     parser.add_argument("--revision", help="Hub commit; default model is pinned automatically")

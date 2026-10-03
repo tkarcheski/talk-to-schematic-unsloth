@@ -108,7 +108,7 @@ uv run --locked schematic-model synthetic \
 
 The generator stages a complete dataset before publishing it, rejects invalid settings, and records design parameters, netlists, BOMs, findings, split statistics, and asset hashes in `manifest.json`. Image paths are relative to the dataset directory.
 
-This is one idealized teaching topology with simplified component rules. Numerical labels include units. Synthetic rules and self-scoring gold answers do not establish real-world engineering accuracy. The original `docs/example_*` files are standalone historical fixtures; they do not describe the regenerated design with the same identifier.
+This is one idealized teaching topology with simplified component rules. Numerical labels include units. Synthetic rules and self-scoring gold answers do not establish real-world engineering accuracy.
 
 ## Train on the 4090
 
@@ -127,7 +127,7 @@ uv run --locked python scripts/prepare_training.py \
 
 # Run these two commands with your Unsloth environment's Python.
 python scripts/download_model.py --out models/Qwen3.5-4B
-python train_unsloth.py \
+python -m schematic_model.training \
   --data data/training/real-crop-v1 --out outputs/schematic-lora \
   --model models/Qwen3.5-4B \
   --revision 3764fa359b9082ea5a1e4a5e3ac3aaf6e9671636 \

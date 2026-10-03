@@ -2,8 +2,6 @@ __pycache__/
 outputs/
 *.pyc
 preds*.jsonl
-p.jsonl
-n.jsonl
 .venv/
 .cache/
 .pytest_cache/

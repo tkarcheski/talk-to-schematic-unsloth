@@ -27,7 +27,7 @@ dev = [
 
 [tool.setuptools]
 packages = ["schematic_model"]
-py-modules = ["hwsynth", "build_dataset", "evaluate", "make_mock_preds", "predict", "chat", "train_unsloth"]
+py-modules = ["hwsynth", "build_dataset", "evaluate", "predict", "chat"]
 
 [tool.setuptools.package-data]
 schematic_model = ["skills/*/SKILL.md", "web/*"]

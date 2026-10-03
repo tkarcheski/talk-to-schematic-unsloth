@@ -8,7 +8,6 @@
     "corpora/**",
     "docs/examples/**",
     "docs/simulated_conversations.md",
-    "docs/example_*",
     "tests/fixtures/**",
     "cspell.json",
     "uv.lock",
