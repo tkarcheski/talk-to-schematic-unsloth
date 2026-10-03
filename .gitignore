@@ -18,7 +18,6 @@ data/training/
 data/validation/
 results/
 tmp/
-.ai-pilled/
 models/
 unsloth_compiled_cache/
 .aws

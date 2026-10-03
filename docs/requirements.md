@@ -20,7 +20,7 @@ checkpoint is available, but model qualification remains open.
 | Usable local chat | Select a real schematic, inspect its source, zoom, ask the loaded model, see failures accurately | 120-item catalog, desktop/mobile browser checks, actual three-turn conversation at 2,048 pixels |
 | Reusable AI skills | Packaged reading, tracing, and evaluation instructions with evidence boundaries | Three packaged skills; export is verified and refuses to overwrite existing directories |
 | Publish a model | Reproducible adapter and honest model card; qualified status only after gates pass | [Experimental release](validation/hugging-face-experimental-release.json) published and hash verified; qualified release pending |
-| Maintainable development | Small reviewed commits, formatting, spelling, regression tests, regular pushes | Local hooks and remote CI pass on Python 3.11, 3.12, and 3.13; [recorded run](validation/ci-first-pass.json) |
+| Maintainable development | Small reviewed commits, formatting, spelling, regression tests, regular pushes | Local hooks and remote CI pass on Python 3.13; [recorded run](validation/ci-first-pass.json) |
 
 ## Evaluation and data boundaries
 

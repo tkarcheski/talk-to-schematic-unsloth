@@ -33,7 +33,7 @@ The expanded training recipe contains 888 conversations and 1,409 supervised tur
 
 ## Install and check
 
-Python 3.11–3.13 is supported for the CPU package; the checked local GPU environment uses Python 3.13.14.
+Python 3.13 is required; the checked local GPU environment uses Python 3.13.14.
 
 ```sh
 uv sync --locked
@@ -209,6 +209,6 @@ Exported directories can be installed in your agent's skill directory. Export re
 
 ## Development loop
 
-Make one focused change, run the relevant tests, review the result, commit, and push. `.ai-pilled.json` runs the actual uv test and lint commands; it does not invent model-quality evidence. The [CI workflow](.github/workflows/checks.yml) repeats the browser state tests, hooks, CPU checks, application branch coverage, and package build on Python 3.11–3.13. All three versions passed in the [first verified run](https://github.com/tkarcheski/talk-to-schematic-unsloth/actions/runs/37022994096). [Recorded CI evidence](docs/validation/ci-first-pass.json) identifies the exact checked commit.
+Make one focused change, run the relevant tests, review the result, commit, and push. The [CI workflow](.github/workflows/checks.yml) repeats the browser state tests, hooks, CPU checks, application branch coverage, and package build on Python 3.13. The [first verified run](https://github.com/tkarcheski/talk-to-schematic-unsloth/actions/runs/37022994096) passed on Python 3.11–3.13; its [recorded CI evidence](docs/validation/ci-first-pass.json) identifies the exact checked commit.
 
 Keep model results and source-derived gold separate. Use validation data for tuning, preserve the held-out test split, and record every candidate's settings and failures. A saved checkpoint becomes a deployable candidate only after reload and complete-response checks; passing a small benchmark does not establish general schematic-review competence.
