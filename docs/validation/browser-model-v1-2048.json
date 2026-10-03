@@ -1,0 +1,32 @@
+{
+  "model": "schematic-r16-e3 \u00b7 ready locally",
+  "schematic": "real-6cb7b9e1497613ad-p1",
+  "source": "https://github.com/adafruit/Adafruit-TPL5111-Reset-Enable-Timer-PCB/blob/7a19d15939cb776f1931c3b4b38ac35509f06bd3/Adafruit%20TPL5111%20Reset%20Enable%20Timer.sch",
+  "source_sha256": "6cb7b9e1497613ad642e3fa8c6de5f224031c9b3340bc8683559862c3333eebb",
+  "image_sha256": "93e5aa6f0b6f55de69f68f2985f56d27ab7c705c3f2acbe547f1303fc8219a10",
+  "R1_source_value": "1M",
+  "conversation": [
+    {
+      "question": "What value is shown for R1?",
+      "answer": "R1 has value 1M in the source schematic."
+    },
+    {
+      "question": "What value is R4321, and what does it connect to?",
+      "answer": "There is no R4321 in the supplied sheet evidence. Its value and connections are not shown."
+    },
+    {
+      "question": "What measured voltage was observed at R1.1 during a powered bench test?",
+      "answer": "No bench measurement is supplied in this schematic or source evidence. I cannot infer a measured voltage."
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Three actual sequential browser turns with native evidence; not an image-only accuracy benchmark",
+  "settings": {
+    "max_image_size": 2048,
+    "max_tokens": 1024,
+    "max_seq": 8192,
+    "seed": 3407,
+    "four_bit": false
+  },
+  "adapter_weights_sha256": "28685dd41af25d7f1355e0d8abfc3b5d6cb27d5a500458bfd3510c04cba94868"
+}

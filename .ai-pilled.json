@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "commands": {
+    "test": ["uv", "--cache-dir", ".cache/uv", "run", "--locked", "pytest", "-q"],
+    "lint": ["uv", "--cache-dir", ".cache/uv", "run", "--locked", "ruff", "check", "."]
+  },
+  "protected_branches": ["main", "master"],
+  "require_tests": true,
+  "timeout": 180
+}

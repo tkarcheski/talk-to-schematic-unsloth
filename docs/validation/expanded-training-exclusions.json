@@ -1,0 +1,14 @@
+[
+  {
+    "board_id": "real-5316af4e1ec5ce66-p1",
+    "refdes": "R14",
+    "value": "27",
+    "reason": "Manual review of the v3 QT2040 Trinkey image found target value/name glyphs coincident with the adjacent resistor. Preserve native evidence supervision; exclude the entire board/value group until another representative is visually reviewed."
+  },
+  {
+    "board_id": "real-d8160e36719d1105-p1",
+    "refdes": "R10",
+    "value": "33",
+    "reason": "Manual review of the v3 TFP401 image found overlapping resistor-array names and values, making target assignment ambiguous. Preserve native evidence supervision; exclude the entire board/value group until another representative is visually reviewed."
+  }
+]

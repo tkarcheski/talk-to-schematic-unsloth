@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "binding_sha256": "e6ddf16a26114af481fd07843fe6dc6ac15400cc8996c7a933e186cc62f6d69a",
+  "fit_manifest_sha256": "91cd362828778f4e8ef84b2b365b65fb67726b98ed4c1df049f78c71237fe880",
+  "global_step": 2,
+  "peak_cuda_allocated_bytes": 12112464896,
+  "peak_cuda_reserved_bytes": 12318670848,
+  "training_metrics": {
+    "train_runtime": 46.5106,
+    "train_samples_per_second": 0.172,
+    "train_steps_per_second": 0.043,
+    "total_flos": 1080952596375552.0,
+    "train_loss": 2.112152338027954,
+    "epoch": 1.0
+  },
+  "limitations": [
+    "A two-step extreme-row fit test is bounded evidence, not proof every full-run allocation will fit.",
+    "Full training starts from pinned base weights, never the smoke adapter; full-run errors are reported without changing settings.",
+    "Expanded training uses v3 images; validation/test inside that snapshot remain frozen v2. The separate v3 baseline is explicitly labeled render comparison.",
+    "No quality-based selection or deployment/publication is performed by this runner."
+  ],
+  "selected_rows": [
+    {
+      "id": "real-2faec9d78e0fb9e1-p1",
+      "visual_tokens": 4032,
+      "text_characters": 1764,
+      "text_tokens": 641,
+      "total_training_tokens": 4672,
+      "training_grid_height": 64,
+      "training_grid_width": 63,
+      "aspect_ratio": 1.0129166666666667
+    },
+    {
+      "id": "real-95a569be6b38d9cc-p1",
+      "visual_tokens": 2752,
+      "text_characters": 9416,
+      "text_tokens": 4931,
+      "total_training_tokens": 7682,
+      "training_grid_height": 64,
+      "training_grid_width": 43,
+      "aspect_ratio": 1.47625
+    },
+    {
+      "id": "real-d8160e36719d1105-p1",
+      "visual_tokens": 2816,
+      "text_characters": 8983,
+      "text_tokens": 4979,
+      "total_training_tokens": 7794,
+      "training_grid_height": 44,
+      "training_grid_width": 64,
+      "aspect_ratio": 1.4336917562724014
+    },
+    {
+      "id": "real-409c942e81f9fa23-p1",
+      "visual_tokens": 1408,
+      "text_characters": 2171,
+      "text_tokens": 880,
+      "total_training_tokens": 2287,
+      "training_grid_height": 22,
+      "training_grid_width": 64,
+      "aspect_ratio": 2.93040293040293
+    },
+    {
+      "id": "real-164f0c9fe89330e2-p1",
+      "visual_tokens": 3776,
+      "text_characters": 4491,
+      "text_tokens": 2194,
+      "total_training_tokens": 5969,
+      "training_grid_height": 59,
+      "training_grid_width": 64,
+      "aspect_ratio": 1.0845006778129236
+    },
+    {
+      "id": "real-94ad413a6465bc82-p1",
+      "visual_tokens": 3392,
+      "text_characters": 4971,
+      "text_tokens": 2424,
+      "total_training_tokens": 5815,
+      "training_grid_height": 53,
+      "training_grid_width": 64,
+      "aspect_ratio": 1.2188928390045708
+    },
+    {
+      "id": "real-718375f09eb561bc-p1",
+      "visual_tokens": 2816,
+      "text_characters": 5807,
+      "text_tokens": 2971,
+      "total_training_tokens": 5786,
+      "training_grid_height": 44,
+      "training_grid_width": 64,
+      "aspect_ratio": 1.4519056261343013
+    },
+    {
+      "id": "real-c9f3532bf04326ca-p1",
+      "visual_tokens": 3072,
+      "text_characters": 5055,
+      "text_tokens": 2650,
+      "total_training_tokens": 5721,
+      "training_grid_height": 48,
+      "training_grid_width": 64,
+      "aspect_ratio": 1.3513513513513513
+    }
+  ],
+  "config": {
+    "data": "tmp/expanded-candidate-fit-data",
+    "out": "outputs/expanded-v3-fit-2048",
+    "model": "models/Qwen3.5-4B",
+    "revision": "3764fa359b9082ea5a1e4a5e3ac3aaf6e9671636",
+    "four_bit": false,
+    "max_seq": 8192,
+    "max_image_size": 2048,
+    "epochs": 3.0,
+    "max_steps": 2,
+    "max_train_rows": null,
+    "lr": 0.0001,
+    "rank": 16,
+    "gradient_accumulation": 4,
+    "save_steps": 50,
+    "seed": 3407,
+    "resume": null,
+    "export_merged": false,
+    "finetune_vision": true,
+    "min_free_vram_gb": 12.0,
+    "local_files_only": true,
+    "cache_dir": "models/huggingface"
+  },
+  "original_gate_sha256": "b35ead033eec1af60ae987930f6b232a2a62d9dd32bd77ab2f56c9302c45358d",
+  "snapshot_sha256": "fffff610aa232ee034cfe46f65a764f7f06d21a2a583dd3ab16978298368a34c",
+  "path_normalization": "Config paths are repository-relative; original gate bytes identified by original_gate_sha256."
+}

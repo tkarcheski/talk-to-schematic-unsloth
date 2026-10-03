@@ -1,51 +1,92 @@
-"""
-predict.py - answer every turn of every test conversation through an
-OpenAI-compatible server (vLLM / SGLang). Earlier turns use the gold answers
-(teacher forcing) so each turn is graded independently.
+"""Predict every gold-labelled turn with resumable, dataset-bound evidence."""
 
-  vllm serve outputs/hw-lora-merged --served-model-name hw --max-model-len 32768
-  python predict.py --model hw --out preds_ft.jsonl
-"""
 import argparse
-import base64
+import hashlib
 import json
-import mimetypes
-import re
+import os
+from pathlib import Path
+import sys
 
-from openai import OpenAI
-
-ap = argparse.ArgumentParser()
-ap.add_argument("--data", default="data/test.jsonl")
-ap.add_argument("--model", default="hw")
-ap.add_argument("--base-url", default="http://localhost:8000/v1")
-ap.add_argument("--out", default="preds.jsonl")
-ap.add_argument("--max-tokens", type=int, default=4000)
-args = ap.parse_args()
-client = OpenAI(base_url=args.base_url, api_key="local")
+from evaluate import EvaluationError, load, load_gold
+from schematic_model.inference import Client, InferenceError, convert_messages, image_fingerprints
 
 
-def to_openai(content):
-    out = []
-    for c in content:
-        if c["type"] == "image":
-            mime = mimetypes.guess_type(c["image"])[0] or "image/png"
-            b64 = base64.b64encode(open(c["image"], "rb").read()).decode()
-            out.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}})
-        else:
-            out.append({"type": "text", "text": re.sub(r"<think>.*?</think>\s*", "", c["text"], flags=re.S)})
-    return out
+def predict(dataset, output, model, client, *, resume=False, history="gold", max_tokens=1024):
+    dataset, output = Path(dataset), Path(output)
+    rows = load_gold(dataset)
+    if history not in {"gold", "generated"} or max_tokens < 1:
+        raise ValueError("History must be gold or generated; max_tokens must be positive")
+    images = {}
+    for row in rows:
+        for reference, digest in image_fingerprints(row["messages"], dataset).items():
+            if reference in images and images[reference] != digest:
+                raise ValueError(f"Image bytes changed during prediction preflight: {reference}")
+            images[reference] = digest
+        convert_messages(row["messages"], dataset, image_hashes=images)
+    binding = {"schema_version": 2, "dataset_sha256": hashlib.sha256(dataset.read_bytes()).hexdigest(),
+               "images_sha256": images,
+               "model": model, "base_url": client.base_url, "history": history,
+               "max_tokens": max_tokens, "temperature": 0.0}
+    metadata = output.with_suffix(output.suffix + ".meta.json")
+    existing = {}
+    if output.exists() or metadata.exists():
+        if not resume:
+            raise ValueError("Output already exists; use --resume with the same dataset and settings")
+        if not metadata.is_file() or json.loads(metadata.read_text()) != binding:
+            raise ValueError("Resume metadata does not match dataset/images/model/settings")
+        if output.exists() and output.stat().st_size:
+            existing = load(output)
+    expected = {f"{row['id']}#{i}" for row in rows for i in range(len(row["gold"]))}
+    if set(existing) - expected:
+        raise ValueError("Existing predictions contain keys outside this dataset")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if not metadata.exists():
+        with metadata.open("x", encoding="utf-8") as handle:
+            json.dump(binding, handle, indent=2)
+            handle.write("\n")
+    with output.open("a" if resume else "x", encoding="utf-8") as handle:
+        for row in rows:
+            messages = convert_messages(row["messages"], dataset, image_hashes=images)
+            turn, conversation = 0, []
+            for message in messages:
+                if message["role"] != "assistant":
+                    conversation.append(message)
+                    continue
+                key = f"{row['id']}#{turn}"
+                if key in existing:
+                    answer = existing[key]
+                else:
+                    result = client.complete(model, conversation, max_tokens=max_tokens)
+                    answer = result["output"]
+                    handle.write(json.dumps({"key": key, **result}) + "\n")
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                    existing[key] = answer
+                conversation.append(message if history == "gold" else {"role": "assistant", "content": answer})
+                turn += 1
+    return {"conversations": len(rows), "predictions": len(existing), **binding}
 
 
-with open(args.out, "w") as fo:
-    for line in open(args.data):
-        r = json.loads(line)
-        msgs = [{"role": m["role"], "content": to_openai(m["content"])} for m in r["messages"]]
-        turn = 0
-        for i, m in enumerate(msgs):
-            if m["role"] != "assistant":
-                continue
-            resp = client.chat.completions.create(model=args.model, messages=msgs[:i],
-                                                  temperature=0.0, max_tokens=args.max_tokens)
-            fo.write(json.dumps({"key": f"{r['id']}#{turn}", "output": resp.choices[0].message.content}) + "\n")
-            turn += 1
-        print(r["id"])
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--data", default="data/test.jsonl")
+    parser.add_argument("--out", default="preds.jsonl")
+    parser.add_argument("--model", required=True)
+    parser.add_argument("--base-url", default="http://localhost:8888/v1")
+    parser.add_argument("--timeout", type=float, default=180)
+    parser.add_argument("--max-tokens", type=int, default=1024)
+    parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--history", choices=["gold", "generated"], default="gold")
+    args = parser.parse_args(argv)
+    try:
+        report = predict(args.data, args.out, args.model, Client(args.base_url, timeout=args.timeout),
+                         resume=args.resume, history=args.history, max_tokens=args.max_tokens)
+    except (EvaluationError, InferenceError, ValueError, OSError) as exc:
+        print(f"Prediction incomplete: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps(report, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

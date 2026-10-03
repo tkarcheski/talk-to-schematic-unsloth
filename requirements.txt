@@ -1,10 +1,2 @@
-# data generation + evaluation (CPU)
-schemdraw>=0.19
-pillow
-matplotlib
-openai
-# training (GPU) - install on the RTX PRO 6000 box
-# unsloth
-# transformers>=5
-# trl
-# datasets
+# Compatibility installer; prefer uv sync --locked for reproducible dependencies.
+-e .

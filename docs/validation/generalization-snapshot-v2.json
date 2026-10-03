@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "snapshot_path": "data/validation/generalization-v2",
+  "snapshot_sha256": "aaa4e5a862bc8307fdb5100144706a2b059ebd64b71ce6eac04066ff55789192",
+  "plan_file": "docs/validation/generalization-eval-plan-v2.json",
+  "plan_file_sha256": "2a4c0e7d0fce6689f81d08d52120b350db2bef9c5c6a832f54c720c9bb6c5263",
+  "plan_sha256": "31354cbf66e43bfe8dd10753b009ab0296fb269ce5790b6bba5e9a3a4da464dd",
+  "serving_readability_review": "docs/validation/generalization-readability-2048.json",
+  "serving_readability_review_sha256": "5c1172b8f750490520fc73f6a2008bccf293bd24bbd8a7c2b4c4fa6376b011a5",
+  "datasets": [
+    {
+      "path": "vision/val.jsonl",
+      "sha256": "8a0ae002240be753ea6b04f86f71b92d2f52f113f94c53cc00032038c33299f0",
+      "rows": 19
+    },
+    {
+      "path": "evidence/val.jsonl",
+      "sha256": "9cb3e6e181269607bfc823cd92195392e148b27d875424ff631be8467a93159b",
+      "rows": 6
+    }
+  ],
+  "image_count": 13,
+  "categories": {
+    "image_only_values": 13,
+    "image_only_absence": 3,
+    "image_only_measurements": 3,
+    "native_evidence_connections": 6
+  },
+  "status": "frozen-before-model-evaluation",
+  "limitations": [
+    "Value visibility flags do not establish pixel readability; every new value target requires review.",
+    "Targets and question wording both change; this measures task generalization, not an isolated wording effect.",
+    "This adds validation prompts, not independent boards, training data, or held-out test evidence.",
+    "Image-only user content contains only the frozen image and question; no native facts, labels, or coordinates are injected.",
+    "Existing deterministic scorers remain unchanged; contextual refusal v2 does not recognize these new question templates and requires manual adjudication.",
+    "Serving-scale visual review binds this versioned plan in a separate report; no model-processor readability certification is implied."
+  ]
+}

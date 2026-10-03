@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "purpose": "Validation-only resolution selection; no test predictions or training changes",
+  "snapshot_sha256": "8b152832864cfd0eb78a8881b16eef8a47be1c050a091461f6366be067bf993c",
+  "dataset_sha256": "59bf947cc7c40142ac8d6ea38e80448eb09333d1af17721905131c6e281c8866",
+  "model_training_manifest_sha256": "8b28573e07097927fdab38c2f8291de6cf8924e7362f52bfd8f2c0a6e7a000e0",
+  "reference_1024": "summary.json",
+  "results": [
+    {
+      "settings": {
+        "model": "outputs/real-crop-v1-r16-e3",
+        "served_model_name": "schematic",
+        "max_seq": 8192,
+        "max_image_size": 1536,
+        "max_tokens": 1024,
+        "seed": 3407,
+        "four_bit": false,
+        "min_free_vram_gb": 10.0
+      },
+      "predictions": "ablation-adapter-val-vision-1536.jsonl",
+      "metrics": {
+        "refuse.acc": 1.0,
+        "value.acc": 0.8461538461538461
+      },
+      "counts": {
+        "value.acc": 26,
+        "refuse.acc": 26
+      },
+      "failed_turns": 0,
+      "turns": 52,
+      "release_passed": false,
+      "peak_cuda_allocated_bytes": 9777790464,
+      "peak_cuda_reserved_bytes": 9806282752,
+      "max_prompt_tokens": 2332,
+      "elapsed_seconds": 69.735,
+      "predictions_sha256": "e422e9632cc2dcc4fdfac567f8968fbfe5d434ef2610b20e03abd5b9a0b77bc9"
+    },
+    {
+      "settings": {
+        "model": "outputs/real-crop-v1-r16-e3",
+        "served_model_name": "schematic",
+        "max_seq": 8192,
+        "max_image_size": 2048,
+        "max_tokens": 1024,
+        "seed": 3407,
+        "four_bit": false,
+        "min_free_vram_gb": 10.0
+      },
+      "predictions": "ablation-adapter-val-vision-2048.jsonl",
+      "metrics": {
+        "refuse.acc": 1.0,
+        "value.acc": 0.9230769230769231
+      },
+      "counts": {
+        "value.acc": 26,
+        "refuse.acc": 26
+      },
+      "failed_turns": 0,
+      "turns": 52,
+      "release_passed": false,
+      "peak_cuda_allocated_bytes": 19365782528,
+      "peak_cuda_reserved_bytes": 19409141760,
+      "max_prompt_tokens": 3948,
+      "elapsed_seconds": 74.141,
+      "predictions_sha256": "fe36f8788bcac072ea06b3f2eb35a93fadb4d7fa1a5f57f9a22d44bb81acbc1c"
+    }
+  ],
+  "original_summary_sha256": "86c361d13a33bd26bf65f2df667e8d8b2ce7f81dac5543018204e55e50845e43",
+  "path_normalization": "Model and prediction paths made repository-relative; original summary hash retained."
+}

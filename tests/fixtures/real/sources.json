@@ -1,0 +1,47 @@
+[
+  {
+    "id": "real-3e1319dbd4863c07",
+    "repository": "adafruit/Adafruit-VCNL40X0-PCB",
+    "commit": "13e0c0867b66ae15eb1331880ccea30b83713467",
+    "source_path": "VCNL4000.sch",
+    "source_url": "https://github.com/adafruit/Adafruit-VCNL40X0-PCB/blob/13e0c0867b66ae15eb1331880ccea30b83713467/VCNL4000.sch",
+    "sha256": "3e1319dbd4863c076da52353c46c94ad5ca8f06b0737a2c9de7731a4d58a20fe",
+    "license": "CC-BY-SA-3.0",
+    "render_method": "eagle_xml_geometry_v1",
+    "source_kind": "real_hardware",
+    "image_kind": "derivative_render_of_original_source_geometry",
+    "fixture": "vcnl4000.sch",
+    "license_file": "vcnl4000-LICENSE.txt",
+    "original_readme": "vcnl4000-SOURCE-README.md"
+  },
+  {
+    "id": "real-4c1c81074f41cdb5",
+    "repository": "adafruit/Adafruit-TXB0104-Level-Shifter-Breakout-PCB",
+    "commit": "0dcd9500672a5b6ab652f9cbf9e01bccdd6a31b6",
+    "source_path": "Adafruit TXB0104.sch",
+    "source_url": "https://github.com/adafruit/Adafruit-TXB0104-Level-Shifter-Breakout-PCB/blob/0dcd9500672a5b6ab652f9cbf9e01bccdd6a31b6/Adafruit%20TXB0104.sch",
+    "sha256": "4c1c81074f41cdb5f1605571ed7885553fb833dff07caa16f2a6f705e4baad83",
+    "license": "CC-BY-SA-3.0",
+    "render_method": "eagle_xml_geometry_v1",
+    "source_kind": "real_hardware",
+    "image_kind": "derivative_render_of_original_source_geometry",
+    "fixture": "txb0104.sch",
+    "license_file": "txb0104-LICENSE.txt",
+    "original_readme": "txb0104-SOURCE-README.md"
+  },
+  {
+    "id": "real-7f2992ebf5d1fe9b",
+    "repository": "adafruit/Adafruit-VL53L4CX-PCB",
+    "commit": "8e287e0d06293984a3c2b4e14180830dda2e3acc",
+    "source_path": "Adafruit VL53L4CX.sch",
+    "source_url": "https://github.com/adafruit/Adafruit-VL53L4CX-PCB/blob/8e287e0d06293984a3c2b4e14180830dda2e3acc/Adafruit%20VL53L4CX.sch",
+    "sha256": "7f2992ebf5d1fe9b1a3863b040e0002245f74e66e19ad1339c6d10314c4e1391",
+    "license": "CC-BY-SA-3.0",
+    "render_method": "eagle_xml_geometry_v2_circuit_crop",
+    "source_kind": "real_hardware",
+    "image_kind": "derivative_render_of_original_source_geometry",
+    "fixture": "vl53l4cx.sch",
+    "license_file": "vl53l4cx-LICENSE.txt",
+    "original_readme": "vl53l4cx-SOURCE-README.md"
+  }
+]

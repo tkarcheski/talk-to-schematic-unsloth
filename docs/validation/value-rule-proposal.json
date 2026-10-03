@@ -1,0 +1,370 @@
+{
+  "schema_version": 1,
+  "status": "proposal_only_not_implemented",
+  "proposed_version": "contextual-value-v2",
+  "scope": "General validation/training-derived label shapes and independently authored adversarial statements. No heldout response is a test fixture. Existing value.acc/gates/profiles remain unchanged.",
+  "evaluator_sha256": "aa66c890f047bc71428133d6400a7f0e66126585cc2fb2f7ed710cac048d0b46",
+  "contract": [
+    "Extract the requested refdes from a small explicit set of supported user-question forms, using only the aligned user text. For native-evidence first turns, parse the terminal question paragraph and never select a refdes from the JSON evidence blob.",
+    "Accept one affirmative, unambiguous marked/recorded-value claim (or one bare value) for the requested component. Allow a bounded set of wrappers such as R7 is marked VALUE, R7 has value VALUE in the source schematic, or The value shown next to R7 is VALUE. The entire answer must match; correct substrings are insufficient.",
+    "Any negation, alternatives, ranges, multiple component/value claims, contradictory tails, or unsupported wrappers require manual review and do not automatically pass. Do not infer the final correct claim from not A but B.",
+    "First support simple single-quantity capacitance/inductance/resistance labels with SI normalization using exact decimal arithmetic. Require dimension equality; distinguish milli from mega. Treat u/\u00b5/\u03bc as micro. Infer omitted resistance units only when the gold quantity is a supported resistor shorthand and the question targets a resistor reference.",
+    "Opaque part numbers, connector names, and qualified labels use a strict whole-value literal branch. Do not drop Pack, tolerance, wattage, voltage ratings, or part suffixes. Unsupported compound quantity labels remain literal/manual rather than guessing a semantic parse.",
+    "Return accepted/status/reason/version details. Unknown question forms or semantically plausible paraphrases are manual_review, not proof of model hallucination. Provide separate version metadata and opt-in CLI/API; never silently replace v1 or rescore a published release."
+  ],
+  "implementation_boundary": {
+    "arithmetic": "decimal.Decimal with fixed SI scale exponents; no 2% numeric tolerance for printed part labels",
+    "initial_dimensions": [
+      "capacitance",
+      "inductance",
+      "resistance"
+    ],
+    "unit_prefixes": "p,n,u,\u00b5,\u03bc,m,k,K,M,G; milli/mega case preserved",
+    "opaque_labels": "exact normalized whitespace and presentation markup only; do not reinterpret digit-bearing part numbers as quantities",
+    "equivalent_quantity_explanations": "Even correct two-value explanations fail the initial closed grammar and are marked manual_review. A future supported equation grammar requires separate adversarial tests."
+  },
+  "limitations": [
+    "This defines a stricter answer-format contract with electrical unit equivalence, not a general natural-language semantic judge.",
+    "Literal marking and nominal electrical value are distinct tasks for qualified labels. The proposal preserves qualifiers rather than using the nominal value to excuse an incomplete transcription.",
+    "Bespoke component prefixes and ambiguous unitless labels cannot safely imply a dimension; require explicit context or leave manual.",
+    "No model prompt, answer, gold label, dataset, metric gate, or benchmark score was changed for this proposal."
+  ],
+  "cases": [
+    {
+      "id": "capacitance_nano_micro",
+      "question": "Read the value shown next to C7.",
+      "gold": {
+        "type": "value",
+        "value": "0.1uF"
+      },
+      "answer": "C7 is marked 100nF.",
+      "expected_restricted_rule_acceptance": true,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "capacitance_base_unit",
+      "question": "Read the value shown next to C7.",
+      "gold": {
+        "type": "value",
+        "value": "10uF"
+      },
+      "answer": "C7 is marked 0.00001 F.",
+      "expected_restricted_rule_acceptance": true,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "micro_symbol",
+      "question": "Read the value shown next to C7.",
+      "gold": {
+        "type": "value",
+        "value": "10\u00b5F"
+      },
+      "answer": "C7 is marked 10uF.",
+      "expected_restricted_rule_acceptance": true,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "capacitance_scaled",
+      "question": "Read the value shown next to C7.",
+      "gold": {
+        "type": "value",
+        "value": "10uF"
+      },
+      "answer": "C7 is marked 10000nF.",
+      "expected_restricted_rule_acceptance": true,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "resistance_explicit_ohms",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "1K"
+      },
+      "answer": "R7 is marked 1000 ohms.",
+      "expected_restricted_rule_acceptance": true,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "resistance_mega_conversion",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "100K"
+      },
+      "answer": "R7 is marked 0.1 M\u03a9.",
+      "expected_restricted_rule_acceptance": true,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "resistance_large_prefix",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "1M"
+      },
+      "answer": "R7 is marked 1000 k\u03a9.",
+      "expected_restricted_rule_acceptance": true,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "bare_resistor_ohms",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "47"
+      },
+      "answer": "R7 is marked 47 ohms.",
+      "expected_restricted_rule_acceptance": true,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "resistor_suffix_case",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "10K"
+      },
+      "answer": "R7 is marked 10 k\u03a9.",
+      "expected_restricted_rule_acceptance": true,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "qualified_exact_literal",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "10K Pack"
+      },
+      "answer": "R7 is marked 10K Pack.",
+      "expected_restricted_rule_acceptance": true,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "opaque_part_number",
+      "question": "Read the value shown next to D7.",
+      "gold": {
+        "type": "value",
+        "value": "1N4148"
+      },
+      "answer": "D7 is marked 1N4148.",
+      "expected_restricted_rule_acceptance": true,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "opaque_connector_label",
+      "question": "Read the value shown next to JP7.",
+      "gold": {
+        "type": "value",
+        "value": "1x10_254mm"
+      },
+      "answer": "JP7 is marked 1x10_254mm.",
+      "expected_restricted_rule_acceptance": true,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "wrong_capacitance_prefix",
+      "question": "Read the value shown next to C7.",
+      "gold": {
+        "type": "value",
+        "value": "10uF"
+      },
+      "answer": "C7 is marked 10mF.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "negated_expected_value",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "10K"
+      },
+      "answer": "R7 is not 10K but 47K.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "multiple_values_even_with_correct_final",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "47K"
+      },
+      "answer": "R7 is not 10K but 47K.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "correct_token_called_incorrect",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "10K"
+      },
+      "answer": "The answer 10K is incorrect.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "wrong_component_same_value",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "10K"
+      },
+      "answer": "R9 is marked 10K.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "two_component_claims",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "10K"
+      },
+      "answer": "R7 is marked 10K; R8 is marked 47K.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "value_range",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "10K"
+      },
+      "answer": "R7 is marked 10K to 47K.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "wrong_dimension",
+      "question": "Read the value shown next to C7.",
+      "gold": {
+        "type": "value",
+        "value": "0.1uF"
+      },
+      "answer": "C7 is marked 0.1 ohm.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "milli_vs_mega",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "1M"
+      },
+      "answer": "R7 is marked 1 m\u03a9.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "missing_tolerance",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "10K 1%"
+      },
+      "answer": "R7 is marked 10K.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "missing_power_rating",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "1.74 0.25W"
+      },
+      "answer": "R7 is marked 1.74 ohms.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "alternative_part_numbers",
+      "question": "Read the value shown next to Q7.",
+      "gold": {
+        "type": "value",
+        "value": "BSS138"
+      },
+      "answer": "Q7 is marked BSS138 or 2N7002D.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "two_equivalent_quantities_still_out_of_grammar",
+      "question": "Read the value shown next to C7.",
+      "gold": {
+        "type": "value",
+        "value": "0.1uF"
+      },
+      "answer": "C7 is 0.1uF (100nF).",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "empty",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "10K"
+      },
+      "answer": "",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": false
+    },
+    {
+      "id": "quoted_then_contradicted",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "10K"
+      },
+      "answer": "The source might say 10K, but the actual value is 47K.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "measurement_instead_of_marking",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "10K"
+      },
+      "answer": "R7 was measured as 10K.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "bare_negation",
+      "question": "Read the value shown next to C7.",
+      "gold": {
+        "type": "value",
+        "value": "0.1uF"
+      },
+      "answer": "Not 0.1uF.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": true
+    },
+    {
+      "id": "missing_pack_annotation",
+      "question": "Read the value shown next to R7.",
+      "gold": {
+        "type": "value",
+        "value": "10K Pack"
+      },
+      "answer": "R7 is marked 10K.",
+      "expected_restricted_rule_acceptance": false,
+      "current_v1_value_acc": false
+    }
+  ],
+  "fixture_counts": {
+    "total": 30,
+    "expected_accept": 12,
+    "v1_false_positive_against_proposed_contract": 11,
+    "v1_false_negative_against_proposed_contract": 8
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "status": "completed",
+  "model_revision": "3764fa359b9082ea5a1e4a5e3ac3aaf6e9671636",
+  "python": "3.13.14",
+  "packages": {
+    "unsloth": "2026.8.22",
+    "unsloth_zoo": "2026.8.16",
+    "transformers": "5.5.0",
+    "trl": "0.23.1",
+    "torch": "2.11.0+cu130",
+    "peft": "0.18.1",
+    "Pillow": "12.3.0"
+  },
+  "training_metrics": {
+    "train_runtime": 76.7294,
+    "train_samples_per_second": 0.026,
+    "train_steps_per_second": 0.026,
+    "total_flos": 41866051003392.0,
+    "train_loss": 1.7511387467384338,
+    "epoch": 0.5
+  },
+  "global_step": 2,
+  "peak_cuda_allocated_bytes": 10256412672,
+  "peak_cuda_reserved_bytes": 10347347968,
+  "elapsed_seconds": 95.55,
+  "scope": "Training completed. Downstream benchmark quality and deployment require separate validation.",
+  "config": {
+    "data": "data",
+    "out": "outputs/smoke-4b",
+    "model": "models/Qwen3.5-4B",
+    "revision": "3764fa359b9082ea5a1e4a5e3ac3aaf6e9671636",
+    "four_bit": false,
+    "max_seq": 4096,
+    "max_image_size": 768,
+    "epochs": 2,
+    "max_steps": 2,
+    "max_train_rows": 4,
+    "lr": 0.0001,
+    "rank": 16,
+    "gradient_accumulation": 1,
+    "save_steps": 2,
+    "seed": 3407,
+    "resume": null,
+    "export_merged": false,
+    "finetune_vision": true,
+    "min_free_vram_gb": 12,
+    "local_files_only": true,
+    "cache_dir": "models/huggingface"
+  },
+  "dataset_revision": "bc424de",
+  "purpose": "Two-step execution and GPU-fit smoke test; not model quality evidence"
+}

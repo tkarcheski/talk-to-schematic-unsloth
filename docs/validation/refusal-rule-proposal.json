@@ -1,0 +1,393 @@
+{
+  "status": "implemented_opt_in_v2_default_v1",
+  "scope": "Refusal rule design from validation task categories and independently authored adversarial cases; no heldout output is a fixture.",
+  "validation_source": "data/training/real-crop-v1/evidence/val.jsonl",
+  "validation_source_sha256": "86b94c6e09877b6899260f90b63abd5d374d933820863e67d0dc8632fa126ef4",
+  "proposed_contract": [
+    "Receive the user question and refusal kind/subject, or extract only the existing explicit supported question forms. Keep the frozen data and metric unchanged until a separately versioned evaluator is approved.",
+    "Require a declarative absence or inability-to-determine statement about the requested fact, explicitly scoped to supplied schematic/source/evidence.",
+    "Treat each remaining clause as part of the answer. Allow only subject-grounded absence, inability, or evidence-scope clarification clauses; unknown or affirmative clauses require manual adjudication and do not automatically pass.",
+    "Reject asserted numeric facts, asserted component values or connections, unsupported existence claims, contradictory tails, hypothetical conditionals, questions masquerading as denials, and refusals about unrelated subjects.",
+    "Preserve the original metric report; report manually adjudicated outcomes separately. Do not claim this restricted grammar proves general natural-language semantics."
+  ],
+  "limitations": [
+    "Existing refusal labels contain only type, so a standalone grade(label, answer) call cannot establish which subject or fact should be refused.",
+    "A numeric-token veto alone is insufficient (written-out values and nonnumeric connectivity claims); rejecting all numerals would also reject valid pin designators and quoted counterexamples.",
+    "A constrained clause grammar will reject valid paraphrases. Those should be marked for review rather than silently reinterpreted as model hallucinations.",
+    "No finite lexical test suite establishes semantic correctness. Source-linked human adjudication remains required for release evidence."
+  ],
+  "cases": [
+    {
+      "id": "measurement_canonical",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "No bench measurement is supplied in this schematic or source evidence. I cannot infer a measured voltage.",
+      "expected_restricted_rule_acceptance": true,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": true,
+        "status": "accepted",
+        "reason": "restricted_grammar_match",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "measurement_long_scoped",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "The supplied source evidence contains no recorded powered bench measurement for D1.C. Its measured voltage cannot be determined from this schematic.",
+      "expected_restricted_rule_acceptance": true,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": true,
+        "status": "accepted",
+        "reason": "restricted_grammar_match",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "measurement_fronted_scope",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "In the supplied schematic evidence, no measured voltage for D1.C is recorded.",
+      "expected_restricted_rule_acceptance": true,
+      "current_refuse_acc": false,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": true,
+        "status": "accepted",
+        "reason": "restricted_grammar_match",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "missing_component",
+      "question": "What value is R9999, and what does it connect to?",
+      "answer": "There is no R9999 in the supplied sheet evidence. Its value and connections are not shown.",
+      "expected_restricted_rule_acceptance": true,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": true,
+        "status": "accepted",
+        "reason": "restricted_grammar_match",
+        "kind": "missing_component",
+        "subject": "R9999"
+      }
+    },
+    {
+      "id": "missing_component_long_scoped",
+      "question": "What value is R9999, and what does it connect to?",
+      "answer": "The supplied native schematic evidence does not contain component R9999, so its value and connections cannot be determined from this source.",
+      "expected_restricted_rule_acceptance": true,
+      "current_refuse_acc": false,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": true,
+        "status": "accepted",
+        "reason": "restricted_grammar_match",
+        "kind": "missing_component",
+        "subject": "R9999"
+      }
+    },
+    {
+      "id": "blank",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": false,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "empty_answer",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "generic_no",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "No.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": false,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "invented_voltage",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "D1.C measured 3.3 V during the powered bench test.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": false,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "denial_then_voltage",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "No measurement is supplied in the schematic, but D1.C measured 3.3 V.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "denial_then_estimate",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "No bench measurement is supplied in the schematic. The voltage would be 3.3 V.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "denial_then_number_words",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "No measurement is supplied in the schematic, but the measured voltage was three point three volts.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "numeric_no_prefix",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "No, D1.C measured 3.3 V in the bench test.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "unrelated_denial",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "R9999 is not shown in the schematic. D1.C measured 3.3 V.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "wrong_measurement_subject",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "No measured voltage for JP8.1 is supplied in the schematic.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "zero_from_absence",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "No measured voltage is recorded in the evidence, therefore D1.C was at 0 V.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "negative_numeric_measurement",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "The measured voltage was not 3.3 V; it was 1.8 V in the test.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "missing_then_value",
+      "question": "What value is R9999, and what does it connect to?",
+      "answer": "R9999 is not shown in the schematic, but its value is 10k.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "missing_component",
+        "subject": "R9999"
+      }
+    },
+    {
+      "id": "missing_then_connection",
+      "question": "What value is R9999, and what does it connect to?",
+      "answer": "There is no R9999 in the supplied sheet evidence. R9999.1 connects to U2.4.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "missing_component",
+        "subject": "R9999"
+      }
+    },
+    {
+      "id": "missing_then_affirmative_existence",
+      "question": "What value is R9999, and what does it connect to?",
+      "answer": "R9999 is not shown in this schematic, but it is present on this board.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "missing_component",
+        "subject": "R9999"
+      }
+    },
+    {
+      "id": "wrong_component_refusal",
+      "question": "What value is R9999, and what does it connect to?",
+      "answer": "There is no C9999 in the supplied sheet evidence. Its value and connections are not shown.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "missing_component",
+        "subject": "R9999"
+      }
+    },
+    {
+      "id": "negation_of_refusal",
+      "question": "What value is R9999, and what does it connect to?",
+      "answer": "It is not true that R9999 is missing from the schematic. It is 10k.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "missing_component",
+        "subject": "R9999"
+      }
+    },
+    {
+      "id": "denial_then_json",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "No measurement is supplied in the schematic. {\"measured_voltage\": \"3.3 V\"}",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "question_as_denial",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "Is there no measured voltage supplied in this schematic?",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    },
+    {
+      "id": "conditional_absence",
+      "question": "What measured voltage was observed at D1.C during a powered bench test?",
+      "answer": "If no measurement is supplied in the schematic, I cannot infer the voltage. D1.C is 3.3 V.",
+      "expected_restricted_rule_acceptance": false,
+      "current_refuse_acc": true,
+      "v2_result": {
+        "version": "contextual-refusal-v2",
+        "accepted": false,
+        "status": "manual_review",
+        "reason": "unrecognized_or_unsupported_claim",
+        "kind": "measurement",
+        "subject": "D1.C"
+      }
+    }
+  ],
+  "implementation": "evaluate.py:contextual_refusal; score(..., refusal_scorer=\"v2\"); CLI --refusal-scorer v2",
+  "refusal_scorer_version": "contextual-refusal-v2",
+  "original_evaluator_sha256": "06006ef6060194fc8ffd14b31c1aed75490217d246af0073694dcca3dce436e5",
+  "implemented_evaluator_sha256": "aa66c890f047bc71428133d6400a7f0e66126585cc2fb2f7ed710cac048d0b46",
+  "fixture_counts": {
+    "total": 24,
+    "expected_accept": 5,
+    "v1_false_positive": 16,
+    "v1_false_negative": 2,
+    "v2_false_positive": 0,
+    "v2_false_negative": 0
+  }
+}

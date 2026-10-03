@@ -1,0 +1,1056 @@
+{
+  "schema_version": 1,
+  "status": "serving_resize_manual_review_bound_to_versioned_plan",
+  "inputs": {
+    "original_plan_path": "docs/validation/generalization-eval-plan.json",
+    "original_plan_file_sha256": "a920982e21966f9505ac98c4898fb34dc3ccc0564de728fc8b5ada28ecfef39c",
+    "original_plan_content_sha256": "010e037e864ec0a7c12ff85a38aa31167f1354a391e9edf4df11ae0af3321e6a",
+    "prior_original_resolution_report_path": "docs/validation/generalization-readability.json",
+    "prior_original_resolution_report_sha256": "9e7c68d7ba06e3820d28ce9b51a3259c2c1a0042ea0f3637fd3499ed3675bc5d",
+    "base_snapshot_sha256": "8b152832864cfd0eb78a8881b16eef8a47be1c050a091461f6366be067bf993c",
+    "final_plan_binding_status": "verified_all_13_value_targets_match",
+    "final_plan_path": "docs/validation/generalization-eval-plan-v2.json",
+    "final_plan_file_sha256": "2a4c0e7d0fce6689f81d08d52120b350db2bef9c5c6a832f54c720c9bb6c5263",
+    "final_plan_content_sha256": "31354cbf66e43bfe8dd10753b009ab0296fb269ce5790b6bba5e9a3a4da464dd"
+  },
+  "scope": "Thirteen image-only value targets in the versioned v2 plan on existing validation boards: twelve unchanged targets and the explicit Verter R9 replacement for overlapping C8. Connectivity and refusal cases are outside this visual review.",
+  "method": {
+    "inspection": "Each frozen v2 PNG was passed through schematic_model.deployment.decode_image(image_content(path)[image_url][url], 2048). The saved RGB result was viewed at its resulting resolution. Source and image hashes, exact native value and source visibility were verified; saved pixels were compared byte-for-byte with a repeat of the same serving decode path.",
+    "resize": {
+      "max_edge_px": 2048,
+      "conversion": "RGB",
+      "operation": "Pillow Image.thumbnail((2048, 2048), Image.Resampling.LANCZOS)",
+      "pillow_version": "12.3.0",
+      "decode_image_source_sha256": "152bd9d53cb8e21f742c14e480b707be7d634aa5f2f88313a6d1259120281f2b"
+    },
+    "source_coordinates": "Original EAGLE NAME/VALUE nodes and instance transforms are retained; current v3 rendered coordinates are not substituted for these frozen v2 images.",
+    "limitations": [
+      "Readability is an agent visual inspection outcome, not measured human accuracy or model accuracy.",
+      "This reviews serving decode/resize output before the model processor. Model-specific smart resize, pixel grids, patching, tiling and resulting tensors were not inspected; no GPU or model inference ran for this report.",
+      "These are additional prompts on existing validation boards, not independent test boards.",
+      "Small text remains small after resize. A readable target does not certify the whole schematic, unrelated labels, electrical correctness or connectivity.",
+      "All raster inspection artifacts are temporary derivatives in tmp. Frozen source images, original report, plan, dataset and model artifacts were not modified.",
+      "R9 is the explicit replacement recorded in the versioned v2 plan, not a silent mutation of the original C8 case. All 13 reviewed identities, targets, sources, images and pages were matched to the bound plan; this does not claim a published evaluation snapshot or model result."
+    ]
+  },
+  "counts": {
+    "visually_reviewed_final_targets": 13,
+    "unreviewed_final_value_targets": 0,
+    "outcomes": {
+      "readable_after_serving_resize": 13
+    },
+    "original_plan_targets_reviewed": 13,
+    "original_plan_readable_after_serving_resize": 12,
+    "original_plan_inconclusive_after_serving_resize": 1,
+    "explicit_replacement_targets_reviewed": 1,
+    "vision_processor_outputs_reviewed": 0,
+    "other_plan_cases_outside_review": 12,
+    "versioned_plan_value_targets": 13
+  },
+  "reviewed_targets": [
+    {
+      "id": "real-0cfb7ac859c9935d-p1-generalization-value-00",
+      "board_id": "real-0cfb7ac859c9935d-p1",
+      "family_id": "adafruit/Adafruit-Terminal-PiCowbell-for-Pico",
+      "target": {
+        "refdes": "JP3",
+        "literal_value": "1x10_254mm"
+      },
+      "status": "readable_after_serving_resize",
+      "observation": "Upper-center left terminal bank: JP3 and 1x10_254mm remain distinct and readable; no target-label collision observed.",
+      "selection": "unchanged_original_plan_target",
+      "source_url": "https://github.com/adafruit/Adafruit-Terminal-PiCowbell-for-Pico/blob/38f512959eea28a4ae38c9ba7e700d3ac0d5618c/Adafruit%20Terminal%20PiCowbell%20for%20Pico.sch",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-Terminal-PiCowbell-for-Pico/Adafruit Terminal PiCowbell for Pico.sch",
+      "source_sha256": "0cfb7ac859c9935d48f9a8ce4b55f1c1eed5700e8e22538fdfe40d6b305f5142",
+      "page": 1,
+      "frozen_image_path": "data/training/real-crop-v1/images/a59b262f9484236879aca9992bbd41d014638ef7cbd3eb07687bffaea3dc511d.png",
+      "image_sha256": "a59b262f9484236879aca9992bbd41d014638ef7cbd3eb07687bffaea3dc511d",
+      "original_dimensions_px": [
+        2400,
+        915
+      ],
+      "inspection_image": {
+        "path": "tmp/generalization-legibility-2048/real-0cfb7ac859c9935d-p1-generalization-value-00.png",
+        "sha256": "6013e4a2e6b5fb6733765c48981f22ab57e99cb89149da129f6d9bae8ef6da6c",
+        "rgb_pixels_sha256": "36c67e451f2b1bd05bbf69175196717e3728928088fcfe954e759240c5ffae77",
+        "dimensions_px": [
+          2048,
+          781
+        ],
+        "mode": "RGB"
+      },
+      "render_method": "eagle_xml_geometry_v2_circuit_crop",
+      "original_eagle_labels": [
+        {
+          "kind": "NAME",
+          "gate": "A",
+          "source": {
+            "node": "attribute",
+            "x_mm": 113.03,
+            "y_mm": 155.575,
+            "size_mm": 1.778,
+            "rotation": "MR0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "A",
+          "source": {
+            "node": "attribute",
+            "x_mm": 113.03,
+            "y_mm": 157.48,
+            "size_mm": 1.778,
+            "rotation": "MR0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        }
+      ],
+      "vision_processor_output_status": "unreviewed"
+    },
+    {
+      "id": "real-1d419f20aad342c8-p1-generalization-value-01",
+      "board_id": "real-1d419f20aad342c8-p1",
+      "family_id": "adafruit/Adafruit-Trinket-M0-PCB",
+      "target": {
+        "refdes": "D2",
+        "literal_value": "SCHOTTKY"
+      },
+      "status": "readable_after_serving_resize",
+      "observation": "Lower-right VBUS diode: D2 and rotated SCHOTTKY are small but readable on opposite sides of the symbol.",
+      "selection": "unchanged_original_plan_target",
+      "source_url": "https://github.com/adafruit/Adafruit-Trinket-M0-PCB/blob/4103b9cd2722fadc28dc3969bbe067c6873e0540/Trinket%20M0%20rev%20D.sch",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-Trinket-M0-PCB/Trinket M0 rev D.sch",
+      "source_sha256": "1d419f20aad342c8a8c792a2c2aa8dee3a5be90333e53874f60a85b8ab580307",
+      "page": 1,
+      "frozen_image_path": "data/training/real-crop-v1/images/63f24327ba7374084b8522948e53b1aa91aab390c5f4af8d178a616a7ded74c9.png",
+      "image_sha256": "63f24327ba7374084b8522948e53b1aa91aab390c5f4af8d178a616a7ded74c9",
+      "original_dimensions_px": [
+        2400,
+        1657
+      ],
+      "inspection_image": {
+        "path": "tmp/generalization-legibility-2048/real-1d419f20aad342c8-p1-generalization-value-01.png",
+        "sha256": "d037a14231c2b855d64ace20739df22b805d82e14b17450b1d7fc48868f61b44",
+        "rgb_pixels_sha256": "ab1f4b3fbe36f7ff5c8047ed53de37403ea0807e6adc9e4fbbf9fb1ec14f9da2",
+        "dimensions_px": [
+          2048,
+          1414
+        ],
+        "mode": "RGB"
+      },
+      "render_method": "eagle_xml_geometry_v2_circuit_crop",
+      "original_eagle_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -2.54,
+            "y_mm": 2.54,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              193.04,
+              76.2,
+              270.0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -2.54,
+            "y_mm": -3.81,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              193.04,
+              76.2,
+              270.0,
+              false
+            ]
+          }
+        }
+      ],
+      "vision_processor_output_status": "unreviewed"
+    },
+    {
+      "id": "real-2aa9670d485c0142-p1-generalization-value-02",
+      "board_id": "real-2aa9670d485c0142-p1",
+      "family_id": "adafruit/Adafruit-STEMMA-Audio-Amp-PCB",
+      "target": {
+        "refdes": "R2",
+        "literal_value": "30K"
+      },
+      "status": "readable_after_serving_resize",
+      "observation": "Upper-right amplifier input: R2 is above the resistor and 30K remains readable inside its body.",
+      "selection": "unchanged_original_plan_target",
+      "source_url": "https://github.com/adafruit/Adafruit-STEMMA-Audio-Amp-PCB/blob/12d0f77a674db2b356c9e6b385f3917d4eb3420a/Adafruit%20STEMMA%20Audio%20Amp.sch",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-STEMMA-Audio-Amp-PCB/Adafruit STEMMA Audio Amp.sch",
+      "source_sha256": "2aa9670d485c014258dc4ec5d057799a481161905ba09914b05a2650bbf3c0d8",
+      "page": 1,
+      "frozen_image_path": "data/training/real-crop-v1/images/f14aa4487de1e6b53612b2b6b52d9c0f6ebf7e0010b0c2ec6bc67d34e05e2055.png",
+      "image_sha256": "f14aa4487de1e6b53612b2b6b52d9c0f6ebf7e0010b0c2ec6bc67d34e05e2055",
+      "original_dimensions_px": [
+        2400,
+        1301
+      ],
+      "inspection_image": {
+        "path": "tmp/generalization-legibility-2048/real-2aa9670d485c0142-p1-generalization-value-02.png",
+        "sha256": "1f199d8f4dc43ac753b5514373ee41ea0fc1f650e1d8bcdaaf82eb8cbeec4e99",
+        "rgb_pixels_sha256": "b75444f163172e5955554490d677af253fa10e0ed62030dccf7cf5f18981e368",
+        "dimensions_px": [
+          2048,
+          1110
+        ],
+        "mode": "RGB"
+      },
+      "render_method": "eagle_xml_geometry_v2_circuit_crop",
+      "original_eagle_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 170.18,
+            "y_mm": 137.16,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 170.18,
+            "y_mm": 134.62,
+            "size_mm": 1.016,
+            "rotation": "R0",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        }
+      ],
+      "vision_processor_output_status": "unreviewed"
+    },
+    {
+      "id": "real-345815802bcdb2b6-p1-generalization-value-03",
+      "board_id": "real-345815802bcdb2b6-p1",
+      "family_id": "adafruit/Adafruit-STMPE610-Breakout-PCB",
+      "target": {
+        "refdes": "C1",
+        "literal_value": "0.1uF"
+      },
+      "status": "readable_after_serving_resize",
+      "observation": "Left of the main IC: C1 and rotated 0.1uF remain separated on opposite sides of the capacitor.",
+      "selection": "unchanged_original_plan_target",
+      "source_url": "https://github.com/adafruit/Adafruit-STMPE610-Breakout-PCB/blob/8cf4f3cc9aaa31c6f5b90e661fa7ba99559052bb/Adafruit%20STMPE610.sch",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-STMPE610-Breakout-PCB/Adafruit STMPE610.sch",
+      "source_sha256": "345815802bcdb2b61a55bc69b1fadbb33e7ca4fb24c7300e3c54635f6ad0f877",
+      "page": 1,
+      "frozen_image_path": "data/training/real-crop-v1/images/d82691b2443325041b863001c6d4d87f874f3bf05dd891d711ebb5e08ecebcdb.png",
+      "image_sha256": "d82691b2443325041b863001c6d4d87f874f3bf05dd891d711ebb5e08ecebcdb",
+      "original_dimensions_px": [
+        2400,
+        1736
+      ],
+      "inspection_image": {
+        "path": "tmp/generalization-legibility-2048/real-345815802bcdb2b6-p1-generalization-value-03.png",
+        "sha256": "561baef53599d3056b438dc7c9e611269df13cfa308b701df54d98fb570b96d2",
+        "rgb_pixels_sha256": "0a5db5dd644ed18ca04ec5eabd7c98367e339933bf73795b7743df04cf448530",
+        "dimensions_px": [
+          2048,
+          1481
+        ],
+        "mode": "RGB"
+      },
+      "render_method": "eagle_xml_geometry_v2_circuit_crop",
+      "original_eagle_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -2.29,
+            "y_mm": 1.25,
+            "size_mm": 1.27,
+            "rotation": "R90",
+            "alignment": "center",
+            "instance_transform": [
+              93.98,
+              106.68,
+              0.0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": 2.3,
+            "y_mm": 1.25,
+            "size_mm": 1.27,
+            "rotation": "R90",
+            "alignment": "center",
+            "instance_transform": [
+              93.98,
+              106.68,
+              0.0,
+              false
+            ]
+          }
+        }
+      ],
+      "vision_processor_output_status": "unreviewed"
+    },
+    {
+      "id": "real-438e19d1be9c30f7-p1-generalization-value-04",
+      "board_id": "real-438e19d1be9c30f7-p1",
+      "family_id": "adafruit/Adafruit-TMP119-Temperature-Sensor-PCB",
+      "target": {
+        "refdes": "R1",
+        "literal_value": "10K"
+      },
+      "status": "readable_after_serving_resize",
+      "observation": "Top ON-LED section: R1 is beside the resistor and 10K remains readable inside its body. Unrelated collisions elsewhere are outside this target review.",
+      "selection": "unchanged_original_plan_target",
+      "source_url": "https://github.com/adafruit/Adafruit-TMP119-Temperature-Sensor-PCB/blob/fe8ae26b0f8362aa93a8074374984c1da7bf01aa/Adafruit%20TMP119%20Temperature%20Sensor.sch",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-TMP119-Temperature-Sensor-PCB/Adafruit TMP119 Temperature Sensor.sch",
+      "source_sha256": "438e19d1be9c30f7d8a4c94127d4679559369abfe0f5af59968014672e2d6a1f",
+      "page": 1,
+      "frozen_image_path": "data/training/real-crop-v1/images/761b8ce691c7cce109a25c246c0a4b487c69c56d59261d424c4467adfc63ce87.png",
+      "image_sha256": "761b8ce691c7cce109a25c246c0a4b487c69c56d59261d424c4467adfc63ce87",
+      "original_dimensions_px": [
+        2400,
+        1051
+      ],
+      "inspection_image": {
+        "path": "tmp/generalization-legibility-2048/real-438e19d1be9c30f7-p1-generalization-value-04.png",
+        "sha256": "04b4e7b8b978d24cababe32f9037b22f8150847b5ef42cfe0b6f7d6898927102",
+        "rgb_pixels_sha256": "c3a7900d5146e014c1652a950d3b6b113d53f2634bae602f416578774ed78cfd",
+        "dimensions_px": [
+          2048,
+          897
+        ],
+        "mode": "RGB"
+      },
+      "render_method": "eagle_xml_geometry_v2_circuit_crop",
+      "original_eagle_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 76.2,
+            "y_mm": 152.4,
+            "size_mm": 1.27,
+            "rotation": "R90",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 78.74,
+            "y_mm": 152.4,
+            "size_mm": 1.016,
+            "rotation": "R90",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        }
+      ],
+      "vision_processor_output_status": "unreviewed"
+    },
+    {
+      "id": "real-4f7c1a85ea9f6599-p1-generalization-value-05",
+      "board_id": "real-4f7c1a85ea9f6599-p1",
+      "family_id": "adafruit/Adafruit-USB-Host-FeatherWing-PCB",
+      "target": {
+        "refdes": "C18",
+        "literal_value": "0.1uF"
+      },
+      "status": "readable_after_serving_resize",
+      "observation": "Above the main IC near 3.3V: C18 is below the horizontal capacitor and 0.1uF above it. Both are small but readable.",
+      "selection": "unchanged_original_plan_target",
+      "source_url": "https://github.com/adafruit/Adafruit-USB-Host-FeatherWing-PCB/blob/7011deb5316121374db87580ad3b03f22d8f676d/Adafruit%20USB%20Host%20FeatherWing.sch",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-USB-Host-FeatherWing-PCB/Adafruit USB Host FeatherWing.sch",
+      "source_sha256": "4f7c1a85ea9f65994535e865aef3353420df58e2bbf0e7d14da67ad4d48e7c73",
+      "page": 1,
+      "frozen_image_path": "data/training/real-crop-v1/images/146ef5c8e83c58d0dacffb03b680f13f84894a67921e4ffa201c7a75af1b01b6.png",
+      "image_sha256": "146ef5c8e83c58d0dacffb03b680f13f84894a67921e4ffa201c7a75af1b01b6",
+      "original_dimensions_px": [
+        2400,
+        1668
+      ],
+      "inspection_image": {
+        "path": "tmp/generalization-legibility-2048/real-4f7c1a85ea9f6599-p1-generalization-value-05.png",
+        "sha256": "3d9f7704ecaae7bea1ebfca0b1ec068dc02e95ae9c72b556177f0015399a029a",
+        "rgb_pixels_sha256": "2bf57cd063176c90b4aa3896ad87cc2864c271da3b09f2f93ee7ebb8804a928f",
+        "dimensions_px": [
+          2048,
+          1423
+        ],
+        "mode": "RGB"
+      },
+      "render_method": "eagle_xml_geometry_v2_circuit_crop",
+      "original_eagle_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 133.37,
+            "y_mm": 150.11,
+            "size_mm": 1.27,
+            "rotation": "R180",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 133.37,
+            "y_mm": 154.7,
+            "size_mm": 1.27,
+            "rotation": "R180",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        }
+      ],
+      "vision_processor_output_status": "unreviewed"
+    },
+    {
+      "id": "real-64da290fb975b669-p1-generalization-value-06",
+      "board_id": "real-64da290fb975b669-p1",
+      "family_id": "adafruit/Adafruit-Verter-PCB",
+      "target": {
+        "refdes": "R9",
+        "literal_value": "75K 1%"
+      },
+      "status": "readable_after_serving_resize",
+      "observation": "Lower-left USB divider bank: R9 is above the first horizontal resistor; the complete 75K 1% value is readable inside its body, including the tolerance suffix.",
+      "selection": "explicit_versioned_plan_override",
+      "source_url": "https://github.com/adafruit/Adafruit-Verter-PCB/blob/47ff9d8588a4b841b6d0a1efa42fc9275463c16e/Adafruit%20Verter%20TPS63060%202A%20BoostBuck.sch",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-Verter-PCB/Adafruit Verter TPS63060 2A BoostBuck.sch",
+      "source_sha256": "64da290fb975b669352cf63e2c187b6d28431df4864f31dc31252d978b1784e5",
+      "page": 1,
+      "frozen_image_path": "data/training/real-crop-v1/images/fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450.png",
+      "image_sha256": "fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450",
+      "original_dimensions_px": [
+        2400,
+        1468
+      ],
+      "inspection_image": {
+        "path": "tmp/generalization-legibility-2048/real-64da290fb975b669-p1-generalization-value-06.png",
+        "sha256": "e575d24e2dc172824628d561214e8c5568ac1cc513ad805459d1b7c205885c8c",
+        "rgb_pixels_sha256": "ad2bab2938d1dc3cb79f421b5a5b43227677dc4079c73b2e799f38a46e3c1dd3",
+        "dimensions_px": [
+          2048,
+          1253
+        ],
+        "mode": "RGB"
+      },
+      "render_method": "eagle_xml_geometry_v2_circuit_crop",
+      "original_eagle_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": 0.0,
+            "y_mm": 2.54,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "center",
+            "instance_transform": [
+              63.5,
+              55.88,
+              0.0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": 0.0,
+            "y_mm": 0.0,
+            "size_mm": 1.016,
+            "rotation": "R0",
+            "alignment": "center",
+            "instance_transform": [
+              63.5,
+              55.88,
+              0.0,
+              false
+            ]
+          }
+        }
+      ],
+      "vision_processor_output_status": "unreviewed",
+      "replaces_target": {
+        "refdes": "C8",
+        "literal_value": "1uF/10V X5R"
+      },
+      "question": "For R9, report the adjacent value marking verbatim."
+    },
+    {
+      "id": "real-8914b54920886518-p1-generalization-value-07",
+      "board_id": "real-8914b54920886518-p1",
+      "family_id": "adafruit/Adafruit_ADXL343_PCB",
+      "target": {
+        "refdes": "D1",
+        "literal_value": "1N4148"
+      },
+      "status": "readable_after_serving_resize",
+      "observation": "Center CS path: D1 is above the diode and 1N4148 is below it; both remain distinct and readable.",
+      "selection": "unchanged_original_plan_target",
+      "source_url": "https://github.com/adafruit/Adafruit_ADXL343_PCB/blob/13dce5a5963041d7d7f60492da459e00a96f4344/ADXL343%20Rev%20B.sch",
+      "native_source_path": "data/real/sources/adafruit__Adafruit_ADXL343_PCB/ADXL343 Rev B.sch",
+      "source_sha256": "8914b549208865182257a379bb148d10218440743f5c21a4919c52c02c5c5be2",
+      "page": 1,
+      "frozen_image_path": "data/training/real-crop-v1/images/6ac7eb2686c99469741ef9c4057a2cc149ecc2e2aef183c2a957aac2acef765f.png",
+      "image_sha256": "6ac7eb2686c99469741ef9c4057a2cc149ecc2e2aef183c2a957aac2acef765f",
+      "original_dimensions_px": [
+        2400,
+        1580
+      ],
+      "inspection_image": {
+        "path": "tmp/generalization-legibility-2048/real-8914b54920886518-p1-generalization-value-07.png",
+        "sha256": "fe92b4f5384d218547aa74903280923cc714767361b80024d8e2ba9c15846983",
+        "rgb_pixels_sha256": "371c9bf32cbbfe62b2fd4a77f8aa5d52ee87bfe91762a4e3a6c9fd36ec63475e",
+        "dimensions_px": [
+          2048,
+          1348
+        ],
+        "mode": "RGB"
+      },
+      "render_method": "eagle_xml_geometry_v2_circuit_crop",
+      "original_eagle_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": 0.0,
+            "y_mm": 2.54,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "center",
+            "instance_transform": [
+              134.62,
+              86.36,
+              0.0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": 0.0,
+            "y_mm": -2.5,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "center",
+            "instance_transform": [
+              134.62,
+              86.36,
+              0.0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 134.62,
+            "y_mm": 88.9,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 134.62,
+            "y_mm": 83.86,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        }
+      ],
+      "vision_processor_output_status": "unreviewed"
+    },
+    {
+      "id": "real-8cfa9f969cd7abde-p1-generalization-value-08",
+      "board_id": "real-8cfa9f969cd7abde-p1",
+      "family_id": "adafruit/Adafruit_2.8_Inch_TFT_Shield_PCB",
+      "target": {
+        "refdes": "C4",
+        "literal_value": "0.1uF"
+      },
+      "status": "readable_after_serving_resize",
+      "observation": "Bottom-right capacitor bank: C4 is above its capacitor and 0.1uF below. Both remain readable. This does not certify the overlapping resistor labels elsewhere.",
+      "selection": "unchanged_original_plan_target",
+      "source_url": "https://github.com/adafruit/Adafruit_2.8_Inch_TFT_Shield_PCB/blob/048abde4fd0ae02c8872e1938297e66b5d4e8784/tfttouchshield.sch",
+      "native_source_path": "data/real/sources/adafruit__Adafruit_2.8_Inch_TFT_Shield_PCB/tfttouchshield.sch",
+      "source_sha256": "8cfa9f969cd7abdef57679dd94c53fb6968bec9b11ad120638ee8d6853d28413",
+      "page": 1,
+      "frozen_image_path": "data/training/real-crop-v1/images/12d1ad4a99534d842ff3cb49fe5eda2d2bc0ae8314fcf48eab2d0cbcdc09d2c7.png",
+      "image_sha256": "12d1ad4a99534d842ff3cb49fe5eda2d2bc0ae8314fcf48eab2d0cbcdc09d2c7",
+      "original_dimensions_px": [
+        2400,
+        1752
+      ],
+      "inspection_image": {
+        "path": "tmp/generalization-legibility-2048/real-8cfa9f969cd7abde-p1-generalization-value-08.png",
+        "sha256": "3f15b0e349d8d9317c1c7c6726af6834271deccf43c96ffd517f736ef912cafc",
+        "rgb_pixels_sha256": "73c8e665acb4515ffae2cc3817851190d77f6226d6bb32d7f6ee4ee2c5fc59ff",
+        "dimensions_px": [
+          2048,
+          1495
+        ],
+        "mode": "RGB"
+      },
+      "render_method": "eagle_xml_geometry_v2_circuit_crop",
+      "original_eagle_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 194.056,
+            "y_mm": 26.035,
+            "size_mm": 1.778,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 194.056,
+            "y_mm": 21.209,
+            "size_mm": 1.778,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        }
+      ],
+      "vision_processor_output_status": "unreviewed"
+    },
+    {
+      "id": "real-91c9543e73055270-p1-generalization-value-09",
+      "board_id": "real-91c9543e73055270-p1",
+      "family_id": "adafruit/Adafruit-TPA2012-or-TS2012-Breakout-PCB",
+      "target": {
+        "refdes": "U1",
+        "literal_value": "TS2012"
+      },
+      "status": "readable_after_serving_resize",
+      "observation": "Main IC: U1 is above the symbol and the part value TS2012 is below. The generic TPA2012D2 symbol text inside the body is separate.",
+      "selection": "unchanged_original_plan_target",
+      "source_url": "https://github.com/adafruit/Adafruit-TPA2012-or-TS2012-Breakout-PCB/blob/b099d41a3fb4cddce5f19a7a8bbdc7a2d68711d8/Adafruit%20TS2012%20TPA2012%20Class%20D%20Audio%20Amp.sch",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-TPA2012-or-TS2012-Breakout-PCB/Adafruit TS2012 TPA2012 Class D Audio Amp.sch",
+      "source_sha256": "91c9543e7305527060ab9b92e5949215a9b44d49a822db974918afb712f6ab3a",
+      "page": 1,
+      "frozen_image_path": "data/training/real-crop-v1/images/5855ba1136e38f766e97462a2d40818590f27f3f4e2e01189ec99a19d20ae023.png",
+      "image_sha256": "5855ba1136e38f766e97462a2d40818590f27f3f4e2e01189ec99a19d20ae023",
+      "original_dimensions_px": [
+        2400,
+        2228
+      ],
+      "inspection_image": {
+        "path": "tmp/generalization-legibility-2048/real-91c9543e73055270-p1-generalization-value-09.png",
+        "sha256": "5ea746d54cef72df8a275baebfa8a1aa8d855cfbbc9e1d356aef807033c11bfb",
+        "rgb_pixels_sha256": "b75d8a9b215a41e942b358fec3fa5ce52e2b9bd4df057335e756c38ce96ea0b4",
+        "dimensions_px": [
+          2048,
+          1901
+        ],
+        "mode": "RGB"
+      },
+      "render_method": "eagle_xml_geometry_v2_circuit_crop",
+      "original_eagle_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -15.24,
+            "y_mm": 33.02,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              132.08,
+              104.14,
+              0.0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -15.24,
+            "y_mm": -40.64,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              132.08,
+              104.14,
+              0.0,
+              false
+            ]
+          }
+        }
+      ],
+      "vision_processor_output_status": "unreviewed"
+    },
+    {
+      "id": "real-9508a2b89bbb403e-p1-generalization-value-10",
+      "board_id": "real-9508a2b89bbb403e-p1",
+      "family_id": "adafruit/Adafruit-WCH-CH9102F-Friend-PCB",
+      "target": {
+        "refdes": "C3",
+        "literal_value": "10uF"
+      },
+      "status": "readable_after_serving_resize",
+      "observation": "Upper-left decoupling bank: C3 is the second capacitor; C3 and rotated 10uF remain separated on opposite sides.",
+      "selection": "unchanged_original_plan_target",
+      "source_url": "https://github.com/adafruit/Adafruit-WCH-CH9102F-Friend-PCB/blob/eb022866b738f738971172c8725546e7b221369f/Adafruit%20CH9102F.sch",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-WCH-CH9102F-Friend-PCB/Adafruit CH9102F.sch",
+      "source_sha256": "9508a2b89bbb403e43e1b850dfa9a986e75b5c08f419f2885610413d509e1821",
+      "page": 1,
+      "frozen_image_path": "data/training/real-crop-v1/images/e0dfc88e94e9e12d1f73efde849580603f161ee559e1a314b1b014dc137bafc1.png",
+      "image_sha256": "e0dfc88e94e9e12d1f73efde849580603f161ee559e1a314b1b014dc137bafc1",
+      "original_dimensions_px": [
+        2400,
+        1524
+      ],
+      "inspection_image": {
+        "path": "tmp/generalization-legibility-2048/real-9508a2b89bbb403e-p1-generalization-value-10.png",
+        "sha256": "b483a3fde2ae5a780ac35722df42f44366c0b9e121c7e6e3a178334bf6b51363",
+        "rgb_pixels_sha256": "de5dc8959d79aff12017a5b929ff5d6f67f7b8ea5ee8133dd6970fb696c32788",
+        "dimensions_px": [
+          2048,
+          1300
+        ],
+        "mode": "RGB"
+      },
+      "render_method": "eagle_xml_geometry_v2_circuit_crop",
+      "original_eagle_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 73.91,
+            "y_mm": 113.01,
+            "size_mm": 1.27,
+            "rotation": "R90",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 78.5,
+            "y_mm": 113.01,
+            "size_mm": 1.27,
+            "rotation": "R90",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        }
+      ],
+      "vision_processor_output_status": "unreviewed"
+    },
+    {
+      "id": "real-c8a604dd5dde4cd6-p1-generalization-value-11",
+      "board_id": "real-c8a604dd5dde4cd6-p1",
+      "family_id": "adafruit/Adafruit-Terminal-Block-BFF-PCB",
+      "target": {
+        "refdes": "R3",
+        "literal_value": "5.1K"
+      },
+      "status": "readable_after_serving_resize",
+      "observation": "Right charging block: R3 is beside the lower status-LED resistor; 5.1K is small but readable inside its body.",
+      "selection": "unchanged_original_plan_target",
+      "source_url": "https://github.com/adafruit/Adafruit-Terminal-Block-BFF-PCB/blob/6e2c47d43d37a4911910750956fb27c9459b2a57/Adafruit%20Terminal%20Block%20BFF.sch",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-Terminal-Block-BFF-PCB/Adafruit Terminal Block BFF.sch",
+      "source_sha256": "c8a604dd5dde4cd64418c0e667b33b1a2ea9849c85062c47f7bc7271c0517278",
+      "page": 1,
+      "frozen_image_path": "data/training/real-crop-v1/images/c505368f229d2a6baaefafd995bf95e99c60f4f2d6730fc6defda6434998a694.png",
+      "image_sha256": "c505368f229d2a6baaefafd995bf95e99c60f4f2d6730fc6defda6434998a694",
+      "original_dimensions_px": [
+        2400,
+        820
+      ],
+      "inspection_image": {
+        "path": "tmp/generalization-legibility-2048/real-c8a604dd5dde4cd6-p1-generalization-value-11.png",
+        "sha256": "fae546b634f0848ba22b1aa3d9b2fec9ac9a36f4beb01d30360b3022f97c45b1",
+        "rgb_pixels_sha256": "dae9306860b4fb3ece6f19e9d9fd0d56faaeeedf8767a3341dd8adcbb53f9ff6",
+        "dimensions_px": [
+          2048,
+          700
+        ],
+        "mode": "RGB"
+      },
+      "render_method": "eagle_xml_geometry_v2_circuit_crop",
+      "original_eagle_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 147.32,
+            "y_mm": 71.12,
+            "size_mm": 1.27,
+            "rotation": "R270",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 144.78,
+            "y_mm": 71.12,
+            "size_mm": 1.016,
+            "rotation": "R270",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          }
+        }
+      ],
+      "vision_processor_output_status": "unreviewed"
+    },
+    {
+      "id": "real-ed5f22fd2b645d79-p1-generalization-value-12",
+      "board_id": "real-ed5f22fd2b645d79-p1",
+      "family_id": "adafruit/Adafruit-UDA1334A-I2S-Stereo-DAC-PCB",
+      "target": {
+        "refdes": "R1",
+        "literal_value": "10k"
+      },
+      "status": "readable_after_serving_resize",
+      "observation": "Lower-left digital resistor bank: R1 is beside the rightmost resistor; its exact lowercase value 10k is readable inside.",
+      "selection": "unchanged_original_plan_target",
+      "source_url": "https://github.com/adafruit/Adafruit-UDA1334A-I2S-Stereo-DAC-PCB/blob/e836025c26c8dcfa3fab3e9aa7756542770f4849/Adafruit%20UDA1334%20I2S%20DAC.sch",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-UDA1334A-I2S-Stereo-DAC-PCB/Adafruit UDA1334 I2S DAC.sch",
+      "source_sha256": "ed5f22fd2b645d797d97316cc02a8872d747e7b37163ff7cb2b6bfcdabc89327",
+      "page": 1,
+      "frozen_image_path": "data/training/real-crop-v1/images/96c1acf4918a7a62b2bc150e0cd791818c6a30f81dc0e2426b17627097d7d667.png",
+      "image_sha256": "96c1acf4918a7a62b2bc150e0cd791818c6a30f81dc0e2426b17627097d7d667",
+      "original_dimensions_px": [
+        2400,
+        1159
+      ],
+      "inspection_image": {
+        "path": "tmp/generalization-legibility-2048/real-ed5f22fd2b645d79-p1-generalization-value-12.png",
+        "sha256": "4dfc5341970cee64eb23cd46ccb2338daea1fcca086599f282737a8a172a1518",
+        "rgb_pixels_sha256": "e9dbb732d02defb143a6fb8d680331148f050736659eadc6c5aff58fad3f1efc",
+        "dimensions_px": [
+          2048,
+          989
+        ],
+        "mode": "RGB"
+      },
+      "render_method": "eagle_xml_geometry_v2_circuit_crop",
+      "original_eagle_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": 0.0,
+            "y_mm": 2.54,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "center",
+            "instance_transform": [
+              88.9,
+              78.74,
+              90.0,
+              false
+            ]
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": 0.0,
+            "y_mm": 0.0,
+            "size_mm": 1.016,
+            "rotation": "R0",
+            "alignment": "center",
+            "instance_transform": [
+              88.9,
+              78.74,
+              90.0,
+              false
+            ]
+          }
+        }
+      ],
+      "vision_processor_output_status": "unreviewed"
+    }
+  ],
+  "superseded_proposal_evidence": {
+    "id": "real-64da290fb975b669-p1-generalization-value-06",
+    "board_id": "real-64da290fb975b669-p1",
+    "target": {
+      "refdes": "C8",
+      "literal_value": "1uF/10V X5R"
+    },
+    "status": "inconclusive_overlap_after_serving_resize",
+    "source_sha256": "64da290fb975b669352cf63e2c187b6d28431df4864f31dc31252d978b1784e5",
+    "image_sha256": "fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450",
+    "inspection_image": {
+      "path": "tmp/generalization-legibility-2048/real-64da290fb975b669-p1-generalization-value-06.png",
+      "sha256": "e575d24e2dc172824628d561214e8c5568ac1cc513ad805459d1b7c205885c8c",
+      "rgb_pixels_sha256": "ad2bab2938d1dc3cb79f421b5a5b43227677dc4079c73b2e799f38a46e3c1dd3",
+      "dimensions_px": [
+        2048,
+        1253
+      ],
+      "mode": "RGB"
+    },
+    "observation": "C8 value and adjacent C5 name still visually collide after the 2048 resize. Source anchors are at (169.94,100.31) and (170.43,100.31) mm, both R90, size 1.27 mm, center alignment, with 0.49 mm perpendicular separation. These source positions substantiate the observed collision; no universal font-metric threshold is inferred.",
+    "prior_report_path": "docs/validation/generalization-readability.json",
+    "versioned_plan_replacement": {
+      "refdes": "R9",
+      "literal_value": "75K 1%"
+    }
+  }
+}

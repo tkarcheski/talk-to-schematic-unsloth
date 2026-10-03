@@ -1,0 +1,44 @@
+[
+  {
+    "board_id": "real-5316af4e1ec5ce66-p1",
+    "refdes": "R14",
+    "value": "27",
+    "reason": "Manual review of the v3 QT2040 Trinkey image found target value/name glyphs coincident with the adjacent resistor. Preserve native evidence supervision; exclude the entire board/value group until another representative is visually reviewed."
+  },
+  {
+    "board_id": "real-d8160e36719d1105-p1",
+    "refdes": "R10",
+    "value": "33",
+    "reason": "Manual review of the v3 TFP401 image found overlapping resistor-array names and values, making target assignment ambiguous. Preserve native evidence supervision; exclude the entire board/value group until another representative is visually reviewed."
+  },
+  {
+    "board_id": "real-415fae4356e66269-p1",
+    "refdes": "VR1",
+    "value": "10Ktrimmer",
+    "reason": "Excluded from this pilot pending confident image-label review. Lower-left trimmer: the end of the rotated 10Ktrimmer value touches or nearly touches adjacent R4 name. Native source anchor geometry is recorded, but this is not a confirmed renderer defect or an exclusion decision. Source-assisted supervision remains unchanged."
+  },
+  {
+    "board_id": "real-8a98feaf7a8b337d-p1",
+    "refdes": "FB1",
+    "value": "FERITTE",
+    "reason": "Excluded from this pilot pending confident image-label review. Lower-left analog filtering block: FB1 and FERITTE appear separated. Preserve the literal source spelling FERITTE. Nominal font size is small enough that this review does not certify exact character legibility. Source-assisted supervision remains unchanged."
+  },
+  {
+    "board_id": "real-8a98feaf7a8b337d-p1",
+    "refdes": "Y1",
+    "value": "ABM8G-12.288MHZ-4Y-T3",
+    "reason": "Excluded from this pilot pending confident image-label review. Upper-middle oscillator: long crystal part number is below the symbol and appears separate, but text is very small. Exact character legibility is not certified. Source-assisted supervision remains unchanged."
+  },
+  {
+    "board_id": "real-8a98feaf7a8b337d-p1",
+    "refdes": "C21",
+    "value": "10nF (0.01uF)",
+    "reason": "Excluded from this pilot pending confident image-label review. Upper-left output filter: rotated C21 and 10nF (0.01uF) appear separated; small text prevents confident certification of every character. Source-assisted supervision remains unchanged."
+  },
+  {
+    "board_id": "real-8a98feaf7a8b337d-p1",
+    "refdes": "U2",
+    "value": "AP7312-1833W6-7",
+    "reason": "Excluded from this pilot pending confident image-label review. Lower-left power block: U2 and AP7312-1833W6-7 appear separated above/below the regulator. The small font needs closer pixel-level and inference-scale review. Source-assisted supervision remains unchanged."
+  }
+]

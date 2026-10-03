@@ -1,0 +1,2461 @@
+{
+  "schema_version": 1,
+  "status": "manual_sample_no_dataset_or_exclusion_changes",
+  "render_method": "eagle_xml_geometry_v3_text_alignment",
+  "inputs": {
+    "selection_plan": {
+      "path": "tmp/expanded-training-plan.json",
+      "sha256": "8aead42edee27e33d87a62a8cf2d7493f1c3b1be68e437b1e0ebbbedc79be6b1",
+      "seed": 3407,
+      "target_count": 720
+    },
+    "v3_native_training": {
+      "path": "data/real-v3/train.jsonl",
+      "sha256": "c21df0874ef9d5189518de866c764e1a61317ca7dc40a72e44eb769960192f60"
+    },
+    "existing_exclusions": {
+      "path": "docs/validation/expanded-training-exclusions.json",
+      "sha256": "46e3872baf19eb529684ebf66415cd36f6f9ca306a70ecb2bee5ea534eabadb9"
+    },
+    "base_snapshot_sha256": "8b152832864cfd0eb78a8881b16eef8a47be1c050a091461f6366be067bf993c"
+  },
+  "method": {
+    "selection": "Purposive sample of six training boards with capacitors, connectors, ICs, switches, transistor parts, an inductor, an LED, a crystal, a ferrite bead and a trimmer. Long, rotated and uncommon literal labels were favored. This is not a random sample or an estimate of corpus-wide quality.",
+    "visual_inspection": "Original full-page v3 PNGs inspected at their original 2400-pixel width; no source or image was edited.",
+    "source_verification": "Each reviewed image, SVG and native source matched its v3 provenance SHA-256. NAME/VALUE coordinates are extracted from the pinned EAGLE source and current v3 transforms.",
+    "locators": "Pixel anchors locate original NAME/VALUE labels using the stored SVG viewBox and default centered aspect-ratio mapping. Nominal font size is not measured glyph height or an OCR score. No separate crop image was produced.",
+    "status_meanings": {
+      "native_resolution_readable": "Reviewer could identify target name and literal value in this image. This is limited to the listed target and original resolution.",
+      "native_resolution_small_text_inconclusive": "No obvious collision observed for target, but small text prevents confident certification of every character.",
+      "potential_overlap_manual_review_required": "Specific target/neighbor collision candidate needs adjudication; no automatic exclusion or renderer diagnosis."
+    },
+    "limitations": [
+      "No image was assessed after the deployed 1024-pixel resize or vision-processor tiling. All selected targets remain unreviewed at model inference scale.",
+      "Unreviewed targets are not certified by the outcomes for these 23 targets.",
+      "Inspection of a target does not certify its complete board image; unrelated source overlaps remain visible in some images.",
+      "The prior QT2040 and TFP401 exclusions are inputs, not additional reviewed sample targets. No new exclusion is applied by this report."
+    ]
+  },
+  "counts": {
+    "selected_value_targets": 720,
+    "reviewed_targets": 23,
+    "reviewed_boards": 6,
+    "unreviewed_targets": 697,
+    "review_status": {
+      "native_resolution_readable": 18,
+      "native_resolution_small_text_inconclusive": 4,
+      "potential_overlap_manual_review_required": 1
+    },
+    "model_scale_reviewed_targets": 0,
+    "model_scale_unreviewed_targets": 720
+  },
+  "prior_excluded_groups": [
+    {
+      "board_id": "real-5316af4e1ec5ce66-p1",
+      "value": "27",
+      "explicit_exclusions": [
+        {
+          "board_id": "real-5316af4e1ec5ce66-p1",
+          "refdes": "R14",
+          "value": "27",
+          "reason": "Manual review of the v3 QT2040 Trinkey image found target value/name glyphs coincident with the adjacent resistor. Preserve native evidence supervision; exclude the entire board/value group until another representative is visually reviewed."
+        }
+      ],
+      "suppressed_same_value_candidates": [
+        "R14",
+        "R15"
+      ]
+    },
+    {
+      "board_id": "real-d8160e36719d1105-p1",
+      "value": "33",
+      "explicit_exclusions": [
+        {
+          "board_id": "real-d8160e36719d1105-p1",
+          "refdes": "R10",
+          "value": "33",
+          "reason": "Manual review of the v3 TFP401 image found overlapping resistor-array names and values, making target assignment ambiguous. Preserve native evidence supervision; exclude the entire board/value group until another representative is visually reviewed."
+        }
+      ],
+      "suppressed_same_value_candidates": [
+        "R10",
+        "R11",
+        "R12",
+        "R6",
+        "R7",
+        "R8",
+        "R9"
+      ]
+    }
+  ],
+  "follow_up": [
+    {
+      "board_id": "real-415fae4356e66269-p1",
+      "refdes": "VR1",
+      "value": "10Ktrimmer",
+      "action": "Adjudicate potential collision with R4 before deciding whether to exclude this board/value group. No replacement selected."
+    },
+    {
+      "board_id": "real-8a98feaf7a8b337d-p1",
+      "refdes": [
+        "FB1",
+        "Y1",
+        "C21",
+        "U2"
+      ],
+      "action": "Review small target text at actual model input scale before asserting trainable visual legibility."
+    }
+  ],
+  "reviewed_targets": [
+    {
+      "row_id": "real-415fae4356e66269-p1-expanded-value-08d1623c441b",
+      "board_id": "real-415fae4356e66269-p1",
+      "refdes": "C4",
+      "value": "47uF/16V",
+      "same_value_candidates": [
+        "C4"
+      ],
+      "family": "adafruit/Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Upper-left polarized capacitor: rotated name and value are separate and identifiable.",
+      "source_url": "https://github.com/adafruit/Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB/blob/900c418203489887894b71debe1849a6df259c0f/Adafruit%20STSPIN220%20Stepper%20Motor%20Driver.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB/Adafruit STSPIN220 Stepper Motor Driver.sch",
+      "source_sha256": "415fae4356e662691903323861136033042e0f929cfd6e92052b20f645635bde",
+      "source_commit": "900c418203489887894b71debe1849a6df259c0f",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-415fae4356e66269-p1.png",
+      "image_sha256": "fb341e537208f98c69e36207ea673c536062d07ac32dc1cd6c1423261e9f8cbb",
+      "image_dimensions_px": [
+        2400,
+        1774
+      ],
+      "svg_sha256": "960614f21596a7895b4c1fa72b33f80d352f38e6c2071a1022a860c82f166a61",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 43.33,
+            "y_mm": 156.19,
+            "size_mm": 1.27,
+            "rotation": "R90",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "C4",
+            "x_mm": 43.33,
+            "y_mm": -156.19,
+            "size_mm": 1.27,
+            "rotation_degrees": -90.0,
+            "horizontal_anchor": "middle",
+            "vertical_baseline": "central",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 351.82,
+            "anchor_y_px": 158.15,
+            "nominal_font_size_px": 12.89
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 48.22,
+            "y_mm": 156.19,
+            "size_mm": 1.27,
+            "rotation": "R90",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "47uF/16V",
+            "x_mm": 48.22,
+            "y_mm": -156.19,
+            "size_mm": 1.27,
+            "rotation_degrees": -90.0,
+            "horizontal_anchor": "middle",
+            "vertical_baseline": "central",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 401.47,
+            "anchor_y_px": 158.15,
+            "nominal_font_size_px": 12.89
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-415fae4356e66269-p1-expanded-value-1e78d95f7329",
+      "board_id": "real-415fae4356e66269-p1",
+      "refdes": "CSTBY",
+      "value": "1nF",
+      "same_value_candidates": [
+        "CSTBY"
+      ],
+      "family": "adafruit/Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Central reset capacitor: CSTBY above 1nF, with clear separation.",
+      "source_url": "https://github.com/adafruit/Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB/blob/900c418203489887894b71debe1849a6df259c0f/Adafruit%20STSPIN220%20Stepper%20Motor%20Driver.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB/Adafruit STSPIN220 Stepper Motor Driver.sch",
+      "source_sha256": "415fae4356e662691903323861136033042e0f929cfd6e92052b20f645635bde",
+      "source_commit": "900c418203489887894b71debe1849a6df259c0f",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-415fae4356e66269-p1.png",
+      "image_sha256": "fb341e537208f98c69e36207ea673c536062d07ac32dc1cd6c1423261e9f8cbb",
+      "image_dimensions_px": [
+        2400,
+        1774
+      ],
+      "svg_sha256": "960614f21596a7895b4c1fa72b33f80d352f38e6c2071a1022a860c82f166a61",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 101.6,
+            "y_mm": 106.68,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "CSTBY",
+            "x_mm": 101.6,
+            "y_mm": -106.68,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 943.41,
+            "anchor_y_px": 660.8,
+            "nominal_font_size_px": 12.89
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 101.6,
+            "y_mm": 104.14,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "1nF",
+            "x_mm": 101.6,
+            "y_mm": -104.14,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 943.41,
+            "anchor_y_px": 686.59,
+            "nominal_font_size_px": 12.89
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-415fae4356e66269-p1-expanded-value-a8e1611eece5",
+      "board_id": "real-415fae4356e66269-p1",
+      "refdes": "COFF",
+      "value": "22nF",
+      "same_value_candidates": [
+        "COFF"
+      ],
+      "family": "adafruit/Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Far-right timing capacitor: COFF and 22nF are separate beside the symbol.",
+      "source_url": "https://github.com/adafruit/Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB/blob/900c418203489887894b71debe1849a6df259c0f/Adafruit%20STSPIN220%20Stepper%20Motor%20Driver.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB/Adafruit STSPIN220 Stepper Motor Driver.sch",
+      "source_sha256": "415fae4356e662691903323861136033042e0f929cfd6e92052b20f645635bde",
+      "source_commit": "900c418203489887894b71debe1849a6df259c0f",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-415fae4356e66269-p1.png",
+      "image_sha256": "fb341e537208f98c69e36207ea673c536062d07ac32dc1cd6c1423261e9f8cbb",
+      "image_dimensions_px": [
+        2400,
+        1774
+      ],
+      "svg_sha256": "960614f21596a7895b4c1fa72b33f80d352f38e6c2071a1022a860c82f166a61",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 233.68,
+            "y_mm": 99.06,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "COFF",
+            "x_mm": 233.68,
+            "y_mm": -99.06,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 2284.37,
+            "anchor_y_px": 738.16,
+            "nominal_font_size_px": 12.89
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 233.68,
+            "y_mm": 96.52,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "22nF",
+            "x_mm": 233.68,
+            "y_mm": -96.52,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 2284.37,
+            "anchor_y_px": 763.95,
+            "nominal_font_size_px": 12.89
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-415fae4356e66269-p1-expanded-value-1bf280e5c900",
+      "board_id": "real-415fae4356e66269-p1",
+      "refdes": "JP1",
+      "value": "6-pin 2.54 Terminal",
+      "same_value_candidates": [
+        "JP1"
+      ],
+      "family": "adafruit/Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB",
+      "literal_value_occurrences_in_selected_plan": 2,
+      "status": "native_resolution_readable",
+      "observation": "Left motor connector: rotated long terminal value and JP1 name are separated on opposite sides.",
+      "source_url": "https://github.com/adafruit/Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB/blob/900c418203489887894b71debe1849a6df259c0f/Adafruit%20STSPIN220%20Stepper%20Motor%20Driver.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB/Adafruit STSPIN220 Stepper Motor Driver.sch",
+      "source_sha256": "415fae4356e662691903323861136033042e0f929cfd6e92052b20f645635bde",
+      "source_commit": "900c418203489887894b71debe1849a6df259c0f",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-415fae4356e66269-p1.png",
+      "image_sha256": "fb341e537208f98c69e36207ea673c536062d07ac32dc1cd6c1423261e9f8cbb",
+      "image_dimensions_px": [
+        2400,
+        1774
+      ],
+      "svg_sha256": "960614f21596a7895b4c1fa72b33f80d352f38e6c2071a1022a860c82f166a61",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "A",
+          "source": {
+            "node": "attribute",
+            "x_mm": 71.755,
+            "y_mm": 105.41,
+            "size_mm": 1.778,
+            "rotation": "MR90",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "JP1",
+            "x_mm": 71.755,
+            "y_mm": -105.41,
+            "size_mm": 1.778,
+            "rotation_degrees": -90.0,
+            "horizontal_anchor": "end",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 640.41,
+            "anchor_y_px": 673.69,
+            "nominal_font_size_px": 18.05
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "A",
+          "source": {
+            "node": "attribute",
+            "x_mm": 50.8,
+            "y_mm": 105.41,
+            "size_mm": 1.778,
+            "rotation": "MR90",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "6-pin 2.54 Terminal",
+            "x_mm": 50.8,
+            "y_mm": -105.41,
+            "size_mm": 1.778,
+            "rotation_degrees": -90.0,
+            "horizontal_anchor": "end",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 427.66,
+            "anchor_y_px": 673.69,
+            "nominal_font_size_px": 18.05
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-415fae4356e66269-p1-expanded-value-441071b023ff",
+      "board_id": "real-415fae4356e66269-p1",
+      "refdes": "VR1",
+      "value": "10Ktrimmer",
+      "same_value_candidates": [
+        "VR1"
+      ],
+      "family": "adafruit/Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "potential_overlap_manual_review_required",
+      "observation": "Lower-left trimmer: the end of the rotated 10Ktrimmer value touches or nearly touches adjacent R4 name. Native source anchor geometry is recorded, but this is not a confirmed renderer defect or an exclusion decision.",
+      "source_url": "https://github.com/adafruit/Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB/blob/900c418203489887894b71debe1849a6df259c0f/Adafruit%20STSPIN220%20Stepper%20Motor%20Driver.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-STSPIN220-Stepper-Motor-Driver-Breakout-Board-PCB/Adafruit STSPIN220 Stepper Motor Driver.sch",
+      "source_sha256": "415fae4356e662691903323861136033042e0f929cfd6e92052b20f645635bde",
+      "source_commit": "900c418203489887894b71debe1849a6df259c0f",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-415fae4356e66269-p1.png",
+      "image_sha256": "fb341e537208f98c69e36207ea673c536062d07ac32dc1cd6c1423261e9f8cbb",
+      "image_dimensions_px": [
+        2400,
+        1774
+      ],
+      "svg_sha256": "960614f21596a7895b4c1fa72b33f80d352f38e6c2071a1022a860c82f166a61",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 57.531,
+            "y_mm": 31.75,
+            "size_mm": 1.27,
+            "rotation": "MR270",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "VR1",
+            "x_mm": 57.531,
+            "y_mm": -31.75,
+            "size_mm": 1.27,
+            "rotation_degrees": -90.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-before-edge",
+            "line_offsets_mm": [
+              0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 496.0,
+            "anchor_y_px": 1421.53,
+            "nominal_font_size_px": 12.89
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 59.69,
+            "y_mm": 31.75,
+            "size_mm": 1.27,
+            "rotation": "MR270",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "10Ktrimmer",
+            "x_mm": 59.69,
+            "y_mm": -31.75,
+            "size_mm": 1.27,
+            "rotation_degrees": -90.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-before-edge",
+            "line_offsets_mm": [
+              0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 517.92,
+            "anchor_y_px": 1421.53,
+            "nominal_font_size_px": 12.89
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed",
+      "adjacent_label_evidence": {
+        "refdes": "R4",
+        "labels": [
+          {
+            "kind": "NAME",
+            "gate": "G$1",
+            "source": {
+              "node": "attribute",
+              "x_mm": 61.468,
+              "y_mm": 38.1,
+              "size_mm": 1.27,
+              "rotation": "R90",
+              "alignment": "bottom-left",
+              "instance_transform": [
+                0,
+                0,
+                0,
+                false
+              ]
+            },
+            "rendered": {
+              "text": "R4",
+              "x_mm": 61.468,
+              "y_mm": -38.1,
+              "size_mm": 1.27,
+              "rotation_degrees": -90.0,
+              "horizontal_anchor": "start",
+              "vertical_baseline": "text-after-edge",
+              "line_offsets_mm": [
+                -0.0
+              ]
+            }
+          },
+          {
+            "kind": "VALUE",
+            "gate": "G$1",
+            "source": {
+              "node": "attribute",
+              "x_mm": 66.675,
+              "y_mm": 38.1,
+              "size_mm": 1.27,
+              "rotation": "R90",
+              "alignment": "bottom-left",
+              "instance_transform": [
+                0,
+                0,
+                0,
+                false
+              ]
+            },
+            "rendered": {
+              "text": "60K",
+              "x_mm": 66.675,
+              "y_mm": -38.1,
+              "size_mm": 1.27,
+              "rotation_degrees": -90.0,
+              "horizontal_anchor": "start",
+              "vertical_baseline": "text-after-edge",
+              "line_offsets_mm": [
+                -0.0
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "row_id": "real-58bffb22cb27734e-p1-expanded-value-d76354d84578",
+      "board_id": "real-58bffb22cb27734e-p1",
+      "refdes": "L2",
+      "value": "4.7uH 2A / YSMC0420V-4R7M",
+      "same_value_candidates": [
+        "L1",
+        "L2"
+      ],
+      "family": "adafruit/Adafruit-TPS65131-Split-Power-Supply-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Lower-right inductor: L2 is beside the symbol and long component specification is below it.",
+      "source_url": "https://github.com/adafruit/Adafruit-TPS65131-Split-Power-Supply-PCB/blob/5c4644c7acc1e285870881ca24b7542121193ce7/Adafruit%20TPS65131%20Split%20Power%20Supply.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-TPS65131-Split-Power-Supply-PCB/Adafruit TPS65131 Split Power Supply.sch",
+      "source_sha256": "58bffb22cb27734ed736aff751d068c77aa750e8dd2cd162a31451fda8980711",
+      "source_commit": "5c4644c7acc1e285870881ca24b7542121193ce7",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-58bffb22cb27734e-p1.png",
+      "image_sha256": "e9eee41768b1218caf94caab1b74e80d9c498904c5e3dea7871b1e5ab677f19f",
+      "image_dimensions_px": [
+        2400,
+        1421
+      ],
+      "svg_sha256": "f4f6dfa9df3e744edae1e97e9d6b5a4982fcc5f125dfff773735a976c8143599",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 93.98,
+            "y_mm": 41.91,
+            "size_mm": 1.4224,
+            "rotation": "R270",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "L2",
+            "x_mm": 93.98,
+            "y_mm": -41.91,
+            "size_mm": 1.4224,
+            "rotation_degrees": -90.0,
+            "horizontal_anchor": "middle",
+            "vertical_baseline": "central",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 1412.04,
+            "anchor_y_px": 927.48,
+            "nominal_font_size_px": 18.4
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 107.95,
+            "y_mm": 37.83,
+            "size_mm": 1.4224,
+            "rotation": "R0",
+            "alignment": "center",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "4.7uH 2A / YSMC0420V-4R7M",
+            "x_mm": 107.95,
+            "y_mm": -37.83,
+            "size_mm": 1.4224,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "middle",
+            "vertical_baseline": "central",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 1592.71,
+            "anchor_y_px": 980.24,
+            "nominal_font_size_px": 18.4
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-58bffb22cb27734e-p1-expanded-value-32d833f348ce",
+      "board_id": "real-58bffb22cb27734e-p1",
+      "refdes": "Q1",
+      "value": "AO3401A",
+      "same_value_candidates": [
+        "Q1"
+      ],
+      "family": "adafruit/Adafruit-TPS65131-Split-Power-Supply-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Upper-left MOSFET: rotated Q1 name and AO3401A value are readable and separate.",
+      "source_url": "https://github.com/adafruit/Adafruit-TPS65131-Split-Power-Supply-PCB/blob/5c4644c7acc1e285870881ca24b7542121193ce7/Adafruit%20TPS65131%20Split%20Power%20Supply.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-TPS65131-Split-Power-Supply-PCB/Adafruit TPS65131 Split Power Supply.sch",
+      "source_sha256": "58bffb22cb27734ed736aff751d068c77aa750e8dd2cd162a31451fda8980711",
+      "source_commit": "5c4644c7acc1e285870881ca24b7542121193ce7",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-58bffb22cb27734e-p1.png",
+      "image_sha256": "e9eee41768b1218caf94caab1b74e80d9c498904c5e3dea7871b1e5ab677f19f",
+      "image_dimensions_px": [
+        2400,
+        1421
+      ],
+      "svg_sha256": "f4f6dfa9df3e744edae1e97e9d6b5a4982fcc5f125dfff773735a976c8143599",
+      "source_name_value_labels": [
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 6.604,
+            "y_mm": 83.185,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "AO3401A",
+            "x_mm": 6.604,
+            "y_mm": -83.185,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 282.04,
+            "anchor_y_px": 393.69,
+            "nominal_font_size_px": 16.42
+          }
+        },
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 4.699,
+            "y_mm": 82.804,
+            "size_mm": 1.4224,
+            "rotation": "R90",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "Q1",
+            "x_mm": 4.699,
+            "y_mm": -82.804,
+            "size_mm": 1.4224,
+            "rotation_degrees": -90.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 257.41,
+            "anchor_y_px": 398.61,
+            "nominal_font_size_px": 18.4
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-58bffb22cb27734e-p1-expanded-value-316ca0efda62",
+      "board_id": "real-58bffb22cb27734e-p1",
+      "refdes": "U1",
+      "value": "TPS65131",
+      "same_value_candidates": [
+        "U1"
+      ],
+      "family": "adafruit/Adafruit-TPS65131-Split-Power-Supply-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Main IC: source places U1 well above the body and TPS65131 below. Both labels are legible; the large name/value separation is retained.",
+      "source_url": "https://github.com/adafruit/Adafruit-TPS65131-Split-Power-Supply-PCB/blob/5c4644c7acc1e285870881ca24b7542121193ce7/Adafruit%20TPS65131%20Split%20Power%20Supply.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-TPS65131-Split-Power-Supply-PCB/Adafruit TPS65131 Split Power Supply.sch",
+      "source_sha256": "58bffb22cb27734ed736aff751d068c77aa750e8dd2cd162a31451fda8980711",
+      "source_commit": "5c4644c7acc1e285870881ca24b7542121193ce7",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-58bffb22cb27734e-p1.png",
+      "image_sha256": "e9eee41768b1218caf94caab1b74e80d9c498904c5e3dea7871b1e5ab677f19f",
+      "image_dimensions_px": [
+        2400,
+        1421
+      ],
+      "svg_sha256": "f4f6dfa9df3e744edae1e97e9d6b5a4982fcc5f125dfff773735a976c8143599",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 53.34,
+            "y_mm": 96.25,
+            "size_mm": 1.4224,
+            "rotation": "SR0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "U1",
+            "x_mm": 53.34,
+            "y_mm": -96.25,
+            "size_mm": 1.4224,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 886.46,
+            "anchor_y_px": 224.72,
+            "nominal_font_size_px": 18.4
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 45.72,
+            "y_mm": 30.29,
+            "size_mm": 1.4224,
+            "rotation": "SR0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "TPS65131",
+            "x_mm": 45.72,
+            "y_mm": -30.29,
+            "size_mm": 1.4224,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 787.91,
+            "anchor_y_px": 1077.75,
+            "nominal_font_size_px": 18.4
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-58bffb22cb27734e-p1-expanded-value-1d96682bdb05",
+      "board_id": "real-58bffb22cb27734e-p1",
+      "refdes": "C5",
+      "value": "22uF/16V",
+      "same_value_candidates": [
+        "C1",
+        "C2",
+        "C4",
+        "C40",
+        "C5",
+        "C50"
+      ],
+      "family": "adafruit/Adafruit-TPS65131-Split-Power-Supply-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Right negative-output capacitor: C5 and 22uF/16V are separate to the right of the symbol.",
+      "source_url": "https://github.com/adafruit/Adafruit-TPS65131-Split-Power-Supply-PCB/blob/5c4644c7acc1e285870881ca24b7542121193ce7/Adafruit%20TPS65131%20Split%20Power%20Supply.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-TPS65131-Split-Power-Supply-PCB/Adafruit TPS65131 Split Power Supply.sch",
+      "source_sha256": "58bffb22cb27734ed736aff751d068c77aa750e8dd2cd162a31451fda8980711",
+      "source_commit": "5c4644c7acc1e285870881ca24b7542121193ce7",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-58bffb22cb27734e-p1.png",
+      "image_sha256": "e9eee41768b1218caf94caab1b74e80d9c498904c5e3dea7871b1e5ab677f19f",
+      "image_dimensions_px": [
+        2400,
+        1421
+      ],
+      "svg_sha256": "f4f6dfa9df3e744edae1e97e9d6b5a4982fcc5f125dfff773735a976c8143599",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 109.22,
+            "y_mm": 49.53,
+            "size_mm": 1.4224,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "C5",
+            "x_mm": 109.22,
+            "y_mm": -49.53,
+            "size_mm": 1.4224,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 1609.13,
+            "anchor_y_px": 828.93,
+            "nominal_font_size_px": 18.4
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 107.95,
+            "y_mm": 45.72,
+            "size_mm": 1.4224,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "22uF/16V",
+            "x_mm": 107.95,
+            "y_mm": -45.72,
+            "size_mm": 1.4224,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 1592.71,
+            "anchor_y_px": 878.2,
+            "nominal_font_size_px": 18.4
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-fac3ab5c362b8f47-p1-expanded-value-7bd637832a36",
+      "board_id": "real-fac3ab5c362b8f47-p1",
+      "refdes": "LED1",
+      "value": "45-21/LK2C-B38452C4CB2/2T",
+      "same_value_candidates": [
+        "LED1"
+      ],
+      "family": "adafruit/Adafruit-TCS34725-Color-Sensor-Breakout-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Lower-right LED: long manufacturer code is above the symbol and LED1 below, without observed collision.",
+      "source_url": "https://github.com/adafruit/Adafruit-TCS34725-Color-Sensor-Breakout-PCB/blob/a430372ce3aa9ca0184bd7354f9417ea0dc518a6/Adafruit%20TCS34725.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-TCS34725-Color-Sensor-Breakout-PCB/Adafruit TCS34725.sch",
+      "source_sha256": "fac3ab5c362b8f4711f2d8ec27639ba5ffbb8e5e5c24b5dbe7a5a7860e74416a",
+      "source_commit": "a430372ce3aa9ca0184bd7354f9417ea0dc518a6",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-fac3ab5c362b8f47-p1.png",
+      "image_sha256": "06e0a9754bdb9ca889b6e127c1a50c242fd67590645d4772f5dd3e6f014f0b81",
+      "image_dimensions_px": [
+        2400,
+        1202
+      ],
+      "svg_sha256": "6764a0cfaff44c295627c0188cf903e999768b714ed5420192eb5dfaa6895e08",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -5.08,
+            "y_mm": 3.175,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              180.34,
+              76.2,
+              180.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "LED1",
+            "x_mm": 185.42,
+            "y_mm": -73.025,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "end",
+            "vertical_baseline": "text-before-edge",
+            "line_offsets_mm": [
+              0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 1887.61,
+            "anchor_y_px": 817.35,
+            "nominal_font_size_px": 16.14
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -5.08,
+            "y_mm": -2.794,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              180.34,
+              76.2,
+              180.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "45-21/LK2C-B38452C4CB2/2T",
+            "x_mm": 185.42,
+            "y_mm": -78.994,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "end",
+            "vertical_baseline": "text-before-edge",
+            "line_offsets_mm": [
+              0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 1887.61,
+            "anchor_y_px": 741.5,
+            "nominal_font_size_px": 16.14
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-fac3ab5c362b8f47-p1-expanded-value-325a90f389d8",
+      "board_id": "real-fac3ab5c362b8f47-p1",
+      "refdes": "U2",
+      "value": "RT9193",
+      "same_value_candidates": [
+        "U2"
+      ],
+      "family": "adafruit/Adafruit-TCS34725-Color-Sensor-Breakout-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Lower-left regulator: U2 above and RT9193 below the body are legible.",
+      "source_url": "https://github.com/adafruit/Adafruit-TCS34725-Color-Sensor-Breakout-PCB/blob/a430372ce3aa9ca0184bd7354f9417ea0dc518a6/Adafruit%20TCS34725.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-TCS34725-Color-Sensor-Breakout-PCB/Adafruit TCS34725.sch",
+      "source_sha256": "fac3ab5c362b8f4711f2d8ec27639ba5ffbb8e5e5c24b5dbe7a5a7860e74416a",
+      "source_commit": "a430372ce3aa9ca0184bd7354f9417ea0dc518a6",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-fac3ab5c362b8f47-p1.png",
+      "image_sha256": "06e0a9754bdb9ca889b6e127c1a50c242fd67590645d4772f5dd3e6f014f0b81",
+      "image_dimensions_px": [
+        2400,
+        1202
+      ],
+      "svg_sha256": "6764a0cfaff44c295627c0188cf903e999768b714ed5420192eb5dfaa6895e08",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -7.62,
+            "y_mm": 6.096,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              111.76,
+              71.12,
+              0.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "U2",
+            "x_mm": 104.14,
+            "y_mm": -77.216,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 854.82,
+            "anchor_y_px": 764.09,
+            "nominal_font_size_px": 16.14
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -7.62,
+            "y_mm": -7.62,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              111.76,
+              71.12,
+              0.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "RT9193",
+            "x_mm": 104.14,
+            "y_mm": -63.5,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 854.82,
+            "anchor_y_px": 938.38,
+            "nominal_font_size_px": 16.14
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-fac3ab5c362b8f47-p1-expanded-value-316ca0efda62",
+      "board_id": "real-fac3ab5c362b8f47-p1",
+      "refdes": "U1",
+      "value": "TCS34725",
+      "same_value_candidates": [
+        "U1"
+      ],
+      "family": "adafruit/Adafruit-TCS34725-Color-Sensor-Breakout-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Upper-left sensor: U1 above and exact value TCS34725 below are legible. Generic TCS3472x text inside the body is distinct from the value label.",
+      "source_url": "https://github.com/adafruit/Adafruit-TCS34725-Color-Sensor-Breakout-PCB/blob/a430372ce3aa9ca0184bd7354f9417ea0dc518a6/Adafruit%20TCS34725.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-TCS34725-Color-Sensor-Breakout-PCB/Adafruit TCS34725.sch",
+      "source_sha256": "fac3ab5c362b8f4711f2d8ec27639ba5ffbb8e5e5c24b5dbe7a5a7860e74416a",
+      "source_commit": "a430372ce3aa9ca0184bd7354f9417ea0dc518a6",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-fac3ab5c362b8f47-p1.png",
+      "image_sha256": "06e0a9754bdb9ca889b6e127c1a50c242fd67590645d4772f5dd3e6f014f0b81",
+      "image_dimensions_px": [
+        2400,
+        1202
+      ],
+      "svg_sha256": "6764a0cfaff44c295627c0188cf903e999768b714ed5420192eb5dfaa6895e08",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -10.16,
+            "y_mm": 12.7,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              106.68,
+              104.14,
+              0.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "U1",
+            "x_mm": 96.52,
+            "y_mm": -116.84,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 758.0,
+            "anchor_y_px": 260.61,
+            "nominal_font_size_px": 16.14
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -10.16,
+            "y_mm": -13.97,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              106.68,
+              104.14,
+              0.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "TCS34725",
+            "x_mm": 96.52,
+            "y_mm": -90.17,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 758.0,
+            "anchor_y_px": 599.49,
+            "nominal_font_size_px": 16.14
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-6c404d8fa6e1a3cf-p1-expanded-value-e4be7c160bb0",
+      "board_id": "real-6c404d8fa6e1a3cf-p1",
+      "refdes": "SW1",
+      "value": "MSS12C02LS",
+      "same_value_candidates": [
+        "SW1"
+      ],
+      "family": "adafruit/Adafruit-UPDI-Friend-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Right slide switch: MSS12C02LS above and SW1 below are separated.",
+      "source_url": "https://github.com/adafruit/Adafruit-UPDI-Friend-PCB/blob/6063046738409ca77509f5ccce2f2b0ce72be210/Adafruit%20UPDI%20Friend.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-UPDI-Friend-PCB/Adafruit UPDI Friend.sch",
+      "source_sha256": "6c404d8fa6e1a3cf5cc8e4bbb079280f04fecc000decad1cece731db5a24b027",
+      "source_commit": "6063046738409ca77509f5ccce2f2b0ce72be210",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-6c404d8fa6e1a3cf-p1.png",
+      "image_sha256": "9c5b67c30850aad1cc244497b40cc83c0bbdaeef4bb5c203390330a1d0ccd3d8",
+      "image_dimensions_px": [
+        2400,
+        1627
+      ],
+      "svg_sha256": "6b36303a723113e06e8ed0883fe3409ee595f36bee8b275974d1747d6c3932d9",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 158.115,
+            "y_mm": 115.57,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "SW1",
+            "x_mm": 158.115,
+            "y_mm": -115.57,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 2054.56,
+            "anchor_y_px": 821.61,
+            "nominal_font_size_px": 17.76
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 157.48,
+            "y_mm": 125.73,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "MSS12C02LS",
+            "x_mm": 157.48,
+            "y_mm": -125.73,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 2045.68,
+            "anchor_y_px": 679.53,
+            "nominal_font_size_px": 17.76
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-6c404d8fa6e1a3cf-p1-expanded-value-ad667b78ba8e",
+      "board_id": "real-6c404d8fa6e1a3cf-p1",
+      "refdes": "X1",
+      "value": "JST 3SH",
+      "same_value_candidates": [
+        "X1"
+      ],
+      "family": "adafruit/Adafruit-UPDI-Friend-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Lower-left connector: X1 above and JST 3SH below are readable. A vertical wire passes near the value but does not prevent this reading.",
+      "source_url": "https://github.com/adafruit/Adafruit-UPDI-Friend-PCB/blob/6063046738409ca77509f5ccce2f2b0ce72be210/Adafruit%20UPDI%20Friend.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-UPDI-Friend-PCB/Adafruit UPDI Friend.sch",
+      "source_sha256": "6c404d8fa6e1a3cf5cc8e4bbb079280f04fecc000decad1cece731db5a24b027",
+      "source_commit": "6063046738409ca77509f5ccce2f2b0ce72be210",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-6c404d8fa6e1a3cf-p1.png",
+      "image_sha256": "9c5b67c30850aad1cc244497b40cc83c0bbdaeef4bb5c203390330a1d0ccd3d8",
+      "image_dimensions_px": [
+        2400,
+        1627
+      ],
+      "svg_sha256": "6b36303a723113e06e8ed0883fe3409ee595f36bee8b275974d1747d6c3932d9",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 39.37,
+            "y_mm": 102.235,
+            "size_mm": 1.778,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "X1",
+            "x_mm": 39.37,
+            "y_mm": -102.235,
+            "size_mm": 1.778,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 393.95,
+            "anchor_y_px": 1008.1,
+            "nominal_font_size_px": 24.86
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 39.37,
+            "y_mm": 88.9,
+            "size_mm": 1.778,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "JST 3SH",
+            "x_mm": 39.37,
+            "y_mm": -88.9,
+            "size_mm": 1.778,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 393.95,
+            "anchor_y_px": 1194.58,
+            "nominal_font_size_px": 24.86
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-6c404d8fa6e1a3cf-p1-expanded-value-316ca0efda62",
+      "board_id": "real-6c404d8fa6e1a3cf-p1",
+      "refdes": "U1",
+      "value": "CH340E",
+      "same_value_candidates": [
+        "U1"
+      ],
+      "family": "adafruit/Adafruit-UPDI-Friend-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Lower-right USB/UART IC: U1 above and CH340E below the body are readable.",
+      "source_url": "https://github.com/adafruit/Adafruit-UPDI-Friend-PCB/blob/6063046738409ca77509f5ccce2f2b0ce72be210/Adafruit%20UPDI%20Friend.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-UPDI-Friend-PCB/Adafruit UPDI Friend.sch",
+      "source_sha256": "6c404d8fa6e1a3cf5cc8e4bbb079280f04fecc000decad1cece731db5a24b027",
+      "source_commit": "6063046738409ca77509f5ccce2f2b0ce72be210",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-6c404d8fa6e1a3cf-p1.png",
+      "image_sha256": "9c5b67c30850aad1cc244497b40cc83c0bbdaeef4bb5c203390330a1d0ccd3d8",
+      "image_dimensions_px": [
+        2400,
+        1627
+      ],
+      "svg_sha256": "6b36303a723113e06e8ed0883fe3409ee595f36bee8b275974d1747d6c3932d9",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 101.6,
+            "y_mm": 104.648,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "U1",
+            "x_mm": 101.6,
+            "y_mm": -104.648,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 1264.22,
+            "anchor_y_px": 974.35,
+            "nominal_font_size_px": 17.76
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 101.6,
+            "y_mm": 71.12,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "CH340E",
+            "x_mm": 101.6,
+            "y_mm": -71.12,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 1264.22,
+            "anchor_y_px": 1443.23,
+            "nominal_font_size_px": 17.76
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-6c404d8fa6e1a3cf-p1-expanded-value-9d1dca7a0105",
+      "board_id": "real-6c404d8fa6e1a3cf-p1",
+      "refdes": "X2",
+      "value": "USB TYPE C",
+      "same_value_candidates": [
+        "X2"
+      ],
+      "family": "adafruit/Adafruit-UPDI-Friend-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Upper-left USB connector: X2 above and USB TYPE C below are readable; generic USB C inside the symbol is separate.",
+      "source_url": "https://github.com/adafruit/Adafruit-UPDI-Friend-PCB/blob/6063046738409ca77509f5ccce2f2b0ce72be210/Adafruit%20UPDI%20Friend.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-UPDI-Friend-PCB/Adafruit UPDI Friend.sch",
+      "source_sha256": "6c404d8fa6e1a3cf5cc8e4bbb079280f04fecc000decad1cece731db5a24b027",
+      "source_commit": "6063046738409ca77509f5ccce2f2b0ce72be210",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-6c404d8fa6e1a3cf-p1.png",
+      "image_sha256": "9c5b67c30850aad1cc244497b40cc83c0bbdaeef4bb5c203390330a1d0ccd3d8",
+      "image_dimensions_px": [
+        2400,
+        1627
+      ],
+      "svg_sha256": "6b36303a723113e06e8ed0883fe3409ee595f36bee8b275974d1747d6c3932d9",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 15.24,
+            "y_mm": 168.656,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "X2",
+            "x_mm": 15.24,
+            "y_mm": -168.656,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 56.5,
+            "anchor_y_px": 79.22,
+            "nominal_font_size_px": 17.76
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 15.24,
+            "y_mm": 139.7,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "USB TYPE C",
+            "x_mm": 15.24,
+            "y_mm": -139.7,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 56.5,
+            "anchor_y_px": 484.16,
+            "nominal_font_size_px": 17.76
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-8a98feaf7a8b337d-p1-expanded-value-badaaa830010",
+      "board_id": "real-8a98feaf7a8b337d-p1",
+      "refdes": "FB1",
+      "value": "FERITTE",
+      "same_value_candidates": [
+        "FB1",
+        "FB2"
+      ],
+      "family": "adafruit/Adafruit-VS1053-Breakout-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_small_text_inconclusive",
+      "observation": "Lower-left analog filtering block: FB1 and FERITTE appear separated. Preserve the literal source spelling FERITTE. Nominal font size is small enough that this review does not certify exact character legibility.",
+      "source_url": "https://github.com/adafruit/Adafruit-VS1053-Breakout-PCB/blob/61db4e571d89d321c33bb693b84f80da1510c5e2/Adafruit%20VS1053%20Breakout.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-VS1053-Breakout-PCB/Adafruit VS1053 Breakout.sch",
+      "source_sha256": "8a98feaf7a8b337daddd8111306d3fbc87c7729a226df19b7a3b8bc4d95b50c2",
+      "source_commit": "61db4e571d89d321c33bb693b84f80da1510c5e2",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-8a98feaf7a8b337d-p1.png",
+      "image_sha256": "41e3be30cab664744512b46a01e0b48a6ef2dd711789ad09c826665ecb762659",
+      "image_dimensions_px": [
+        2400,
+        1618
+      ],
+      "svg_sha256": "4188332dfe8394b645e0c349086d69de0c3f900ee809f964e84a912c96fbee8a",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -1.27,
+            "y_mm": 1.905,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              101.6,
+              83.82,
+              0.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "FB1",
+            "x_mm": 100.33,
+            "y_mm": -85.725,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 576.21,
+            "anchor_y_px": 1066.87,
+            "nominal_font_size_px": 8.37
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -1.27,
+            "y_mm": -3.175,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              101.6,
+              83.82,
+              0.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "FERITTE",
+            "x_mm": 100.33,
+            "y_mm": -80.645,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 576.21,
+            "anchor_y_px": 1100.34,
+            "nominal_font_size_px": 8.37
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-8a98feaf7a8b337d-p1-expanded-value-e7424eff12e0",
+      "board_id": "real-8a98feaf7a8b337d-p1",
+      "refdes": "Y1",
+      "value": "ABM8G-12.288MHZ-4Y-T3",
+      "same_value_candidates": [
+        "Y1"
+      ],
+      "family": "adafruit/Adafruit-VS1053-Breakout-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_small_text_inconclusive",
+      "observation": "Upper-middle oscillator: long crystal part number is below the symbol and appears separate, but text is very small. Exact character legibility is not certified.",
+      "source_url": "https://github.com/adafruit/Adafruit-VS1053-Breakout-PCB/blob/61db4e571d89d321c33bb693b84f80da1510c5e2/Adafruit%20VS1053%20Breakout.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-VS1053-Breakout-PCB/Adafruit VS1053 Breakout.sch",
+      "source_sha256": "8a98feaf7a8b337daddd8111306d3fbc87c7729a226df19b7a3b8bc4d95b50c2",
+      "source_commit": "61db4e571d89d321c33bb693b84f80da1510c5e2",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-8a98feaf7a8b337d-p1.png",
+      "image_sha256": "41e3be30cab664744512b46a01e0b48a6ef2dd711789ad09c826665ecb762659",
+      "image_dimensions_px": [
+        2400,
+        1618
+      ],
+      "svg_sha256": "4188332dfe8394b645e0c349086d69de0c3f900ee809f964e84a912c96fbee8a",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -2.54,
+            "y_mm": 2.54,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              165.1,
+              172.72,
+              0.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "Y1",
+            "x_mm": 162.56,
+            "y_mm": -175.26,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 986.24,
+            "anchor_y_px": 476.93,
+            "nominal_font_size_px": 8.37
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -2.54,
+            "y_mm": -3.81,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              165.1,
+              172.72,
+              0.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "ABM8G-12.288MHZ-4Y-T3",
+            "x_mm": 162.56,
+            "y_mm": -168.91,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 986.24,
+            "anchor_y_px": 518.77,
+            "nominal_font_size_px": 8.37
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-8a98feaf7a8b337d-p1-expanded-value-abb23d0d25cd",
+      "board_id": "real-8a98feaf7a8b337d-p1",
+      "refdes": "C21",
+      "value": "10nF (0.01uF)",
+      "same_value_candidates": [
+        "C21",
+        "C22"
+      ],
+      "family": "adafruit/Adafruit-VS1053-Breakout-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_small_text_inconclusive",
+      "observation": "Upper-left output filter: rotated C21 and 10nF (0.01uF) appear separated; small text prevents confident certification of every character.",
+      "source_url": "https://github.com/adafruit/Adafruit-VS1053-Breakout-PCB/blob/61db4e571d89d321c33bb693b84f80da1510c5e2/Adafruit%20VS1053%20Breakout.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-VS1053-Breakout-PCB/Adafruit VS1053 Breakout.sch",
+      "source_sha256": "8a98feaf7a8b337daddd8111306d3fbc87c7729a226df19b7a3b8bc4d95b50c2",
+      "source_commit": "61db4e571d89d321c33bb693b84f80da1510c5e2",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-8a98feaf7a8b337d-p1.png",
+      "image_sha256": "41e3be30cab664744512b46a01e0b48a6ef2dd711789ad09c826665ecb762659",
+      "image_dimensions_px": [
+        2400,
+        1618
+      ],
+      "svg_sha256": "4188332dfe8394b645e0c349086d69de0c3f900ee809f964e84a912c96fbee8a",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -1.79,
+            "y_mm": 0.54,
+            "size_mm": 1.27,
+            "rotation": "R90",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              48.26,
+              175.26,
+              0.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "C21",
+            "x_mm": 46.47,
+            "y_mm": -175.8,
+            "size_mm": 1.27,
+            "rotation_degrees": -90.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 221.33,
+            "anchor_y_px": 473.37,
+            "nominal_font_size_px": 8.37
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": 3.0,
+            "y_mm": 0.54,
+            "size_mm": 1.27,
+            "rotation": "R90",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              48.26,
+              175.26,
+              0.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "10nF (0.01uF)",
+            "x_mm": 51.26,
+            "y_mm": -175.8,
+            "size_mm": 1.27,
+            "rotation_degrees": -90.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 252.89,
+            "anchor_y_px": 473.37,
+            "nominal_font_size_px": 8.37
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-8a98feaf7a8b337d-p1-expanded-value-325a90f389d8",
+      "board_id": "real-8a98feaf7a8b337d-p1",
+      "refdes": "U2",
+      "value": "AP7312-1833W6-7",
+      "same_value_candidates": [
+        "U2"
+      ],
+      "family": "adafruit/Adafruit-VS1053-Breakout-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_small_text_inconclusive",
+      "observation": "Lower-left power block: U2 and AP7312-1833W6-7 appear separated above/below the regulator. The small font needs closer pixel-level and inference-scale review.",
+      "source_url": "https://github.com/adafruit/Adafruit-VS1053-Breakout-PCB/blob/61db4e571d89d321c33bb693b84f80da1510c5e2/Adafruit%20VS1053%20Breakout.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-VS1053-Breakout-PCB/Adafruit VS1053 Breakout.sch",
+      "source_sha256": "8a98feaf7a8b337daddd8111306d3fbc87c7729a226df19b7a3b8bc4d95b50c2",
+      "source_commit": "61db4e571d89d321c33bb693b84f80da1510c5e2",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-8a98feaf7a8b337d-p1.png",
+      "image_sha256": "41e3be30cab664744512b46a01e0b48a6ef2dd711789ad09c826665ecb762659",
+      "image_dimensions_px": [
+        2400,
+        1618
+      ],
+      "svg_sha256": "4188332dfe8394b645e0c349086d69de0c3f900ee809f964e84a912c96fbee8a",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -10.16,
+            "y_mm": 6.096,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              38.1,
+              86.36,
+              0.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "U2",
+            "x_mm": 27.94,
+            "y_mm": -92.456,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 99.24,
+            "anchor_y_px": 1022.52,
+            "nominal_font_size_px": 8.37
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "text",
+            "x_mm": -10.16,
+            "y_mm": -7.62,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              38.1,
+              86.36,
+              0.0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "AP7312-1833W6-7",
+            "x_mm": 27.94,
+            "y_mm": -78.74,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 99.24,
+            "anchor_y_px": 1112.9,
+            "nominal_font_size_px": 8.37
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-df5b0c510b626033-p1-expanded-value-c6c2f9b14de1",
+      "board_id": "real-df5b0c510b626033-p1",
+      "refdes": "X3",
+      "value": "3.5mm Terminal",
+      "same_value_candidates": [
+        "X3"
+      ],
+      "family": "adafruit/Adafruit-STEMMA-Non-Latching-Mini-Relay-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Lower-right terminal: rotated X3 left of the symbol and 3.5mm Terminal below are readable.",
+      "source_url": "https://github.com/adafruit/Adafruit-STEMMA-Non-Latching-Mini-Relay-PCB/blob/7559d509a129d1555af92d410a75b5d89673a9e4/Adafruit%20Non-Latching%20Relay%20Breakout.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-STEMMA-Non-Latching-Mini-Relay-PCB/Adafruit Non-Latching Relay Breakout.sch",
+      "source_sha256": "df5b0c510b6260334b034ffba7ef804a5cdd18dd194de1ba5ae2c5b1b0749fc8",
+      "source_commit": "7559d509a129d1555af92d410a75b5d89673a9e4",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-df5b0c510b626033-p1.png",
+      "image_sha256": "f9b617fd97675c794efa14826cc66996fb2c60db1d25c622a23f9c1a146b6206",
+      "image_dimensions_px": [
+        2400,
+        1292
+      ],
+      "svg_sha256": "917073b59388a4ad18193f9c8a9d3d8b414681a34a972ae69dd30d1f345c2a50",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 116.84,
+            "y_mm": 60.96,
+            "size_mm": 1.27,
+            "rotation": "MR90",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "X3",
+            "x_mm": 116.84,
+            "y_mm": -60.96,
+            "size_mm": 1.27,
+            "rotation_degrees": -90.0,
+            "horizontal_anchor": "end",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 1663.72,
+            "anchor_y_px": 975.92,
+            "nominal_font_size_px": 20.25
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 127.0,
+            "y_mm": 53.34,
+            "size_mm": 1.27,
+            "rotation": "MR0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "3.5mm Terminal",
+            "x_mm": 127.0,
+            "y_mm": -53.34,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "end",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 1825.71,
+            "anchor_y_px": 1097.41,
+            "nominal_font_size_px": 20.25
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-df5b0c510b626033-p1-expanded-value-32d833f348ce",
+      "board_id": "real-df5b0c510b626033-p1",
+      "refdes": "Q1",
+      "value": "MMBT2222",
+      "same_value_candidates": [
+        "Q1"
+      ],
+      "family": "adafruit/Adafruit-STEMMA-Non-Latching-Mini-Relay-PCB",
+      "literal_value_occurrences_in_selected_plan": 1,
+      "status": "native_resolution_readable",
+      "observation": "Central transistor: Q1 and MMBT2222 to the right are clearly separated.",
+      "source_url": "https://github.com/adafruit/Adafruit-STEMMA-Non-Latching-Mini-Relay-PCB/blob/7559d509a129d1555af92d410a75b5d89673a9e4/Adafruit%20Non-Latching%20Relay%20Breakout.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-STEMMA-Non-Latching-Mini-Relay-PCB/Adafruit Non-Latching Relay Breakout.sch",
+      "source_sha256": "df5b0c510b6260334b034ffba7ef804a5cdd18dd194de1ba5ae2c5b1b0749fc8",
+      "source_commit": "7559d509a129d1555af92d410a75b5d89673a9e4",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-df5b0c510b626033-p1.png",
+      "image_sha256": "f9b617fd97675c794efa14826cc66996fb2c60db1d25c622a23f9c1a146b6206",
+      "image_dimensions_px": [
+        2400,
+        1292
+      ],
+      "svg_sha256": "917073b59388a4ad18193f9c8a9d3d8b414681a34a972ae69dd30d1f345c2a50",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 92.71,
+            "y_mm": 74.295,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "Q1",
+            "x_mm": 92.71,
+            "y_mm": -74.295,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 1279.0,
+            "anchor_y_px": 763.31,
+            "nominal_font_size_px": 20.25
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "G$1",
+          "source": {
+            "node": "attribute",
+            "x_mm": 92.71,
+            "y_mm": 72.39,
+            "size_mm": 1.27,
+            "rotation": "R0",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "MMBT2222",
+            "x_mm": 92.71,
+            "y_mm": -72.39,
+            "size_mm": 1.27,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "start",
+            "vertical_baseline": "text-after-edge",
+            "line_offsets_mm": [
+              -0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 1279.0,
+            "anchor_y_px": 793.68,
+            "nominal_font_size_px": 20.25
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    },
+    {
+      "row_id": "real-df5b0c510b626033-p1-expanded-value-1bf280e5c900",
+      "board_id": "real-df5b0c510b626033-p1",
+      "refdes": "JP1",
+      "value": "0.1\" Header",
+      "same_value_candidates": [
+        "JP1"
+      ],
+      "family": "adafruit/Adafruit-STEMMA-Non-Latching-Mini-Relay-PCB",
+      "literal_value_occurrences_in_selected_plan": 6,
+      "status": "native_resolution_readable",
+      "observation": "Lower-left header: 0.1-inch Header above and JP1 below are readable; the literal gold retains its inch quote.",
+      "source_url": "https://github.com/adafruit/Adafruit-STEMMA-Non-Latching-Mini-Relay-PCB/blob/7559d509a129d1555af92d410a75b5d89673a9e4/Adafruit%20Non-Latching%20Relay%20Breakout.sch",
+      "source_path": "data/real/sources/adafruit__Adafruit-STEMMA-Non-Latching-Mini-Relay-PCB/Adafruit Non-Latching Relay Breakout.sch",
+      "source_sha256": "df5b0c510b6260334b034ffba7ef804a5cdd18dd194de1ba5ae2c5b1b0749fc8",
+      "source_commit": "7559d509a129d1555af92d410a75b5d89673a9e4",
+      "license": "CC-BY-SA-3.0",
+      "page": 1,
+      "image_path": "data/real-v3/images/real-df5b0c510b626033-p1.png",
+      "image_sha256": "f9b617fd97675c794efa14826cc66996fb2c60db1d25c622a23f9c1a146b6206",
+      "image_dimensions_px": [
+        2400,
+        1292
+      ],
+      "svg_sha256": "917073b59388a4ad18193f9c8a9d3d8b414681a34a972ae69dd30d1f345c2a50",
+      "source_name_value_labels": [
+        {
+          "kind": "NAME",
+          "gate": "A",
+          "source": {
+            "node": "attribute",
+            "x_mm": 52.07,
+            "y_mm": 60.325,
+            "size_mm": 1.778,
+            "rotation": "R180",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "JP1",
+            "x_mm": 52.07,
+            "y_mm": -60.325,
+            "size_mm": 1.778,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "end",
+            "vertical_baseline": "text-before-edge",
+            "line_offsets_mm": [
+              0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 631.05,
+            "anchor_y_px": 986.04,
+            "nominal_font_size_px": 28.35
+          }
+        },
+        {
+          "kind": "VALUE",
+          "gate": "A",
+          "source": {
+            "node": "attribute",
+            "x_mm": 52.07,
+            "y_mm": 73.66,
+            "size_mm": 1.778,
+            "rotation": "R180",
+            "alignment": "bottom-left",
+            "instance_transform": [
+              0,
+              0,
+              0,
+              false
+            ]
+          },
+          "rendered": {
+            "text": "0.1\" Header",
+            "x_mm": 52.07,
+            "y_mm": -73.66,
+            "size_mm": 1.778,
+            "rotation_degrees": -0.0,
+            "horizontal_anchor": "end",
+            "vertical_baseline": "text-before-edge",
+            "line_offsets_mm": [
+              0.0
+            ]
+          },
+          "locator_on_original_png": {
+            "anchor_x_px": 631.05,
+            "anchor_y_px": 773.43,
+            "nominal_font_size_px": 28.35
+          }
+        }
+      ],
+      "model_scale_status": "unreviewed"
+    }
+  ]
+}

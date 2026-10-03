@@ -1,0 +1,36 @@
+{
+  "snapshot_sha256": "fffff610aa232ee034cfe46f65a764f7f06d21a2a583dd3ab16978298368a34c",
+  "purpose": "training-only expanded visible component lookup snapshot",
+  "composition": {
+    "native_rows": 87,
+    "native_turns": 522,
+    "expanded_value_rows": 715,
+    "vision_refusal_rows": 86,
+    "vision_refusal_turns": 172,
+    "combined_rows": 888,
+    "combined_turns": 1409,
+    "label_counts": {
+      "pins": 174,
+      "refuse": 346,
+      "value": 889
+    },
+    "source_training_boards": 87,
+    "source_visible_targets": 1132,
+    "visible_targets_after_group_exclusions": 1116,
+    "explicit_excluded_targets": 7,
+    "excluded_board_value_groups": 7,
+    "different_absent_identifiers": 83,
+    "training_images_changed_from_base": 87
+  },
+  "sampling": "one seeded representative per training board and exact literal value; original native rows once; one two-turn vision refusal row per original vision board; no held-out sampling",
+  "seed": 3407,
+  "base_snapshot_sha256": "8b152832864cfd0eb78a8881b16eef8a47be1c050a091461f6366be067bf993c",
+  "limitations": [
+    "Source NAME/VALUE visibility flags do not certify pixel readability or absence of overlapping labels.",
+    "Native training wording and labels are preserved, including original missing-part identifiers; only image paths/training_view change.",
+    "Validation/test JSONL bytes and referenced images are copied unchanged from the base snapshot."
+  ],
+  "verified_artifact_count": 129,
+  "heldout_preservation": "All validation/test dataset and referenced image hashes match the original frozen snapshot",
+  "readability_scope": "18 retained target labels visually reviewed at native resolution;697 retained lookup targets unreviewed. All remain unreviewed after model preprocessing."
+}

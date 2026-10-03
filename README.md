@@ -1,169 +1,226 @@
-# Talk to the Schematic: an Unsloth recipe
+# Talk to the Schematic
 
-This recipe fine-tunes a vision LLM so an engineer can **upload a schematic, ask for a review, and then talk to it**. Examples:
+A Python package for extracting schematic evidence, building attributable training data, fine-tuning a vision model with Unsloth, and testing the resulting adapter.
 
-> **Engineer:** Do a design review of this page.
-> **Model:** I found 3 issues:
-> - [critical] D1: D1 SMAJ5.0A stand-off 5 V is below the 12 V input, so it will conduct continuously.
-> - [major] C2, U1: C2 0.1 uF is below the 10 uF minimum output capacitance for LM1117-3.3; risk of oscillation.
-> - [minor] C3: C3 is 10nF; the LIS2DH12 datasheet calls for 100 nF at VDD.
->
-> **Engineer:** Where does U2.SDA go?
-> **Model:** U2.SDA is on SDA, together with R1.2.
->
-> **Engineer:** What tolerance are the pull-up resistors?
-> **Model:** Tolerance isn't marked on R1 or R2 in this schematic.
+The target is an RTX 4090 with 24 GB VRAM. The current base model is **Qwen3.5-4B**, pinned to `3764fa359b9082ea5a1e4a5e3ac3aaf6e9671636`. CPU development uses **Astral uv**.
 
-The full example is in `docs/example_conversation.md`, with the matching image in `docs/example_schematic.png`.
+## Verified status
 
-The target setup is **Qwen3.8-27B** (native vision, Apache-2.0) on **1× RTX PRO 6000 96 GB**, using **Unsloth 16-bit LoRA**.
+- 120 real EAGLE schematics from 120 Adafruit board repositories, with immutable source revisions, original notices, and SHA256 manifests.
+- 120 evidence-assisted conversations and 119 image-only conversations. Twenty board families are reserved for held-out testing.
+- A regenerated synthetic teaching set: 200 designs, 360 conversations, and 1,368 turns.
+- [25 complete simulated conversations](docs/simulated_conversations.md), containing 150 user prompts. These are source-derived gold examples, **not model transcripts**.
+- A two-step 4090 training smoke run saved an adapter with finite loss and 9.55 GiB peak allocated VRAM at 768-pixel images. [Recorded evidence](docs/validation/4090-smoke.json).
+- A complete three-epoch real-data fine-tune saved and reloaded an adapter from 173 mixed-view training conversations, using 12.43 GiB peak allocated VRAM. [Training evidence](docs/validation/real-crop-v1-training.json).
+- The [experimental adapter on Hugging Face](https://huggingface.co/nutinspace/talk-to-schematic-qwen3.5-4b-lora-experimental/tree/21ca688a65be235905a56ff7d4355bc08d02bab6) passes the evidence-assisted benchmark but **fails the image-only value-reading gate**. It is not a qualified release.
+- The base model's full benchmark exposed a nonterminating invented resistor list on an absent-component question. Failed generations remain failures in the benchmark denominator.
 
----
+This project currently supports native **EAGLE XML** extraction and PNG/JPEG/WebP model input. It does not contain a KiCad importer, a general electrical rules checker, or a human-reviewed real-board defect benchmark.
 
-## How the recipe works
+The first complete comparison used the same 20 held-out board families, 1,024-pixel image limit, 1,024-token answer budget, and gold conversation history for both models:
 
-```
-hwsynth.py ── generate design ──► render schematic PNG
-     │                            true netlist + BOM
-     └── rules engine ──────────► true findings (code, severity, refdes, why)
-                                         │
-build_dataset.py ── multi-turn chat built from the truth ──► data/{train,val,test}.jsonl
-                                         │
-train_unsloth.py ── Unsloth LoRA (vision + language layers) ──► adapter / merged model
-                                         │
-predict.py + evaluate.py ── grade every turn, release gates
-chat.py ── talk to any schematic through vLLM
-```
+| Held-out task | Base | First adapter | Cases |
+|---|---:|---:|---:|
+| Values with native evidence | 100% | 100% | 40 |
+| Physical-pad connectivity with native evidence | 100% | 100% | 40 |
+| Image-only literal values | 65% | 67.5% | 40 |
+| Completed answers across both views | 199/200 | 200/200 | 200 |
 
-Every answer is computed from the design's true netlist, BOM, and rules, so **every turn has a machine-checkable gold label**. Nobody hand-labels images.
+These are narrow deterministic metrics, not overall engineering accuracy. The manual audit found valid unit equivalents rejected by literal matching and unsupported extra claims in some otherwise passing base answers. Validation image-only values were 9/26 for the base and 12/26 for the adapter. Further data and model improvements use validation evidence while preserving this first benchmark. [Actual predictions and run summary](docs/validation/model-v1/summary.json) are retained for both models.
 
-## What the model learns
+A validation-only resolution comparison raised the first adapter from 12/26 correct values at 1,024 pixels to 22/26 at 1,536 and 24/26 at 2,048, with zero failed generations. The 2,048-pixel run used 18.0 GiB peak allocated VRAM and still missed the 95% literal-value gate. [Resolution evidence](docs/validation/model-v1/resolution-ablation.json). Source review identified overlapping labels in one remaining case and an incorrect component qualifier in the other; neither was silently scored as correct.
 
-| Turn type | Example question | What a correct answer does | Graded by |
-|---|---|---|---|
-| Review | "Review this schematic for problems." | Lists findings as `[severity] REFDES: why` | Finding recall/precision, false alarms on clean sheets |
-| Fix | "How would you fix the C3 issue?" | Gives a concrete change on the right part | Names the right refdes |
-| Net trace | "What's connected to 3V3?" | Lists exact pins as `REFDES.PIN` | Pin-set F1 |
-| Pin trace | "Where does U2.ADDR go?" | Net + far-end pins, or "floating" | Pin-set F1 |
-| Lookup | "What value is F1?" | Reads value/rating as drawn | Exact value |
-| Calculation | "How much power does U1 dissipate?" | Shows the formula and numbers | Number within 2 % |
-| What-if | "If R3 were 1k, what LED current?" | Recomputes | Number within 2 % |
-| Presence | "Does U2 have a decoupling cap?" | Yes/no with refdes | Yes/no |
-| **Grounding** | "What value is C7?" / "What trace width is VIN?" | **Says it isn't on the sheet** | Refusal rate |
+The expanded training recipe contains 888 conversations and 1,409 supervised turns across the same 87 training board families, including 715 image-only component lookups and varied absent identifiers. Seven uncertain label groups are explicitly excluded; unreviewed labels remain identified as such. Validation and test bytes remain frozen. A two-step test on eight demanding rows at 2,048 pixels passed with 11.47 GiB peak reserved memory. [Snapshot](docs/validation/expanded-v3-snapshot.json), [fit evidence](docs/validation/expanded-v3-fit-2048.json), and [experiment plan](docs/validation/expanded-v3-experiment-plan.json) distinguish data integrity, hardware fit, and model qualification.
 
-The grounding turns matter most for trust. The model has to learn to say "not on this schematic" instead of inventing a part or a layout fact. In the smoke test, an overconfident model scores 0 % on this.
+## Install and check
 
-### Faults the reviewer is trained to catch (17)
+Python 3.11–3.13 is supported for the CPU package; the checked local GPU environment uses Python 3.13.14.
 
-| Area | Fault codes |
-|---|---|
-| Regulator | LDO_VIN_EXCEEDED, LDO_DROPOUT (USB 5 V min + 1117), LDO_CURRENT, LDO_THERMAL, REG_OUTPUT_CAP |
-| Input protection | MISSING_INPUT_PROTECTION, TVS_STANDOFF_LOW, FUSE_UNDERSIZED, CAP_VOLTAGE_DERATING |
-| IC support | MISSING_DECOUPLING, DECOUPLING_VALUE, FLOATING_INPUT (ADDR strap) |
-| Interface | I2C_PULLUP_VALUE, I2C_PIN_SWAP, NET_LABEL_MISMATCH (SDA vs SDA_1) |
-| Indicator | LED_REVERSED, LED_CURRENT |
-
-About a quarter of designs are clean. That way the model also learns to say "no issues found" instead of always finding something.
-
-## Data format (Unsloth vision conversation)
-
-Each `data/*.jsonl` row is one image plus a 3–6 turn chat:
-
-```json
-{"id": "D0012-c0", "design_id": "D0012", "split": "train",
- "messages": [
-  {"role": "system", "content": [{"type": "text", "text": "You are a hardware engineer's schematic assistant..."}]},
-  {"role": "user", "content": [{"type": "image", "image": "data/images/D0012.png"},
-                               {"type": "text", "text": "Reference data:\n- LM1117-3.3: ...\n\nWhere does U2.SDA go?"}]},
-  {"role": "assistant", "content": [{"type": "text", "text": "U2.SDA is on SDA, together with R1.2."}]},
-  {"role": "user", "content": [{"type": "text", "text": "Do a design review of this page."}]},
-  {"role": "assistant", "content": [{"type": "text", "text": "<think>\n...\n</think>\n\nI found 3 issues: ..."}]}],
- "gold": [{"type": "pins", "pins": ["R1.2"], "query": "U2.SDA"}, {"type": "codes", "codes": ["..."]}]}
+```sh
+uv sync --locked
+uv run --locked pytest -q
+uv run --locked ruff check .
+uv build
+uv run --locked schematic-model --help
 ```
 
-Recipe choices:
-- **The image goes on the first turn only.** Follow-up questions refer back to it, the same way a real chat works.
-- **Reference data in the prompt.** Datasheet limits (Vin max, dropout, Cout min, TVS stand-off) are passed with the first question. The model reasons from evidence it was given, not from memory. In production, fill this from your parts DB for the parts on the sheet.
-- **Reasoning on the last turn only.** About 80 % of chats end with a `<think>` block, following Unsloth's guidance to keep at least 75 % reasoning data for Qwen3.8. Earlier turns are plain answers, because Qwen chat templates drop old reasoning from history.
-- **Responses-only loss.** The model is trained on every assistant turn, not on the questions.
-- **Split by design.** No schematic appears in more than one of train, val, and test.
-- **Train-only augmentation.** Slight rotation, blur, scan tint, and JPEG artifacts, never pushed past legibility.
+Install the development hooks once per checkout (Node.js 22.18 or newer is required for CSpell):
 
-## Quickstart
-
-```bash
-# 1. data (CPU)
-pip install schemdraw pillow matplotlib
-python build_dataset.py --n-designs 3000 --out data        # repo ships a 200-design sample
-
-# 2. train (RTX PRO 6000 96 GB)
-pip install --upgrade unsloth "transformers>=5" trl datasets
-python train_unsloth.py --data data --out outputs/hw-lora
-
-# 3. evaluate base vs fine-tune
-vllm serve Qwen/Qwen3.8-27B --served-model-name base --max-model-len 32768
-python predict.py --model base --out preds_base.jsonl
-vllm serve outputs/hw-lora-merged --served-model-name hw --max-model-len 32768
-python predict.py --model hw --out preds_ft.jsonl
-python evaluate.py --pred preds_ft.jsonl --pred-base preds_base.jsonl
-
-# 4. talk to a schematic
-python chat.py docs/example_schematic.png --show-thinking
-
-# no GPU? check the grader
-python make_mock_preds.py perfect > p.jsonl; python make_mock_preds.py naive > n.jsonl
-python evaluate.py --pred p.jsonl --pred-base n.jsonl
+```sh
+npm ci --ignore-scripts
+uv run --locked pre-commit install
+uv run --locked pre-commit run --all-files
+npm run spellcheck
 ```
 
-## Training settings (96 GB)
+The commit hooks check source spelling, Python correctness, configuration syntax, merge conflicts, and unexpectedly large additions. The push hook runs the CPU regression suite. CSpell excludes original third-party fixtures, generated corpus records, and verbatim simulated gold; those artifacts keep their original bytes and have separate provenance checks. Its project vocabulary contains hardware terms and library identifiers.
 
-| Setting | Value | Why |
-|---|---|---|
-| Model | `unsloth/Qwen3.8-27B`, 16-bit LoRA | Unsloth: QLoRA fits 24 GB, 16-bit LoRA needs >36 GB, so 96 GB has room for full-resolution images |
-| Layers | vision + language, attention + MLP | Schematics are far from natural photos, so the vision tower must adapt |
-| LoRA r / alpha | 32 / 32 | Raise to 64 if net tracing under-fits |
-| LR / epochs | 1e-4, 2 epochs, cosine | Lower LR protects general chat skills |
-| Collator | `UnslothVisionDataCollator`, `resize="max"`, responses-only | Small schematic text needs full resolution |
-| Mix-in | `--general-mix` about 15 % general chat/vision | Reduces forgetting |
+Native schematic rendering requires `rsvg-convert` from librsvg. On Ubuntu the package is `librsvg2-bin`; on Arch it is `librsvg`. Tests use real source fixtures and generated failure cases. Ordinary CPU tests do not download models or initialize CUDA.
 
-## Evaluation and release gates
+The wheel includes the command-line tools and three reusable AI skills. Large downloaded corpora, weights, checkpoints, and local prediction results remain outside Git. Pinned source manifests and compact validation evidence are committed.
 
-`predict.py` answers each turn using the gold history (teacher forcing). `evaluate.py` grades each turn by its type.
+## Inspect a real schematic
 
-| Metric | Gate |
-|---|---|
-| review.recall | ≥ 0.90 |
-| review.false_alarm_on_clean | ≤ 0.05 |
-| pins.f1 | ≥ 0.95 |
-| number.acc | ≥ 0.95 |
-| refuse.acc (no hallucinated parts/facts) | ≥ 0.98 |
+```sh
+uv run --locked schematic-model inspect \
+  tests/fixtures/real/txb0104.sch \
+  --out tmp/txb0104-evidence.json \
+  --render tmp/txb0104.png
+```
 
-The grader was self-checked on 2,315 generated turns: gold answers score 100 % on every metric. `docs/eval_smoke_test.txt` compares a perfect echo against an overconfident model. The overconfident model still reads values correctly but fails review recall (0 %) and grounding (0 %).
+The evidence includes the sheet-local BOM and physical package-pad connectivity resolved through the source's embedded libraries. Symbol pin names and physical pad numbers may differ. Unsupported binary EAGLE, hierarchical constructs, or rendering primitives are rejected rather than guessed.
 
-## Moving to real schematics
+Corpus images preserve source geometry and crop page furniture to make circuit labels legible. These corpus renders are explicitly identified as derivatives and include attribution. Original files remain available alongside the corpus. Crowded source labels and peripheral annotation clipping remain known limitations; inspect the original source when a crop is ambiguous.
 
-1. **Export from your EDA tool.** For KiCad: `kicad-cli sch export svg/pdf` (image), `kicad-cli sch export netlist` (truth), `kicad-cli sch export bom`. Rasterize at about 150–200 DPI. Tile large sheets into overlapping crops, each with a crop-local netlist.
-2. **Port your review checklist into `check_design()` rules.** Each rule returns `{code, severity, refdes, why}`.
-3. **Inject faults into released, known-good designs** (swap values, flip polarity, delete decoupling, rename a label). That gives guaranteed-correct review labels.
-4. **Reuse the question generators.** They only need a netlist, a BOM, and findings, so they work unchanged on real exports.
-5. **Hold out a human-checked golden set** of at least 200 real sheets that never touches training. Synthetic test scores are an upper bound.
+## Rebuild the real corpus
 
-## Files
+```sh
+uv run --locked schematic-model corpus \
+  --manifest corpora/adafruit-120.json \
+  --out data/real --limit 120
+```
 
-| File | Purpose |
-|---|---|
-| `hwsynth.py` | Parts DB, design sampler, fault injection, rules engine, netlist/BOM, renderer |
-| `build_dataset.py` | Builds multi-turn review + Q&A conversations with per-turn gold labels |
-| `train_unsloth.py` | Unsloth 16-bit LoRA vision fine-tune, merged export for vLLM |
-| `predict.py` | Answers every test turn via an OpenAI-compatible server |
-| `evaluate.py` | Per-turn grading + release gates, base vs fine-tune |
-| `chat.py` | Interactive "talk to the schematic" CLI |
-| `make_mock_preds.py` | GPU-free grader smoke test |
-| `data/` | 200-design sample (320 train / 20 val / 20 test chats) |
-| `docs/` | Example schematic, example conversation, smoke-test output |
+Existing outputs require an explicit `--overwrite`. The importer verifies source hashes and licensing evidence and returns an incomplete status if it cannot produce the requested count.
 
-## Limitations
+| View | Train | Validation | Test | Turns |
+|---|---:|---:|---:|---:|
+| Native evidence plus image | 87 | 13 | 20 | 720 |
+| Image only | 86 | 13 | 20 | 476 |
 
-- The synthetic sheet has one topology and 17 rules. It demonstrates the recipe; it won't generalize to real multi-sheet boards without real EDA exports.
-- Datasheet values in `hwsynth.py` are simplified for the example. Use your parts DB.
-- `train_unsloth.py` follows Unsloth's documented Qwen3.8/vision APIs but hasn't been run here (no GPU). Expect small adjustments for your installed versions.
+Rows are grouped by board repository, keeping its pages and revisions together. The image-only view excludes hidden values and physical-pad questions that cannot be established visually. One training board has no eligible visible value labels.
+
+The evidence-assisted view supplies extracted facts in the prompt. Its score measures using those facts, not independent wire recognition. The separate image-only view measures visible value lookup and unsupported-fact refusals. Neither view supplies invented design-defect annotations.
+
+See the [source inventory](corpora/adafruit-120.json), [corpus summary](corpora/adafruit-120-summary.json), and [render hashes](corpora/adafruit-120-rendered.json). Source hardware and derived data retain their recorded CC BY-SA 3.0 terms and attribution.
+
+Reproduce the example document after building the corpus:
+
+```sh
+uv run --locked python scripts/export_examples.py --overwrite
+```
+
+## Generate the synthetic teaching set
+
+```sh
+uv run --locked schematic-model synthetic \
+  --n-designs 200 --seed 7 --out tmp/synthetic
+```
+
+The generator stages a complete dataset before publishing it, rejects invalid settings, and records design parameters, netlists, BOMs, findings, split statistics, and asset hashes in `manifest.json`. Image paths are relative to the dataset directory.
+
+This is one idealized teaching topology with simplified component rules. Numerical labels include units. Synthetic rules and self-scoring gold answers do not establish real-world engineering accuracy. The original `docs/example_*` files are standalone historical fixtures; they do not describe the regenerated design with the same identifier.
+
+## Train on the 4090
+
+The CPU uv environment deliberately does not install CUDA or replace Studio's managed dependencies. The local tested training environment contains Unsloth 2026.8.22, Transformers 5.5.0, TRL 0.23.1, and Torch 2.11.0+cu130. See the recorded smoke manifest for exact versions.
+
+Use the installed Unsloth environment, or a separate environment matching the [Unsloth Qwen3.5 training guide](https://unsloth.ai/docs/models/qwen3.5/fine-tune). The current configuration uses bf16 LoRA; GPU fit must be measured for the actual image size and context length.
+
+```sh
+# CPU-only data validation; no model load or output writes.
+uv run --locked schematic-model train --data data/real --dry-run
+
+# Freeze both views for the first real-data training recipe.
+uv run --locked python scripts/prepare_training.py \
+  --evidence data/real --vision data/real/vision \
+  --out data/training/real-crop-v1
+
+# Run these two commands with your Unsloth environment's Python.
+python scripts/download_model.py --out models/Qwen3.5-4B
+python train_unsloth.py \
+  --data data/training/real-crop-v1 --out outputs/schematic-lora \
+  --model models/Qwen3.5-4B \
+  --revision 3764fa359b9082ea5a1e4a5e3ac3aaf6e9671636 \
+  --max-seq 8192 --max-image-size 1024 \
+  --epochs 3 --rank 16 --gradient-accumulation 4
+```
+
+For an execution smoke, use `--max-steps 2 --max-train-rows 4 --gradient-accumulation 1`. That is not a useful trained-model qualification. Training validates split identity and image hashes, checks token length and supervised assistant masks, and writes a manifest with settings, losses, memory use, and artifact hashes. It fails on truncation or invalid data rather than silently dropping examples.
+
+Adapters are saved by default. `--resume CHECKPOINT` resumes trainer state; `--export-merged` additionally writes a separate merged model. Existing nonempty outputs are protected.
+
+## Compare actual model answers
+
+Use the failure-accounting benchmark for qualification. Every requested turn remains in the denominator; incomplete generations get explicit failed records with empty answers. Resource or data failures stop the run and invalidate its report. Ordinary deployment prediction continues to require complete answers.
+
+```sh
+# Run with your Unsloth environment's Python.
+python -m schematic_model.benchmark \
+  --model models/Qwen3.5-4B --data data/training/real-crop-v1/evidence/test.jsonl \
+  --out results/base.jsonl --profile real-grounding \
+  --max-image-size 1024 --max-tokens 1024
+
+python -m schematic_model.benchmark \
+  --model outputs/schematic-lora --data data/training/real-crop-v1/evidence/test.jsonl \
+  --out results/adapter.jsonl --profile real-grounding \
+  --max-image-size 1024 --max-tokens 1024
+
+uv run --locked schematic-model evaluate \
+  --gold data/training/real-crop-v1/evidence/test.jsonl --pred results/adapter.jsonl \
+  --pred-base results/base.jsonl --profile real-grounding \
+  --report results/real-grounding-report.json
+```
+
+Repeat with `data/training/real-crop-v1/vision/test.jsonl` and `--profile real-vision` for the image-only benchmark. Do not compare results from different images or prompt evidence.
+
+Default `--history gold` evaluates each answer with the correct earlier answers. Also run `--history generated` to measure accumulated conversation errors. Resume metadata binds the dataset, all referenced images, model artifacts, and inference settings.
+
+Missing, duplicate, malformed, or incomplete evidence blocks evaluation. A failed run replaces an old passing report with an explicit incomplete report. Deterministic value/pin/refusal scoring is limited: review actual answers and adjudicate lexical false positives and negatives. The `synthetic` profile additionally checks the fixed teaching circuit's review and calculation labels.
+
+A separate [25-prompt validation set](docs/validation/generalization-snapshot-v2.json) uses new targets and wording on the existing 13 validation boards. Its 13 image-only value targets were visually reviewed at the 2,048-pixel serving resize; the remaining cases cover absent components, unavailable measurements, and native connections. It adds no independent test boards and changes no original benchmark. Rebuild it from the pinned corpus and original training snapshot:
+
+```sh
+uv run --locked python -m scripts.prepare_generalization_eval \
+  --overrides docs/validation/generalization-eval-plan-v2.json \
+  --write --out data/validation/generalization-v2
+```
+
+The builder refuses an existing destination. Keep the two evidence modes separate and manually review answers alongside category scores: the six native connection cases alone do not satisfy a complete qualification profile.
+
+## Load the adapter and chat
+
+```sh
+# Run the server with your Unsloth environment's Python.
+python -m schematic_model.deployment bundle \
+  --model outputs/schematic-lora --base-model models/Qwen3.5-4B \
+  --out outputs/deploy-schematic
+
+python -m schematic_model.deployment serve \
+  --model outputs/deploy-schematic --port 8891 \
+  --examples data/real --max-tokens 1024
+
+# A separate terminal can use the CPU uv environment.
+uv run --locked schematic-model chat tmp/txb0104.png \
+  --ref tmp/txb0104-evidence.json --model schematic \
+  --base-url http://127.0.0.1:8891/v1 \
+  --question 'What is connected to the OE net?'
+```
+
+Open **http://127.0.0.1:8891/** for the chat workspace. Its dropdown contains the 120 real product schematics, with original source links and attribution. Choose native evidence plus image or image-only mode, then ask questions. The UI displays actual model availability and preserves failed questions for retry; it never substitutes stored gold answers.
+
+The local server binds only to `127.0.0.1`. It exposes `/health`, `/v1/models`, and `/v1/chat/completions`, uses bounded concurrent HTTP handlers with one serialized GPU generation, bounds inputs and output lengths, and accepts image data URLs rather than server filesystem paths or remote image URLs. It is a local inference service, not a public multi-user hosting platform.
+
+Run `npm run browser:smoke -- --url http://127.0.0.1:8891 --out results/browser-smoke` to check the real catalog and desktop/mobile layout. Add `--question 'What value is shown for R1?'` for a real model request. This check requires Chromium at `/usr/bin/chromium`; screenshots and a JSON report are saved separately from the simulated reference conversations.
+
+The HTTP client also supports a compatible Studio endpoint. It reads an existing `UNSLOTH_API_KEY` environment variable when authentication is required. It does not change Studio authentication or automatically switch its resident model.
+
+## AI skills
+
+The package includes:
+
+- [schematic-read](schematic_model/skills/schematic-read/SKILL.md): observed component facts and evidence-assisted answers.
+- [schematic-trace](schematic_model/skills/schematic-trace/SKILL.md): exact pad/net connectivity and ambiguity handling.
+- [schematic-model-evaluate](schematic_model/skills/schematic-model-evaluate/SKILL.md): held-out comparisons, evidence integrity, and release limitations.
+
+```sh
+uv run --locked schematic-model skills
+uv run --locked schematic-model skills --out tmp/schematic-skills
+```
+
+Exported directories can be installed in your agent's skill directory. Export refuses to replace existing files. The skills were forward-tested against a real source schematic, including refusing to invent a powered measurement.
+
+## Development loop
+
+Make one focused change, run the relevant tests, review the result, commit, and push. `.ai-pilled.json` runs the actual uv test and lint commands; it does not invent model-quality evidence. The [CI workflow](.github/workflows/checks.yml) repeats the browser state tests, hooks, CPU checks, application branch coverage, and package build on Python 3.11–3.13. All three versions passed in the [first verified run](https://github.com/tkarcheski/talk-to-schematic-unsloth/actions/runs/37022994096). [Recorded CI evidence](docs/validation/ci-first-pass.json) identifies the exact checked commit.
+
+Keep model results and source-derived gold separate. Use validation data for tuning, preserve the held-out test split, and record every candidate's settings and failures. A saved checkpoint becomes a deployable candidate only after reload and complete-response checks; passing a small benchmark does not establish general schematic-review competence.
