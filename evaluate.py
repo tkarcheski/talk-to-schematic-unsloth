@@ -1,23 +1,17 @@
 """
 evaluate.py - score "talk to the schematic" answers turn by turn.
 
-  python evaluate.py --gold data/test.jsonl --pred preds_ft.jsonl [--pred-base preds_base.jsonl]
+  python evaluate.py --gold test.jsonl --pred adapter.jsonl --profile real-grounding [--pred-base base.jsonl]
 
-predict.py writes one row per (conversation, turn) with the model's answer.
-Each turn is graded by its gold type:
+Each prediction row holds one (conversation, turn) answer. Each turn is graded
+by its gold type:
 
-  codes   review turn      - finding recall / precision (keyword + refdes match)
   pins    net / pin trace  - pin-set F1 on REFDES.PIN tokens
   value   part lookup      - bounded value token appears in the answer
-  number  calc / what-if   - final equation result within 2 %, including units
-  yesno   presence         - correct yes/no
   refuse  not on sheet     - answer declines instead of inventing (hallucination check)
-  refdes  fix suggestion   - answer names the right part
 These are deterministic format/keyword checks, not a semantic judge. In
-particular, review and refusal scores do not prove that an answer is correct.
-Legacy numeric labels without a unit receive magnitude-only grading; the CLI
-reports their count. Missing predictions and missing release-gate evidence
-are errors, never passing scores.
+particular, refusal scores do not prove that an answer is correct. Missing
+predictions and missing release-gate evidence are errors, never passing scores.
 """
 import argparse
 import hashlib
@@ -30,70 +24,14 @@ import tempfile
 from collections.abc import Mapping
 from pathlib import Path
 
-KEYWORDS = {  # code -> regex that a correct prose finding should match
-    "LDO_VIN_EXCEEDED": r"abs.?max|exceed|input.*(rating|max)|rated",
-    "LDO_DROPOUT": r"dropout|headroom|regulation",
-    "LDO_CURRENT": r"current|mA.*(exceed|rating)",
-    "LDO_THERMAL": r"thermal|dissipat|\bW\b|heat",
-    "REG_OUTPUT_CAP": r"output cap|stabil|oscillat|minimum",
-    "TVS_STANDOFF_LOW": r"stand.?off|conduct|TVS",
-    "MISSING_INPUT_PROTECTION": r"TVS|ESD|surge|protection",
-    "FUSE_UNDERSIZED": r"fuse|F1",
-    "CAP_VOLTAGE_DERATING": r"derat|rated|voltage",
-    "MISSING_DECOUPLING": r"decoupl|bypass|100 ?nF",
-    "DECOUPLING_VALUE": r"decoupl|100 ?nF|value",
-    "FLOATING_INPUT": r"float|ADDR|unconnected",
-    "I2C_PULLUP_VALUE": r"pull.?up|rise|sink|weak|I2C",
-    "I2C_PIN_SWAP": r"swap|SDA.*SCL|SCL.*SDA",
-    "NET_LABEL_MISMATCH": r"SDA_1|label|not connected",
-    "LED_REVERSED": r"revers|polarity|backwards|cathode",
-    "LED_CURRENT": r"current|mA",
-}
-REFDES_OF = {"LDO_VIN_EXCEEDED": "U1", "LDO_DROPOUT": "U1", "LDO_CURRENT": "U1", "LDO_THERMAL": "U1",
-             "REG_OUTPUT_CAP": "C2", "TVS_STANDOFF_LOW": "D1", "MISSING_INPUT_PROTECTION": "J1|D1|VIN",
-             "FUSE_UNDERSIZED": "F1", "CAP_VOLTAGE_DERATING": "C1", "MISSING_DECOUPLING": "U2|C3",
-             "DECOUPLING_VALUE": "C3", "FLOATING_INPUT": "U2", "I2C_PULLUP_VALUE": "R1|R2",
-             "I2C_PIN_SWAP": "U2", "NET_LABEL_MISMATCH": "R1|U2", "LED_REVERSED": "D2", "LED_CURRENT": "R3|D2"}
 REFUSE = r"(no|not|isn't|doesn't|don't|aren't)\b.{0,40}\b(on|in|shown|show|drawn|specified|marked|state|sheet|schematic)"
 REFDES = r"[A-Z][A-Z0-9_$-]*"
 PIN = rf"(?<![\w$-])({REFDES})\.([A-Z0-9_$+-]+)(?![\w$+-])"
 
-UNITS = {
-    "A": ("current", 1.0), "mA": ("current", 1e-3),
-    "uA": ("current", 1e-6), "µA": ("current", 1e-6),
-    "V": ("voltage", 1.0), "mV": ("voltage", 1e-3),
-    "W": ("power", 1.0), "mW": ("power", 1e-3),
-}
-NUMBER_RESULT = re.compile(
-    r"=\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)"
-    r"\s*(mA|uA|µA|mV|mW|A|V|W)\b"
-)
-NEGATED_FINDING = re.compile(
-    r"\b(?:no|without)\s+(?:[\w-]+\s+){0,3}"
-    r"(?:problems?|issues?|faults?|concerns?|risk|violations?)\b"
-    r"|\b(?:not|isn't|is not|doesn't|does not)\s+(?:[\w-]+\s+){0,2}"
-    r"(?:exceed\w*|overheat\w*|revers\w*|float\w*|missing|swapped|too (?:high|low|weak))\b"
-    r"|\b(?:within (?:its |the )?(?:rating|limits?)|adequate headroom|enough headroom)\b",
-    re.I,
-)
-CLEAN_REVIEW = re.compile(
-    r"\bno (?:\w+ )?(?:issues|problems|faults)\b|\blooks? (?:fine|good)\b"
-    r"|\ball (?:check out|checks? pass)|\bevery check passes\b", re.I
-)
-
-
 class EvaluationError(ValueError):
     """Malformed evaluation data or incomplete prediction coverage."""
 
-GATES = {
-    "review.recall": (">=", 0.90),
-    "review.false_alarm_on_clean": ("<=", 0.05),
-    "pins.f1": (">=", 0.95),
-    "number.acc": (">=", 0.95),
-    "refuse.acc": (">=", 0.98),      # must not hallucinate parts or layout facts
-}
 PROFILES = {
-    "synthetic": GATES,
     "real-grounding": {"value.acc": (">=", 0.95), "pins.f1": (">=", 0.95), "refuse.acc": (">=", 0.98)},
     "real-vision": {"value.acc": (">=", 0.95), "refuse.acc": (">=", 0.98)},
 }
@@ -104,44 +42,6 @@ def strip(t):
     """Remove complete reasoning blocks; an unclosed block has no final answer."""
     text = re.sub(r"<think>.*?</think>", "", t or "", flags=re.S | re.I)
     return re.split(r"<think>", text, maxsplit=1, flags=re.I)[0].strip()
-
-
-def _clauses(text):
-    return [clause.strip() for clause in re.split(r"\n|(?<=[.!?])\s+(?=[A-Z])", text)
-            if clause.strip()]
-
-
-def lines_for(code, text):
-    """Candidate claims with a matching part/keyword and no recognized denial.
-
-    This intentionally remains a limited prose heuristic; compound sentences
-    and paraphrases require human review or a separate structured benchmark.
-    """
-    return [line for line in _clauses(text)
-            if re.search(rf"\b({REFDES_OF[code]})\b", line)
-            and re.search(KEYWORDS[code], line, re.I)
-            and not NEGATED_FINDING.search(line)]
-
-
-def _number_correct(gold, answer):
-    matches = NUMBER_RESULT.findall(answer)
-    if not matches:
-        return False
-    value, unit = matches[-1]
-    actual = float(value)
-    if not math.isfinite(actual):
-        return False
-    expected = gold["value"]
-    if "unit" in gold:
-        expected_dimension, expected_scale = UNITS[gold["unit"]]
-        actual_dimension, actual_scale = UNITS[unit]
-        if expected_dimension != actual_dimension:
-            return False
-        actual = actual * actual_scale / expected_scale
-    # A zero label requires zero; a nonzero absolute floor would accept an
-    # energized circuit for a nominally nonconducting diode.
-    tolerance = 0.02 * abs(expected) if expected else 0.0
-    return abs(actual - expected) <= tolerance
 
 
 def contextual_refusal(question, answer):
@@ -243,18 +143,6 @@ def grade(g, ans, *, question=None, refusal_scorer="v1"):
     """Grade one label; callers scoring a dataset must use :func:`score`."""
     t = g["type"]
     ans = strip(ans)
-    if t == "codes":
-        gold = set(g["codes"])
-        hit = {c for c in gold if lines_for(c, ans)}
-        claims = {line for code in KEYWORDS for line in lines_for(code, ans)}
-        claims.update(line for line in _clauses(ans)
-                      if re.search(r"\b(?:problem|fault|fail|overheat|unsafe)\w*\b", line, re.I)
-                      and re.search(r"\b[A-Z]{1,2}\d+\b", line)
-                      and not NEGATED_FINDING.search(line))
-        clean = bool(CLEAN_REVIEW.search(ans)) and not claims
-        return {"review.recall": (len(hit) / len(gold)) if gold else None,
-                "review.precision": (len(hit) / max(len(claims), len(hit))) if claims else float(clean),
-                "review.false_alarm_on_clean": float(not clean) if not gold else None}
     if t == "pins":
         pred = {f"{a}.{b}" for a, b in re.findall(PIN, ans)} - {g.get("query")}
         gold = set(g["pins"])
@@ -274,27 +162,12 @@ def grade(g, ans, *, question=None, refusal_scorer="v1"):
         value = r"\s*".join(re.escape(part) for part in g["value"].split())
         return {"value.acc": bool(re.search(
             rf"(?<![\w.+-]){value}(?!\w|\.\d)", ans, re.I))}
-    if t == "number":
-        return {"number.acc": _number_correct(g, ans)}
-    if t == "yesno":
-        polarity = re.match(r"\s*(yes|no)\b", ans, re.I)
-        if not polarity:
-            return {"yesno.acc": False}
-        said_yes = polarity[1].lower() == "yes"
-        # Explicit contradictions are rejected. This is not a general natural
-        # language entailment checker; the benchmark expects Yes/No first.
-        rest = ans[polarity.end():]
-        contradiction = re.search(r"\bno\b|\b(?:isn't|doesn't|not)\b", rest, re.I) if said_yes else re.search(r"\byes\b", rest, re.I)
-        return {"yesno.acc": said_yes == g["yes"] and not contradiction}
     if t == "refuse":
         if refusal_scorer == "v2":
             return {"refuse.acc": contextual_refusal(question, ans)["accepted"]}
         if refusal_scorer != "v1":
             raise EvaluationError(f"Unknown refusal scorer: {refusal_scorer}")
         return {"refuse.acc": bool(re.search(REFUSE, ans, re.I))}
-    if t == "refdes":
-        return {"fix.names_part": bool(g["refdes"]) and all(
-            re.search(rf"\b{re.escape(r)}\b", ans) for r in g["refdes"])}
     raise EvaluationError(f"Unknown gold type: {t!r}")
 
 
@@ -311,12 +184,7 @@ def _validate_label(label, location):
     if not isinstance(label, dict):
         raise EvaluationError(f"{location} must be an object")
     kind = label.get("type")
-    if kind == "codes":
-        _string_list(label.get("codes"), f"{location}.codes")
-        unknown = set(label["codes"]) - KEYWORDS.keys()
-        if unknown:
-            raise EvaluationError(f"{location}: unknown finding codes {sorted(unknown)}")
-    elif kind == "pins":
+    if kind == "pins":
         _string_list(label.get("pins"), f"{location}.pins")
         if "net" in label and (not isinstance(label["net"], str) or not label["net"].strip()):
             raise EvaluationError(f"{location}.net must be a nonempty string")
@@ -328,19 +196,6 @@ def _validate_label(label, location):
     elif kind == "value":
         if not isinstance(label.get("value"), str) or not label["value"].strip():
             raise EvaluationError(f"{location}.value must be a nonempty string")
-    elif kind == "number":
-        value = label.get("value")
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
-            raise EvaluationError(f"{location}.value must be a finite number")
-        if "unit" in label and (not isinstance(label["unit"], str) or label["unit"] not in UNITS):
-            raise EvaluationError(f"{location}.unit must be one of {', '.join(UNITS)}")
-    elif kind == "yesno":
-        if not isinstance(label.get("yes"), bool):
-            raise EvaluationError(f"{location}.yes must be a boolean")
-    elif kind == "refdes":
-        _string_list(label.get("refdes"), f"{location}.refdes", allow_empty=False)
-        if any(not re.fullmatch(REFDES, ref) for ref in label["refdes"]):
-            raise EvaluationError(f"{location}.refdes contains invalid reference designators")
     elif kind != "refuse":
         raise EvaluationError(f"{location}: unknown gold type {kind!r}")
 
@@ -452,10 +307,10 @@ def load(path):
     return predictions
 
 
-def gate_failures(metrics, counts, gates=None):
+def gate_failures(metrics, counts, gates):
     """Every required metric needs evidence and a finite passing score."""
     failed = []
-    for name, (operator, threshold) in (GATES if gates is None else gates).items():
+    for name, (operator, threshold) in gates.items():
         if name not in metrics or counts.get(name, 0) < 1:
             failed.append(f"{name} (no evidence)")
             continue
@@ -522,7 +377,7 @@ def main(argv=None):
     ap.add_argument("--gold", required=True)
     ap.add_argument("--pred", required=True)
     ap.add_argument("--pred-base")
-    ap.add_argument("--profile", choices=PROFILES, default="synthetic")
+    ap.add_argument("--profile", choices=PROFILES, required=True)
     ap.add_argument("--refusal-scorer", choices=REFUSAL_SCORERS, default="v1",
                     help="v2 is an opt-in restricted contextual grammar; unmatched prose needs manual review")
     ap.add_argument("--report", type=Path, help="write machine-readable benchmark evidence")
@@ -561,10 +416,6 @@ def main(argv=None):
         except (ValueError, OSError) as exc:
             print(f"RELEASE: BLOCKED: Report was not updated: {exc}", file=sys.stderr)
             return 2
-    legacy_numbers = sum(label["type"] == "number" and "unit" not in label
-                         for row in gold for label in row["gold"])
-    if legacy_numbers:
-        print(f"LIMITATION: {legacy_numbers} legacy numeric labels lack units; these receive magnitude-only grading.")
     print("Grading uses format and keyword heuristics; it does not establish semantic correctness.")
     print(f"Refusal scorer: {REFUSAL_SCORERS[a.refusal_scorer]}")
     print(f"{'metric':32s} {'n':>5s} {'model':>8s}" + (f" {'base':>8s}" if base else "") + "  gate")

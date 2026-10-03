@@ -10,8 +10,6 @@ readme = "README.md"
 requires-python = ">=3.11,<3.14"
 dependencies = [
   "pillow>=11,<13",
-  "matplotlib>=3.10,<4",
-  "schemdraw>=0.21,<0.23",
 ]
 
 [project.scripts]
@@ -27,14 +25,14 @@ dev = [
 
 [tool.setuptools]
 packages = ["schematic_model"]
-py-modules = ["hwsynth", "build_dataset", "evaluate", "predict", "chat"]
+py-modules = ["evaluate", "predict", "chat"]
 
 [tool.setuptools.package-data]
 schematic_model = ["skills/*/SKILL.md", "web/*"]
 
 [tool.coverage.run]
 branch = true
-source = ["schematic_model", "build_dataset", "hwsynth", "evaluate", "predict", "chat"]
+source = ["schematic_model", "evaluate", "predict", "chat"]
 
 [tool.coverage.report]
 show_missing = true

@@ -8,7 +8,6 @@ The target is an RTX 4090 with 24 GB VRAM. The current base model is **Qwen3.5-4
 
 - 120 real EAGLE schematics from 120 Adafruit board repositories, with immutable source revisions, original notices, and SHA256 manifests.
 - 120 evidence-assisted conversations and 119 image-only conversations. Twenty board families are reserved for held-out testing.
-- A regenerated synthetic teaching set: 200 designs, 360 conversations, and 1,368 turns.
 - [25 complete simulated conversations](docs/simulated_conversations.md), containing 150 user prompts. These are source-derived gold examples, **not model transcripts**.
 - A two-step 4090 training smoke run saved an adapter with finite loss and 9.55 GiB peak allocated VRAM at 768-pixel images. [Recorded evidence](docs/validation/4090-smoke.json).
 - A complete three-epoch real-data fine-tune saved and reloaded an adapter from 173 mixed-view training conversations, using 12.43 GiB peak allocated VRAM. [Training evidence](docs/validation/real-crop-v1-training.json).
@@ -99,17 +98,6 @@ Reproduce the example document after building the corpus:
 uv run --locked python scripts/export_examples.py --overwrite
 ```
 
-## Generate the synthetic teaching set
-
-```sh
-uv run --locked schematic-model synthetic \
-  --n-designs 200 --seed 7 --out tmp/synthetic
-```
-
-The generator stages a complete dataset before publishing it, rejects invalid settings, and records design parameters, netlists, BOMs, findings, split statistics, and asset hashes in `manifest.json`. Image paths are relative to the dataset directory.
-
-This is one idealized teaching topology with simplified component rules. Numerical labels include units. Synthetic rules and self-scoring gold answers do not establish real-world engineering accuracy.
-
 ## Train on the 4090
 
 The CPU uv environment deliberately does not install CUDA or replace Studio's managed dependencies. The local tested training environment contains Unsloth 2026.8.22, Transformers 5.5.0, TRL 0.23.1, and Torch 2.11.0+cu130. See the recorded smoke manifest for exact versions.
@@ -165,7 +153,7 @@ Repeat with `data/training/real-crop-v1/vision/test.jsonl` and `--profile real-v
 
 Default `--history gold` evaluates each answer with the correct earlier answers. Also run `--history generated` to measure accumulated conversation errors. Resume metadata binds the dataset, all referenced images, model artifacts, and inference settings.
 
-Missing, duplicate, malformed, or incomplete evidence blocks evaluation. A failed run replaces an old passing report with an explicit incomplete report. Deterministic value/pin/refusal scoring is limited: review actual answers and adjudicate lexical false positives and negatives. The `synthetic` profile additionally checks the fixed teaching circuit's review and calculation labels.
+Missing, duplicate, malformed, or incomplete evidence blocks evaluation. A failed run replaces an old passing report with an explicit incomplete report. Deterministic value/pin/refusal scoring is limited: review actual answers and adjudicate lexical false positives and negatives.
 
 A separate [25-prompt validation set](docs/validation/generalization-snapshot-v2.json) uses new targets and wording on the existing 13 validation boards. Its 13 image-only value targets were visually reviewed at the 2,048-pixel serving resize; the remaining cases cover absent components, unavailable measurements, and native connections. It adds no independent test boards and changes no original benchmark. Rebuild it from the pinned corpus and original training snapshot:
 

@@ -21,7 +21,7 @@ Choose the declared benchmark scope:
 schematic-model evaluate --gold TEST.jsonl --pred ADAPTER.jsonl --pred-base BASE.jsonl --profile real-grounding --report report.json
 ```
 
-`real-grounding` requires values, connectivity, and unsupported-fact refusals. `real-vision` requires image-only values and refusals; use its separate image-only dataset. `synthetic` also tests the fixed synthetic circuit's rule findings and calculations. Never switch profiles merely to hide a failing or missing metric.
+`real-grounding` requires values, connectivity, and unsupported-fact refusals. `real-vision` requires image-only values and refusals; use its separate image-only dataset. Never switch profiles merely to hide a failing or missing metric.
 
 Missing, duplicate, malformed, or incomplete prediction evidence blocks a result. Report metric denominators and failures. Deterministic prose matching has limited semantic understanding: inspect actual incorrect answers, correct answers, and plausible false positives before accepting a candidate.
 

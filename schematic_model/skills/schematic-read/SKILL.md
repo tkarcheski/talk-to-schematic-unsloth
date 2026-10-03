@@ -21,4 +21,4 @@ Use `--ref evidence.json` when authoritative extracted facts are available. Stat
 
 Answer with the observed value and reference designator. Keep missing, unreadable, and explicitly unspecified facts distinct. A component's presence does not prove its value, rating, tolerance, or manufacturer part number. A schematic does not establish measured voltage, PCB trace width, layer assignment, or operating behavior.
 
-For electrical review, tie each proposed issue to a visible connection/value and a supplied or verified component limit. Separate confirmed source inconsistencies, assumptions, and questions requiring datasheets or measurements. The model's synthetic rule library is not a universal electrical rules checker.
+For electrical review, tie each proposed issue to a visible connection/value and a supplied or verified component limit. Separate confirmed source inconsistencies, assumptions, and questions requiring datasheets or measurements. The model is not an electrical rules checker.
