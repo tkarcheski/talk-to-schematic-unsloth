@@ -1,0 +1,35 @@
+{
+  "requested_designs": 36,
+  "distinct_source_schematics": 36,
+  "distinct_board_repositories": 36,
+  "conversations": 37,
+  "turns": 222,
+  "split_conversations": {
+    "train": 22,
+    "val": 1,
+    "test": 14
+  },
+  "image_only_conversations": 37,
+  "image_only_split_conversations": {
+    "train": 22,
+    "val": 1,
+    "test": 14
+  },
+  "rendered": true,
+  "status": "complete",
+  "render_method": "eagle_xml_geometry_v3_text_alignment",
+  "crop_policy": "electrical_symbols_and_source_nets_with_text_bounds; frames_and_fiducials_do_not_expand_view",
+  "claims": "Source-fact Q&A with native evidence supplied; not human-reviewed defect gold or image-only OCR evaluation",
+  "excluded": [],
+  "manifest": "corpora/sparkfun-36.json",
+  "attribution": "SparkFun Electronics; each source retains its original README and CC-BY-SA-4.0 license text.",
+  "split_unit": "GitHub board repository; all sheets and revisions stay together. Related products may still share subcircuits.",
+  "limitations": [
+    "Machine-extracted native facts, not human-verified electrical findings.",
+    "Derivative circuit-crop rendering uses original EAGLE geometry and a bounded renderer, not the vendor application. Frames/fiducials do not expand crop bounds; original notices remain in retained source files and an attribution footer is rendered. Unsupported primitives are rejected.",
+    "Evidence-assisted dialogues supply BOM/net facts in the prompt; image-only dialogues are separately located under vision/.",
+    "Selected for the viewer library: Qwiic and breakout boards whose repository carries the CC BY-SA 4.0 license text. Not a random sample of SparkFun designs, and not used by any trained adapter.",
+    "Qwiic_IMU_BNO080 was excluded because its schematic is a test jig rather than the board; 2D_Barcode_Scanner_Breakout took its place."
+  ],
+  "rebuild": "uv run python -m schematic_model.corpus --manifest corpora/sparkfun-36.json --out data/sparkfun --limit 36"
+}

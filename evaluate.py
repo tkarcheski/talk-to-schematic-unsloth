@@ -9,6 +9,10 @@ by its gold type:
   pins    net / pin trace  - pin-set F1 on REFDES.PIN tokens
   value   part lookup      - bounded value token appears in the answer
   refuse  not on sheet     - answer declines instead of inventing (hallucination check)
+  view          viewer call   - exactly one valid viewer command with the expected target;
+                                show_region boxes need IoU >= min_iou with source geometry
+  view_reply    after a call  - plain answer (no further call) that names the shown target
+  view_refuse   label absent  - plain answer that says the label is not on the page
 These are deterministic format/keyword checks, not a semantic judge. In
 particular, refusal scores do not prove that an answer is correct. Missing
 predictions and missing release-gate evidence are errors, never passing scores.
@@ -34,6 +38,8 @@ class EvaluationError(ValueError):
 PROFILES = {
     "real-grounding": {"value.acc": (">=", 0.95), "pins.f1": (">=", 0.95), "refuse.acc": (">=", 0.98)},
     "real-vision": {"value.acc": (">=", 0.95), "refuse.acc": (">=", 0.98)},
+    "view-commands": {"view.call_acc": (">=", 0.95), "view.reply_acc": (">=", 0.95),
+                      "view.refuse_acc": (">=", 0.98)},
 }
 REFUSAL_SCORERS = {"v1": "keyword-refusal-v1", "v2": "contextual-refusal-v2"}
 
@@ -168,7 +174,41 @@ def grade(g, ans, *, question=None, refusal_scorer="v1"):
         if refusal_scorer != "v1":
             raise EvaluationError(f"Unknown refusal scorer: {refusal_scorer}")
         return {"refuse.acc": bool(re.search(REFUSE, ans, re.I))}
+    if t in {"view", "view_reply", "view_refuse"}:
+        return _grade_view(g, ans)
     raise EvaluationError(f"Unknown gold type: {t!r}")
+
+
+def _grade_view(g, ans):
+    from schematic_model.view_tools import ToolFormatError, box_iou, parse_tool_calls
+
+    try:
+        content, calls = parse_tool_calls(ans)
+    except ToolFormatError:
+        content, calls = None, None
+    t = g["type"]
+    if t == "view":
+        result = {"view.call_acc": False}
+        if g["name"] == "show_region":
+            result["view.region_acc"] = False
+        if not calls or len(calls) != 1 or calls[0]["name"] != g["name"]:
+            return result
+        arguments = calls[0]["arguments"]
+        if g["name"] == "show_label":
+            passed = arguments["label"].casefold() == g["arguments"]["label"].casefold()
+        elif g["name"] == "show_region":
+            passed = box_iou(arguments["box"], g["arguments"]["box"]) >= g.get("min_iou", 0.5)
+            result["view.region_acc"] = passed
+        else:
+            passed = True
+        result["view.call_acc"] = passed
+        return result
+    plain = calls == [] and bool(content)
+    if t == "view_refuse":
+        return {"view.refuse_acc": plain and bool(re.search(REFUSE, content, re.I))}
+    label = g.get("label")
+    named = label is None or bool(re.search(rf"(?<![\w$-]){re.escape(label)}(?![\w$-])", content or "", re.I))
+    return {"view.reply_acc": plain and named}
 
 
 def _string_list(value, field, *, allow_empty=True):
@@ -196,7 +236,20 @@ def _validate_label(label, location):
     elif kind == "value":
         if not isinstance(label.get("value"), str) or not label["value"].strip():
             raise EvaluationError(f"{location}.value must be a nonempty string")
-    elif kind != "refuse":
+    elif kind == "view":
+        from schematic_model.view_tools import ToolFormatError, validate_arguments
+
+        try:
+            validate_arguments(label.get("name"), label.get("arguments"))
+        except ToolFormatError as exc:
+            raise EvaluationError(f"{location}: {exc}") from exc
+        if "min_iou" in label and (isinstance(label["min_iou"], bool) or not isinstance(label["min_iou"], (int, float))
+                                   or not 0 < label["min_iou"] <= 1):
+            raise EvaluationError(f"{location}.min_iou must be in (0, 1]")
+    elif kind == "view_reply":
+        if "label" in label and (not isinstance(label["label"], str) or not label["label"].strip()):
+            raise EvaluationError(f"{location}.label must be a nonempty string")
+    elif kind not in {"refuse", "view_refuse"}:
         raise EvaluationError(f"{location}: unknown gold type {kind!r}")
 
 
