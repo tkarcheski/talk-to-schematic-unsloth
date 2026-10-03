@@ -27,6 +27,8 @@ import uuid
 
 from schematic_model.inference import InferenceError
 from schematic_model.training import gpu_inventory, installed_versions, sha256, write_manifest
+from schematic_model.view_tools import (VIEW_TOOLS, VIEWER_INSTRUCTIONS, ToolFormatError, openai_tool_calls,
+                                        parse_tool_calls, plain_messages)
 
 MAX_BODY_BYTES = 32 * 1024 * 1024
 MAX_IMAGE_BYTES = 16 * 1024 * 1024
@@ -224,7 +226,7 @@ def normalize_messages(messages: Any, max_side: int) -> list[dict[str, Any]]:
 
 
 def validate_request(payload: Any, config: DeploymentConfig) -> dict[str, Any]:
-    if not isinstance(payload, dict) or set(payload) - {"model", "messages", "max_tokens", "temperature", "stream"}:
+    if not isinstance(payload, dict) or set(payload) - {"model", "messages", "max_tokens", "temperature", "stream", "tools"}:
         raise ValueError("unsupported completion request fields")
     if payload.get("model") != config.served_model_name:
         raise ValueError("requested model is not served")
@@ -236,8 +238,26 @@ def validate_request(payload: Any, config: DeploymentConfig) -> dict[str, Any]:
     temperature = payload.get("temperature", 0.0)
     if isinstance(temperature, bool) or not isinstance(temperature, (int, float)) or not math.isfinite(temperature) or not 0 <= temperature <= 2:
         raise ValueError("temperature must be a finite number between 0 and 2")
-    return {"messages": normalize_messages(payload.get("messages"), config.max_image_size),
-            "max_tokens": max_tokens, "temperature": float(temperature)}
+    tools = payload.get("tools")
+    # Viewer tool use is rendered to the exact text the model was trained on;
+    # ToolFormatError is a ValueError, so malformed tool traffic is a 400.
+    messages = plain_messages(payload.get("messages"), tools)
+    return {"messages": normalize_messages(messages, config.max_image_size),
+            "max_tokens": max_tokens, "temperature": float(temperature), "tools": tools}
+
+
+def assistant_message(output: str, tools: Any, prefix: str) -> tuple[dict[str, Any], str]:
+    """Return an OpenAI assistant message; viewer calls are parsed only when offered."""
+    if tools is None:
+        return {"role": "assistant", "content": output}, "stop"
+    try:
+        content, calls = parse_tool_calls(output)
+    except ToolFormatError as exc:
+        raise InferenceError("The model produced a malformed viewer command") from exc
+    if not calls:
+        return {"role": "assistant", "content": content}, "stop"
+    return {"role": "assistant", "content": content or None,
+            "tool_calls": openai_tool_calls(calls, prefix)}, "tool_calls"
 
 
 def final_answer(text: str, generated_ids: list[int], eos_ids: set[int]) -> str:
@@ -285,10 +305,13 @@ class LocalModel:
         FastVisionModel.for_inference(model)
         self.model, self.processor, self.torch = model, processor, torch
 
-    def complete(self, model, messages, *, max_tokens=None, temperature=0.0):
-        request = validate_request({"model": model, "messages": messages,
-                                    "max_tokens": self.config.max_tokens if max_tokens is None else max_tokens,
-                                    "temperature": temperature}, self.config)
+    def complete(self, model, messages, *, max_tokens=None, temperature=0.0, tools=None):
+        payload = {"model": model, "messages": messages,
+                   "max_tokens": self.config.max_tokens if max_tokens is None else max_tokens,
+                   "temperature": temperature}
+        if tools is not None:
+            payload["tools"] = tools
+        request = validate_request(payload, self.config)
         self.load()
         started = time.monotonic()
         inputs = self.processor.apply_chat_template(
@@ -392,6 +415,8 @@ def make_server(engine, port: int = 8891, *, examples=None) -> HTTPServer:
                                      "model_fingerprint": engine.fingerprint,
                                      "loaded": getattr(engine, "model", None) is not None,
                                      "busy": generation_lock.locked()})
+            elif self.path == "/api/view-tools":
+                self.send_json(200, {"tools": VIEW_TOOLS, "instructions": VIEWER_INSTRUCTIONS})
             elif self.path == "/v1/models":
                 self.send_json(200, {"object": "list", "data": [{"id": engine.config.served_model_name, "object": "model", "owned_by": "local"}]})
             else:
@@ -453,13 +478,17 @@ def make_server(engine, port: int = 8891, *, examples=None) -> HTTPServer:
                     self.send_json(503, {"error": {"message": "Local generation is busy; retry when idle"}})
                     return
                 try:
-                    result = engine.complete(payload["model"], payload["messages"],
-                                             max_tokens=request["max_tokens"], temperature=request["temperature"])
+                    options = {"max_tokens": request["max_tokens"], "temperature": request["temperature"]}
+                    if request["tools"] is not None:
+                        options["tools"] = request["tools"]
+                    result = engine.complete(payload["model"], payload["messages"], **options)
                 finally:
                     generation_lock.release()
-                self.send_json(200, {"id": "chatcmpl-" + uuid.uuid4().hex, "object": "chat.completion",
+                identifier = "chatcmpl-" + uuid.uuid4().hex
+                message, finish = assistant_message(result["output"], request["tools"], "call-" + identifier[9:21])
+                self.send_json(200, {"id": identifier, "object": "chat.completion",
                                      "created": int(time.time()), "model": engine.config.served_model_name,
-                                     "choices": [{"index": 0, "message": {"role": "assistant", "content": result["output"]}, "finish_reason": "stop"}],
+                                     "choices": [{"index": 0, "message": message, "finish_reason": finish}],
                                      "usage": result["usage"]})
             except (ValueError, TypeError, UnicodeError, RecursionError):
                 self.send_json(400, {"error": {"message": "Invalid completion request"}})
@@ -497,7 +526,8 @@ def main(argv=None):
     serve.add_argument("--4bit", dest="four_bit", action="store_true")
     serve.add_argument("--min-free-vram-gb", type=float, default=10)
     serve.add_argument("--port", type=int, default=8891)
-    serve.add_argument("--examples", help="verified real corpus directory for the browser example catalog")
+    serve.add_argument("--examples", action="append",
+                       help="verified real corpus directory for the browser example catalog; repeat to combine")
     bundle = commands.add_parser("bundle", help="copy an adapter and bind it to a local base model")
     bundle.add_argument("--model", required=True)
     bundle.add_argument("--base-model", required=True)

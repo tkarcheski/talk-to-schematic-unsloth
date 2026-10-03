@@ -1,0 +1,1210 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_Buzzer",
+      "revision": "c6be60f1dea6db2bfb4b55cf7b543160fb68c8b6",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "cd9abaed0174a62df0ba8ab13eb1171929df591471850bb7bc6c3f2189ffa10c",
+      "files": [
+        {
+          "path": "Hardware/SparkFun_Qwiic_Buzzer.sch",
+          "sha256": "55d225fa059b45c984131e5133b1d04e57d596d58f6437e116ebb83d9fa704ec",
+          "bytes": 1292192
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "32b5ebed240837f622d9c5b9e0dd6904bb1fe8f17dd476124d922a6edfd4737d",
+          "bytes": 4415
+        },
+        {
+          "path": "docs/javascript/README.md",
+          "sha256": "912d765bc2d3bdf417c3b652de73c79cfc2752702c15299ee7d8e3da4705d73c",
+          "bytes": 149
+        },
+        {
+          "path": "overrides/README.md",
+          "sha256": "45b983e66b0b3d62a475eeea493a32718a463052e9beefefe750501c3e6cb391",
+          "bytes": 143
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_Human_Presence_Sensor-STHS34PF80",
+      "revision": "44ec023fd380eabd9e093a2e3a7bcab193ad5a97",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "3c6c960b622bc3a07cb9cff0a2bd2d83848118cbf2eb81c17e4cb38ac3e5dd82",
+      "files": [
+        {
+          "path": "Hardware/1U/SparkFun_Qwiic_Presence_STHS34PF80.sch",
+          "sha256": "fc18349c3a99c794d87a1f608ef3189ed80c53cb84dde38cda3283c704d0ce37",
+          "bytes": 1561168
+        },
+        {
+          "path": "Hardware/Mini/SparkFun Qwiic Mini Human Presence Sensor - STHS34PF80.sch",
+          "sha256": "e9c29b6f498e712cbb535bc1b344269a0cd928987ba9e70f3b60f3611cbf3e43",
+          "bytes": 1562526
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "4a7cfdd0768832fc381d75f9c1c95dd92ba8f8294f9e922bdf36c0a3eca951aa",
+          "bytes": 2891
+        },
+        {
+          "path": "Hardware/README.md",
+          "sha256": "6add188e18eb48c055d25c6cb3c9e2865bcec753e4da3b3bc97602b7f613f683",
+          "bytes": 292
+        },
+        {
+          "path": "README.md",
+          "sha256": "2845e7f203863fe9fdb26572fe27e587a16a70667a304d2b3df3454a7fa31126",
+          "bytes": 4319
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "bc1a36edf51c03f582236bd55f76885b91d40368ab245a2f311a135230dede19",
+          "bytes": 102
+        },
+        {
+          "path": "docs/assets/board_files/README.md",
+          "sha256": "c1e949c107612ac6da70b24ce4bf0272bf173c6cb9b5e007d9f7185bbab19732",
+          "bytes": 396
+        },
+        {
+          "path": "docs/assets/component_documentation/README.md",
+          "sha256": "95195950b21189ae853cd6977733d4ea00f182706dfe3f31d4ec7aaaf2ec11ab",
+          "bytes": 541
+        },
+        {
+          "path": "docs/assets/img/README.md",
+          "sha256": "319bc1f836f72ed718d3b7fac9a2455583f45ce8f27525fc3c58e53a6f9e5843",
+          "bytes": 516
+        },
+        {
+          "path": "docs/assets/img/hookup_guide/README.md",
+          "sha256": "5692e46c94917c09b7e823d31c04115c2bcc6655edb1c537ee21a0064eb34580",
+          "bytes": 112
+        },
+        {
+          "path": "docs/github/README.md",
+          "sha256": "c6f0bdf461573979e1bfeb35e23bdb307ce29f1cf41529082cfe9b08b7c07a00",
+          "bytes": 138
+        },
+        {
+          "path": "docs/stylesheet/README.md",
+          "sha256": "d1b1629261a23de0c2da50b523e7270ea83879c34fa441b8e9530f2f8a912083",
+          "bytes": 143
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_Power_Switch",
+      "revision": "53923a22dddca15f32a1b240cad53cb96e67f99f",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "abeab4977e8a9682d8f39a773a5938707924b2b22f9d8533727bbd66fccd1fb4",
+      "files": [
+        {
+          "path": "Hardware/Qwiic Power Switch.sch",
+          "sha256": "f3bb53382f8f1b9711e506011380e8b2cc8a1f929004a711036940283dd0e3e8",
+          "bytes": 1023911
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "60350b68666a0d4903a7197114c723fc6d398d72218b785cc074013e39db374d",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "90955dba32cd5b23d9d2e3f1642163822e47bc17aa99420189f49edaa2995634",
+          "bytes": 3380
+        },
+        {
+          "path": "docs/assets/component_documentation/README.md",
+          "sha256": "a1944e4c47a16477eb1e15bc5d839296c9c9a64c149ec4024c8a80a66bf78a39",
+          "bytes": 135
+        },
+        {
+          "path": "docs/javascript/README.md",
+          "sha256": "912d765bc2d3bdf417c3b652de73c79cfc2752702c15299ee7d8e3da4705d73c",
+          "bytes": 149
+        },
+        {
+          "path": "overrides/README.md",
+          "sha256": "45b983e66b0b3d62a475eeea493a32718a463052e9beefefe750501c3e6cb391",
+          "bytes": 143
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Digi_XBee_Regulated_Qwiic",
+      "revision": "0e25ebd7364daae9f0bd36c49f88e7d2f2435074",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "License.md",
+      "archive_sha256": "1a26d062268c540fd5a021497b8ded4d92f8fdfdda26b5867f658a0a7f88cf9f",
+      "files": [
+        {
+          "path": "Hardware/SparkFun_Digi_XBee_Regulated_Qwiic.sch",
+          "sha256": "9355413510cc5bfdd720e0887f6a8efa8f609f02356471777a2fe8825434fa28",
+          "bytes": 1096426
+        },
+        {
+          "path": "License.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "7a1685002eaa36c70532112a3289d100ba83a031f0e492a798a882a204e214b7",
+          "bytes": 2009
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_OLED_1.3in",
+      "revision": "fe1cef157c993c8265288fbccf211043df3708be",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "License.md",
+      "archive_sha256": "06eeb4cd47a70011e6d2b7c3d57b6cb74359cbe343f5be26bc8267f152e827cf",
+      "files": [
+        {
+          "path": "Hardware/Qwiic_OLED_1.3in.sch",
+          "sha256": "cc99dd3fe23c88a3bf097a21e986d807953843935962e729da82e7bc1351fbc5",
+          "bytes": 1005057
+        },
+        {
+          "path": "License.md",
+          "sha256": "cc2731bed1b3d28242eaa4bc9992864b28650bdc69fb4c558ce6e0b7bfc74680",
+          "bytes": 2885
+        },
+        {
+          "path": "README.md",
+          "sha256": "5b27fc988c5214952fdd27c38b7c405bf23d9fb1850971c8ca104c034a9fd268",
+          "bytes": 1208
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Environmental_Combo_Breakout_ENS160_BME280_QWIIC",
+      "revision": "f268b703dbc4f751e621dbbfca2c8875c3241058",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "fb54030a664fb486e2b1a55ad91df1f7df16e3f1b6201e583a6747199f61628e",
+      "files": [
+        {
+          "path": "Hardware/SparkFun_ENS160_BME280_Breakout.sch",
+          "sha256": "f482001325f9cd112862a4023b80d2d69f039577efe2426dacf509f0abce4ded",
+          "bytes": 887081
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "60350b68666a0d4903a7197114c723fc6d398d72218b785cc074013e39db374d",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "54816ae8c1d6cb7f5a3c1b84fbabb9aa464ea5b2b734832c2a214217f52784b5",
+          "bytes": 1948
+        },
+        {
+          "path": "docs/javascript/README.md",
+          "sha256": "912d765bc2d3bdf417c3b652de73c79cfc2752702c15299ee7d8e3da4705d73c",
+          "bytes": 149
+        },
+        {
+          "path": "overrides/README.md",
+          "sha256": "45b983e66b0b3d62a475eeea493a32718a463052e9beefefe750501c3e6cb391",
+          "bytes": 143
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_VR_IMU_Breakout_BNO086_QWIIC",
+      "revision": "fc8ed693a5193c8faec3098f29d206dea171958e",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "1d8616871af71d4d5258ae3b1062a64d443ddaf1ca8a48287a182c0d1d6ad3f7",
+      "files": [
+        {
+          "path": "Hardware/SparkFun_VR_IMU_Breakout_BNO086_QWIIC.sch",
+          "sha256": "58a8b4f77dd4a1bae4a6c7a1797188a07cd05d1fa7d53091966c0a4484a0d95f",
+          "bytes": 1210360
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "60350b68666a0d4903a7197114c723fc6d398d72218b785cc074013e39db374d",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "1a03a987ce1bab3abc8a1fe966a34ed1c384352c6e0e50a72f33e8bba1694ed3",
+          "bytes": 1787
+        },
+        {
+          "path": "docs/javascript/README.md",
+          "sha256": "912d765bc2d3bdf417c3b652de73c79cfc2752702c15299ee7d8e3da4705d73c",
+          "bytes": 149
+        },
+        {
+          "path": "overrides/README.md",
+          "sha256": "45b983e66b0b3d62a475eeea493a32718a463052e9beefefe750501c3e6cb391",
+          "bytes": 143
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_9DoF_IMU_Breakout",
+      "revision": "215f5227694c089130660f485c3af065fbbc1ef9",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "84bb6db46964059a69a1693f6b46f059d168c57f383752a5e28f57922205bf85",
+      "files": [
+        {
+          "path": "Hardware/SparkFun_IMU_Breakout_ICM-20948.sch",
+          "sha256": "caefa94527f2b667a11b733e7828953c326cb615393c10f0992cf7d04fd3794a",
+          "bytes": 847700
+        },
+        {
+          "path": "Documentation/eMD/1.0.0/sources/stm32f4x/CMSIS/Lib/license.txt",
+          "sha256": "660704c39b23bdea2aa03cc43ae53954661685e595613a2b9d6241735b658ae8",
+          "bytes": 1592
+        },
+        {
+          "path": "Documentation/eMD_SM/EMD-App/src/ASF/thirdparty/CMSIS/Lib/license.txt",
+          "sha256": "660704c39b23bdea2aa03cc43ae53954661685e595613a2b9d6241735b658ae8",
+          "bytes": 1592
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "Documentation/eMD_SM/EMD-App/src/ASF/thirdparty/CMSIS/README.txt",
+          "sha256": "a8d02d0b81b0542a8fb25ab7080df0f3e72a8bb46c6d9890284be82ec663b91c",
+          "bytes": 1694
+        },
+        {
+          "path": "Documentation/eMD_SM/README.md",
+          "sha256": "a1944e4c47a16477eb1e15bc5d839296c9c9a64c149ec4024c8a80a66bf78a39",
+          "bytes": 135
+        },
+        {
+          "path": "Hardware/README.md",
+          "sha256": "7058156cf10e179343bb6c3714b6e47455081bdf0a9b30f8053b67819dbe082c",
+          "bytes": 280
+        },
+        {
+          "path": "Production/README.md",
+          "sha256": "65669cfa16ca50554e52d925936f20ca6e3a1055d6643b07f0961f19fb40e32d",
+          "bytes": 589
+        },
+        {
+          "path": "README.md",
+          "sha256": "649a0b122fb293bee3838640cd35ce5a949c62f55233f10c04f194fa668d5067",
+          "bytes": 2563
+        },
+        {
+          "path": "overrides/README.md",
+          "sha256": "45b983e66b0b3d62a475eeea493a32718a463052e9beefefe750501c3e6cb391",
+          "bytes": 143
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_RFID_ID-XXLA",
+      "revision": "78989e5954a674eb3848a7ec43b353622003aab9",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "31b9471f2477c40ed9684a1e74c6c7cc205ae71258f7b99bd3fb7d2be93d90c5",
+      "files": [
+        {
+          "path": "Hardware/Qwiic RFID - IDXXLA.sch",
+          "sha256": "6468fd15d627da2d9b6f3bf6c56ba71846fb99407cf39e2455eae0cd4b3b7465",
+          "bytes": 818333
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "23005c720b7d07622bc1db843f9eed08a5bf8db375827ef63f677dde64368bf6",
+          "bytes": 3272
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Tsunami_Super_WAV_Trigger_Qwiic",
+      "revision": "336eb78afcebdcea91bf6caa554670940aae7bd5",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "74bb1b1249bbe77d59015d9a4cc0e1276a0bb65c889b71e04e141db6126a6977",
+      "files": [
+        {
+          "path": "Hardware/SparkFun_Tsunami_Qwiic.sch",
+          "sha256": "94c18a29ed0069d88cceed35de07207b2dbe003ed87d3a96acce089404e88fa7",
+          "bytes": 1370635
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "4a0a503d2dd7533f8783aa9d1532bff53bb7eafd39532ac8ce092a0c993433a1",
+          "bytes": 1780
+        },
+        {
+          "path": "Hardware/README.md",
+          "sha256": "7058156cf10e179343bb6c3714b6e47455081bdf0a9b30f8053b67819dbe082c",
+          "bytes": 280
+        },
+        {
+          "path": "README.md",
+          "sha256": "c7074e55981c133cf30f99d815843c0a8e7a528a3c6c93ee65f05f2978fde007",
+          "bytes": 4078
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_CO2_Sensor_XENSIV_PAS",
+      "revision": "08a65f08c40e3a63d90a3495de2a7a21fed05588",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "8c985fe6bd85182fb7c996207170e73140f7dde88b2d400f7cc4a828a2f6ee0e",
+      "files": [
+        {
+          "path": "Hardware/SparkFun_Qwiic_CO2_Sensor_XENSIV_PAS.sch",
+          "sha256": "07f6c12449c0a3e0e783cfdf4d7b322b2eae8b156d101bdc5c9523a0ad59d13b",
+          "bytes": 1187846
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "Documentation/README.md",
+          "sha256": "a1944e4c47a16477eb1e15bc5d839296c9c9a64c149ec4024c8a80a66bf78a39",
+          "bytes": 135
+        },
+        {
+          "path": "Firmware/README.md",
+          "sha256": "ad8d6b825b0e19009df653354f2ff253cb40ab230ed309e122e441d9d2685843",
+          "bytes": 143
+        },
+        {
+          "path": "Hardware/README.md",
+          "sha256": "6add188e18eb48c055d25c6cb3c9e2865bcec753e4da3b3bc97602b7f613f683",
+          "bytes": 292
+        },
+        {
+          "path": "Production/README.md",
+          "sha256": "65669cfa16ca50554e52d925936f20ca6e3a1055d6643b07f0961f19fb40e32d",
+          "bytes": 589
+        },
+        {
+          "path": "README.md",
+          "sha256": "977c0e10c8d84d9fe4a2306ce32ee3b81a34ee6031ce17b9211fe4f09955e7ac",
+          "bytes": 2620
+        },
+        {
+          "path": "overrides/README.md",
+          "sha256": "45b983e66b0b3d62a475eeea493a32718a463052e9beefefe750501c3e6cb391",
+          "bytes": 143
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/Qwiic_Quad_Relay",
+      "revision": "ccca82550404b2fb089228c52bb5467fae676fd2",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "b047a9a8677d6160175a13f8799e9b9d4f9e3a8bab93d543d2bfe38dd268be06",
+      "files": [
+        {
+          "path": "Hardware/Qwiic_Quad_Relay.sch",
+          "sha256": "0813c3b4798bb083a28b1967fa788017b8fe57f4e4ef72f2b858a8c3454e4b22",
+          "bytes": 1034625
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "7f180d308a63515c9f043482e4060433308cdd99b9c6a0a2f01cc28034085a6f",
+          "bytes": 2900
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_CO2_Sensor_SCD4X",
+      "revision": "cc7038afb5866ae185909394f119b9622c563c26",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "947f537f2e7fc4048e703d4fb3d2ff284c1986d86a70d7ce72e2dc04586527ab",
+      "files": [
+        {
+          "path": "Hardware/SCD40/SparkFun_Qwiic_CO2_Sensor_SCD40.sch",
+          "sha256": "6700d67de9aa0f68fda1a62a91c115a10e0e8d883ab694b44d0e553951111e12",
+          "bytes": 987509
+        },
+        {
+          "path": "Hardware/SCD41/SparkFun_Qwiic_CO2_Sensor_SCD41.sch",
+          "sha256": "3fc19546e4823e7edefa8a75be97d3f5b6795aa472b292d1f61164b1d1676453",
+          "bytes": 987509
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "Documentation/README.md",
+          "sha256": "a1944e4c47a16477eb1e15bc5d839296c9c9a64c149ec4024c8a80a66bf78a39",
+          "bytes": 135
+        },
+        {
+          "path": "Firmware/README.md",
+          "sha256": "ad8d6b825b0e19009df653354f2ff253cb40ab230ed309e122e441d9d2685843",
+          "bytes": 143
+        },
+        {
+          "path": "Hardware/README.md",
+          "sha256": "6add188e18eb48c055d25c6cb3c9e2865bcec753e4da3b3bc97602b7f613f683",
+          "bytes": 292
+        },
+        {
+          "path": "Production/README.md",
+          "sha256": "65669cfa16ca50554e52d925936f20ca6e3a1055d6643b07f0961f19fb40e32d",
+          "bytes": 589
+        },
+        {
+          "path": "README.md",
+          "sha256": "57bff7d32984bd8c567658d8f9e48c34b93202c2d82fc55396ad3b9a016823ba",
+          "bytes": 3440
+        },
+        {
+          "path": "overrides/README.md",
+          "sha256": "45b983e66b0b3d62a475eeea493a32718a463052e9beefefe750501c3e6cb391",
+          "bytes": 143
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/Qwiic_Atmospheric_Sensor_Breakout_BME280",
+      "revision": "14709d3629313938035690e38a8976b03e06c1bb",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "e3270cf41dc543b27d13280fa4cc643ce73703bf04044e5a421aaa5cfaacd14a",
+      "files": [
+        {
+          "path": "Hardware/Qwiic_Atmospheric_Sensor.sch",
+          "sha256": "fc70cffeee1624bff6d2c877abede0673397b48d2da60f98ee96b59185dad630",
+          "bytes": 727666
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "7288af16afc03190afaabedf95d70fc272af3f221b12896fa075381b1c026534",
+          "bytes": 2137
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_OLED-0.91",
+      "revision": "270ccc6685ca933dee99031f7079327c7b601f08",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "966cf37ba96d0b6d98c3234243981e6ef5f4979cf9722611e3b03a2b744f37be",
+      "files": [
+        {
+          "path": "Hardware/OLED Display.sch",
+          "sha256": "35d36219a073bc424a793a9e3353203fc4a06f97dffb85ed21b31d1d909f113a",
+          "bytes": 1006947
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "cea963361147cabfbc88fe5baa2004a0088a3df516f2557e0b6d6811026ded82",
+          "bytes": 2885
+        },
+        {
+          "path": "README.md",
+          "sha256": "00a49f95f852993208bcddc21c6f056e4cf838a557c4c12c25466740e6aef4e2",
+          "bytes": 2207
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "e8b3cd4259f223691ab8ada6650071869fb5f2a3a9a17749191a65e531975d7a",
+          "bytes": 281
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/Qwiic_Micro_OLED",
+      "revision": "c3ee0d437bd69ed8c1e5bce32e425c81365d2e21",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "1a997f1adc5e94180b3c417f9d0d934ecd4e4cb809e2135a679dd88f40d6be93",
+      "files": [
+        {
+          "path": "Hardware/Qwiic_OLED_Breakout.sch",
+          "sha256": "c88909cd17a131c820f016075bf8ef047f0723c099f6d52c1805d9abb9f99edb",
+          "bytes": 1009715
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "Hardware/README.md",
+          "sha256": "7058156cf10e179343bb6c3714b6e47455081bdf0a9b30f8053b67819dbe082c",
+          "bytes": 280
+        },
+        {
+          "path": "Libraries/README.md",
+          "sha256": "51cc04fb5547acb51895c8ddd558503a84f20b6d3eb5eaa89c0fc2a95a541552",
+          "bytes": 299
+        },
+        {
+          "path": "Production/README.md",
+          "sha256": "65669cfa16ca50554e52d925936f20ca6e3a1055d6643b07f0961f19fb40e32d",
+          "bytes": 589
+        },
+        {
+          "path": "README.md",
+          "sha256": "d6c1ccc6adffa973611d98122ea46e8ea76433b3d7e2de237e2cc06464cd2e51",
+          "bytes": 2494
+        },
+        {
+          "path": "Software/README.md",
+          "sha256": "b38ce4118d5d5acb551474be06595a09507f6a3cb7d819c0b4e042f30717c8ae",
+          "bytes": 195
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/Qwiic_Joystick",
+      "revision": "872ce30c7db70375220e67d78398a19f7c60b9ab",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "518be6688137204644926b56f248db0752a3a8097f251399ee42e05b73a35556",
+      "files": [
+        {
+          "path": "Hardware/Qwiic Joystick_Eagle/Qwiic Joystick.sch",
+          "sha256": "208c3e6add22aab057ddc77aca1a3d92ee5d8c8e084aea271a7f68ec340ff965",
+          "bytes": 772389
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "f27dceca354e7b691d3d3a69dc4855bd7514c1c7931404bb225e750d00988dfa",
+          "bytes": 3789
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/Qwiic_Quad_Solid_State_Relay",
+      "revision": "539c8268b0c5813d5f32cc3e4a8f4f7e78355bd0",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "d09a67eb8ce9ea23e96d9420b09afef3028ccc2993cbee28c098784a0dc133b8",
+      "files": [
+        {
+          "path": "Hardware/Qwiic Solid State Relay.sch",
+          "sha256": "f31302ce265e8c3c6761ee556a35746ab9dd2aebd10c465e03e358e985378802",
+          "bytes": 797568
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "Firmware/README.md",
+          "sha256": "ad8d6b825b0e19009df653354f2ff253cb40ab230ed309e122e441d9d2685843",
+          "bytes": 143
+        },
+        {
+          "path": "Hardware/README.md",
+          "sha256": "7058156cf10e179343bb6c3714b6e47455081bdf0a9b30f8053b67819dbe082c",
+          "bytes": 280
+        },
+        {
+          "path": "README.md",
+          "sha256": "eb442cf69739a7906c1f8c2f59c25a5713808e33a41bde89646289432fdd56b5",
+          "bytes": 2482
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_ESLOV_to_Qwiic_Bridge",
+      "revision": "a666bf9ff5f64aa4173cf14a91c46ec30a275723",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "6c9ffda88159f196d687d7ab2ce1604de397a45c84421ef357a9297ba63f33a8",
+      "files": [
+        {
+          "path": "Hardware/SparkFun_ESLOV_to_Qwiic_Bridge.sch",
+          "sha256": "2e0cd8a380e161d43a6acfc88ba305248cf5cb7b6672ae68338baa61921d6b36",
+          "bytes": 945692
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "Documentation/README.md",
+          "sha256": "a1944e4c47a16477eb1e15bc5d839296c9c9a64c149ec4024c8a80a66bf78a39",
+          "bytes": 135
+        },
+        {
+          "path": "Hardware/README.md",
+          "sha256": "6add188e18eb48c055d25c6cb3c9e2865bcec753e4da3b3bc97602b7f613f683",
+          "bytes": 292
+        },
+        {
+          "path": "Production/README.md",
+          "sha256": "65669cfa16ca50554e52d925936f20ca6e3a1055d6643b07f0961f19fb40e32d",
+          "bytes": 589
+        },
+        {
+          "path": "README.md",
+          "sha256": "dedbf8d9b6de2d728be1d440b1c575b2e2fbb2daab61e009b576b1d2bc2a6dda",
+          "bytes": 1621
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_dToF_Imager-TMF882X",
+      "revision": "740270a20d78007335bffadc37cc784e1ea64e54",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "License.md",
+      "archive_sha256": "6e66be10074ac3276e0bd6369fb2809c84315c59a120bb9b5f51ef8d2b096097",
+      "files": [
+        {
+          "path": "Hardware/TMF8820/SparkFun_dToF-TMF8820.sch",
+          "sha256": "d0007dec81152b8095d703106ff415efb6463ce87fb9602b620c1921445f322c",
+          "bytes": 1043392
+        },
+        {
+          "path": "Hardware/TMF8820_Mini/SparkFun_dToF-TMF8820_Mini.sch",
+          "sha256": "2454a0129d8ed55a23658499c7855e94ed4fdfd5b652b02a88d1613c2fe960e9",
+          "bytes": 1028686
+        },
+        {
+          "path": "Hardware/TMF8821/SparkFun_dToF-TMF8821.sch",
+          "sha256": "5a360049774c7211d03092c7a5148e59eef219011ce08500768b92cc8ce5bfd1",
+          "bytes": 1043417
+        },
+        {
+          "path": "Hardware/TMF8821_Mini/SparkFun_dToF-TMF8821_Mini.sch",
+          "sha256": "0741740cad92550244b8d8cb3b2671993a15be48520272b6d372cb960a874422",
+          "bytes": 1028684
+        },
+        {
+          "path": "License.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "1ddb094a0fe7eb9d782e36f593eef4d40223443ca5299e1308768991963c7a31",
+          "bytes": 3117
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/Qwiic_Spectral_Sensor_AS726X",
+      "revision": "4a5ba39e5a32962e019a8dc454d0946af5c83de7",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "cfef2e8c1f1b82b28c1100f5802cdb72fab1f6cf8aad807b653ee00e8757e40b",
+      "files": [
+        {
+          "path": "Hardware/Qwiic_Spectral_Sensor-AS726x.sch",
+          "sha256": "375c6e1d2e246c9328b6afd6083170efa6fb880ca77074373310dc00be06e65d",
+          "bytes": 586721
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "Enclosure/README.md",
+          "sha256": "9abae553fe7321e8bb432a34aaf4d39f98532e0a97f6e5473587977d77797a13",
+          "bytes": 163
+        },
+        {
+          "path": "Hardware/README.md",
+          "sha256": "7058156cf10e179343bb6c3714b6e47455081bdf0a9b30f8053b67819dbe082c",
+          "bytes": 280
+        },
+        {
+          "path": "Libraries/README.md",
+          "sha256": "8863b152b6518c574cc6b9f278850e325db4a33f2eb076ebd40b922e74ca15f8",
+          "bytes": 307
+        },
+        {
+          "path": "Production/README.md",
+          "sha256": "65669cfa16ca50554e52d925936f20ca6e3a1055d6643b07f0961f19fb40e32d",
+          "bytes": 589
+        },
+        {
+          "path": "README.md",
+          "sha256": "a22ff7a853df4673fd9db3ff879c2be5830116135a1ec76aaddb6022378d3382",
+          "bytes": 2461
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/Qwiic_OpenLog",
+      "revision": "f3f6a3ec3f70fe4c14612b38fac360f26ee79a4c",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "License.md",
+      "archive_sha256": "7f08d0126a2b5edf67c62b34f4e870e2688955b06d557f0e6c5ea1a38d87ed8f",
+      "files": [
+        {
+          "path": "Hardware/Qwiic-OpenLog.sch",
+          "sha256": "9c7c5e36c6c33858044099e6118e59d11d1a490edf871ef86924eaa22c68af57",
+          "bytes": 967330
+        },
+        {
+          "path": "License.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "Firmware/README.md",
+          "sha256": "5f50ab982c981c281ecbcf5925ef47b0d3020ccf65e6891c55a37fe086d82acb",
+          "bytes": 971
+        },
+        {
+          "path": "README.md",
+          "sha256": "a368f09587838c17f3ca0509d045f74cecec348499bbb9fc0bfe3b8c1c29e0dc",
+          "bytes": 3154
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/Qwiic_GPS-RTK2",
+      "revision": "898a676f3136b68118331e3683299951df3e7133",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "36f3b55969b6b141cd48b58a2143285fd04053d914a546c198596e43cd2cd783",
+      "files": [
+        {
+          "path": "Hardware/Qwiic GPS-RTK2 - ublox ZED-F9P.sch",
+          "sha256": "07a8af85ce0608ebf143d2958efff88c25de08f2baa251dd6682a029eb038b7d",
+          "bytes": 1095381
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "1ae89d52f0a3ace8f7fb24581be56512bf0bfffe13eaf1d01e78c8b3f4b6e891",
+          "bytes": 2220
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_RFID_Tag_ST25DV64KC",
+      "revision": "3769d5a44c71c0aa3b8b94126b3d8e426dc7eeb4",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "8824ae2fa1980624d5e744824fbcf5def1f5aabcfb179db0a05c6ef3f049274a",
+      "files": [
+        {
+          "path": "Hardware/Qwiic_RFID_Tag.sch",
+          "sha256": "029ec2fe927d961be8405c6ca92075dbaac2e925c0cee77b28e50da3a22cf27f",
+          "bytes": 1108569
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "60350b68666a0d4903a7197114c723fc6d398d72218b785cc074013e39db374d",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "9b793558a8b28ab367c792a2a03941c0e5926b4d270caac2a08dbe25dd278b05",
+          "bytes": 2914
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_Accelerometer_BMA400",
+      "revision": "2751c15eec8f50759e3414337c0133b55b9c19d1",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "37e1f93bce01b72446c07fccc0fb1173e96fd190694162d3394413a064f0ccce",
+      "files": [
+        {
+          "path": "Hardware/Qwiic 1x1/SparkFun_Qwiic_Accelerometer_BMA400.sch",
+          "sha256": "1088ccab5e17e98c0dc8340aa8752cda38830a040e3f3797e86560345bbe1f96",
+          "bytes": 1123486
+        },
+        {
+          "path": "Hardware/Qwiic Micro/SparkFun_Qwiic_Micro_Accelerometer_BMA400.sch",
+          "sha256": "30c4b41259069dd700c7351aa1f74a06becb6bcd48eb75fad071c3e94192afd1",
+          "bytes": 1053760
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "097a6b17ea9e49ee27fe5cbc3e94f55ef1899afe1cb5ea91e9eb252597b19c96",
+          "bytes": 3043
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_Barometer_LPS28DFW",
+      "revision": "b012d97cd56bf5a8a2a540c1f81aa75693716141",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "b3b0e4cdeef5942e9e18b88808ac7de2ab4e68e8867dccc95ecc9b84dd415073",
+      "files": [
+        {
+          "path": "Hardware/Qwiic 1x1/SparkFun_Qwiic_Barometer_LPS28DFW.sch",
+          "sha256": "ab7eba927d34151cfbeea05bf87b59ab9a65708dbaf0d5ff92a8909547a278dd",
+          "bytes": 1068377
+        },
+        {
+          "path": "Hardware/Qwiic Micro/SparkFun_Qwiic_Micro_Barometer_LPS28DFW.sch",
+          "sha256": "3c3768e2362ac0e34f5a46eb95431707a14f270d0f0cb91342629691977863fe",
+          "bytes": 1013499
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "5070c50bf89c88f0593663718f672745581ef3cd436aa994f9a84e17ae3d50bb",
+          "bytes": 2814
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_Pressure_Sensor_BMP581",
+      "revision": "6930241063938e0c3a6b49960bbec4178cf310d6",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "19aaaa2a0d72230cb760fc4b5038365ff4a3c5c90d581413a6aeff676e569219",
+      "files": [
+        {
+          "path": "Hardware/Qwiic 1x1/SparkFun_Pressure_Sensor_BMP581_Qwiic.sch",
+          "sha256": "1d5fc138869cd9f88795d3fc5f9c177e6d652d0b545bb59b84840a0087187dea",
+          "bytes": 1123261
+        },
+        {
+          "path": "Hardware/Qwiic Micro/SparkFun_Pressure_Sensor_BMP581_Qwiic_Micro.sch",
+          "sha256": "b25e1c76bdd56dc76539f22bfc1985080a6993acf4d5490fd4432dcf9e8f2cf0",
+          "bytes": 1052894
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "952c3ea72c60734c7934ddf3d36037965ba3490a8e29674e524fad7e93f76490",
+          "bytes": 2685
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_Pressure_Sensor_BMP384",
+      "revision": "1c8760b268bb4a6e29c42cfcd8dbe696ea46ce3a",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "License.md",
+      "archive_sha256": "0cfda46e9d09f83cfc1e6548544f5a27351ef2942f2998f37eb7763be466c47a",
+      "files": [
+        {
+          "path": "Hardware/Qwiic 1x1/BMP384 Breakout.sch",
+          "sha256": "e66972789844e7e1448833d2aead11260cd1f04b2c00413975876d99d70eafc7",
+          "bytes": 1121152
+        },
+        {
+          "path": "Hardware/Qwiic Micro/BMP384 Breakout.sch",
+          "sha256": "ff99faa0ea826b108b0784f67be8f09b83f62249ea2db826fc7793fe961308f5",
+          "bytes": 1052906
+        },
+        {
+          "path": "License.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "0e867860d603e2810c30c877259b959ecca85abdd0774b252b5de4be46e4f4a6",
+          "bytes": 2197
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_Speaker_Amp",
+      "revision": "0666c55c884f3d58f34ac0dac3905eb5b8ca0fcf",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "88f6db10c5d8ad1724e11b7f75dd44dcd1d5db78e41b2e2676982e8fd1a69587",
+      "files": [
+        {
+          "path": "Hardware/SparkFun_Qwiic_Speaker_Amp.sch",
+          "sha256": "0ffd0821e0cfc32f6d5d5cf8c5583091f9469fc24c260cb47e5f1d328985beb4",
+          "bytes": 1170839
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "60350b68666a0d4903a7197114c723fc6d398d72218b785cc074013e39db374d",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "5a170161c4eb245efa137ead88af5f334b809be5f728ad929ed2b5685e603279",
+          "bytes": 4553
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/Qwiic_MultiStar_Board_Promo_Constellation",
+      "revision": "04d805d123eeb0026970922b6362c59c48df4577",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "f3baa9793c0c28376705ea80ae3ddc88a8c6f7c094d1671fd85327ca497a0047",
+      "files": [
+        {
+          "path": "Hardware/Qwiic_MultiStar.sch",
+          "sha256": "73f97ea37bd0286c269341f2240d23e72990184fe752c003516c2556746b2a50",
+          "bytes": 767607
+        },
+        {
+          "path": "Hardware/Qwiic_MultiStar_pattern.sch",
+          "sha256": "73f97ea37bd0286c269341f2240d23e72990184fe752c003516c2556746b2a50",
+          "bytes": 767607
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "f5a91250d67f1c0cd2d80159e59dd5be825b4733139f9b953684c4251be2438b",
+          "bytes": 1542
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_6DoF_ISM330DHCX",
+      "revision": "f848874e34e034c00f4e4b8a50d073738f87817b",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "License.md",
+      "archive_sha256": "f09c60e3583fa9230d470d313d2d6b1dc3326e750ca4425d1eba7427d712b78b",
+      "files": [
+        {
+          "path": "Hardware/Qwiic Micro/SparkFun_6DoF_ISM330DHCX_Qwiic_Micro.sch",
+          "sha256": "1d8ded5e9d0621fc91fb329e79b6db0f2e3a2de9c20a6ac33522f7904457b919",
+          "bytes": 1024705
+        },
+        {
+          "path": "Hardware/Qwiic/SparkFun_6DoF_ISM330DHCX.sch",
+          "sha256": "4f1b5240a1add0acba7e1a4d39779221fd2aac74e099ee13f36fdee43a32031f",
+          "bytes": 1068071
+        },
+        {
+          "path": "License.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "1591b8d56bdfe32878aff9c866c8541ae929b23a027ad3da5d2d7f3db7ee0a2a",
+          "bytes": 3332
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_ToF_Imager_VL53L5CX",
+      "revision": "19e97f0da7e9000c6e4a611269aca6bcc13f093f",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "de203788a8ed581577623a6a6ef0aa8aaffc8c9047e2a2bd6bfa41ca6e377d4e",
+      "files": [
+        {
+          "path": "Hardware/SparkFun Qwiic ToF Imager - VL53L5CX.sch",
+          "sha256": "52d1ba6928f32999a228f2c28c92e8938aad734aec664ea8ecb7e3f0f9c30763",
+          "bytes": 1173196
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "0e0eb6f519cafbd8518b3a471b911d3995262336ebdcfa59f827fcc5c7d99ae8",
+          "bytes": 2542
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Qwiic_Magnetometer-MMC5983MA",
+      "revision": "a6d2ec7928ca7a622ed40d157ed361ef2d9f5c07",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "license.md",
+      "archive_sha256": "1f9fe873e6d760f25fcf1515718a66b11a88bd5db7fd1d6455694d5de2631d74",
+      "files": [
+        {
+          "path": "Hardware/SparkFun_Magnetometer_MMC5983MA_Qwiic_Micro.sch",
+          "sha256": "98a86e5ea8b3414cf5abc84ba761188d53e7c07390b189abc1e16883e4b705eb",
+          "bytes": 948509
+        },
+        {
+          "path": "license.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "7fa3204ab6120d04f5905e836442416c46f4ceb756cc0c8a180b029456539c4e",
+          "bytes": 2096
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/Qwiic_Environmental_Sensor_BME688",
+      "revision": "5edfc65e8dcb8d7a70e3810bbef42226bbbdb9cc",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "8b5749ad36d615e96ab18b96d40c7636893ec1ead642be727c0ea59c759f3d8b",
+      "files": [
+        {
+          "path": "Hardware/Qwiic_BME688.sch",
+          "sha256": "50b319b67b4f763e71198c28a3f7571919296b6b1d725294cc06feef59f3a016",
+          "bytes": 991646
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "b33cadecd974e6ec526dbd46bd64fcd8623323299320a199f8d52dabd1ac03cd",
+          "bytes": 3327
+        },
+        {
+          "path": "README.md",
+          "sha256": "905eeb88dee03580fa4e834ef9f244c0aadbe3e31e62a5ccb323a7f23129a5cb",
+          "bytes": 3849
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/Qwiic_Distance_VL53L1X",
+      "revision": "543b1e2d80325a39c2585882808757361f86cc66",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "LICENSE.md",
+      "archive_sha256": "8214dd76f33d752d38c378d971352bd11c1fd40156e93534607be7d9ec4511d1",
+      "files": [
+        {
+          "path": "Hardware/Qwiic Distance Sensor - VL53L1X.sch",
+          "sha256": "b1fbc00f11de5e5e7dfd44feace261043fc47c179a8182157090dc9147d43acc",
+          "bytes": 1070165
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "a6819ddaf73e50d5d3055d28db309b46566c8545c488e0469acced51cb092f85",
+          "bytes": 2615
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/2D_Barcode_Scanner_Breakout",
+      "revision": "aa67753d752e753bc381e4710055fe9b3e30aaca",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "license_path": "License.md",
+      "archive_sha256": "8b31a430c2839fba6abae8e75c54b78b7dd818918cdf62229557adcd3bce87db",
+      "files": [
+        {
+          "path": "Hardware/2DBarcodeScanner.sch",
+          "sha256": "9ffb7ef63ffdfb7002afb534f5e3e777a8dd0223517395bb29d6bdab9230b67e",
+          "bytes": 1058375
+        },
+        {
+          "path": "License.md",
+          "sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+          "bytes": 2883
+        },
+        {
+          "path": "README.md",
+          "sha256": "2148169ad179f2d3c9e9d7853a0859ea0a20c0f7b16cb67f37e169c8d0b53df2",
+          "bytes": 2405
+        }
+      ]
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 /** Real browser checks against a running schematic server; never mocks API calls.
  *
  * node scripts/browser_smoke.mjs --url http://127.0.0.1:8891
- * Add --question 'What value is shown for R1?' only when the real model is ready.
+ * Add --question 'Show me R1.' only when the real model is ready.
+ * Add --pdf FILE to check a local PDF upload.
  */
 import { chromium, expect } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -12,10 +13,10 @@ function argumentsFrom(argv) {
     url: "http://127.0.0.1:8891",
     out: "results/browser-smoke",
     executable: "/usr/bin/chromium",
-    "expected-examples": "120",
+    "expected-examples": "157",
     "answer-timeout": "300000",
   };
-  const allowed = new Set([...Object.keys(options), "question"]);
+  const allowed = new Set([...Object.keys(options), "question", "pdf"]);
   for (let i = 0; i < argv.length; i += 2) {
     const name = argv[i]?.replace(/^--/, "");
     if (
@@ -25,7 +26,7 @@ function argumentsFrom(argv) {
       argv[i + 1].startsWith("--")
     ) {
       throw new Error(
-        "Use --url URL --out DIRECTORY --executable CHROMIUM [--expected-examples 120] [--question TEXT] [--answer-timeout MS]",
+        "Use --url URL --out DIRECTORY --executable CHROMIUM [--expected-examples 120] [--question TEXT] [--pdf FILE] [--answer-timeout MS]",
       );
     }
     options[name] = argv[i + 1];
@@ -75,111 +76,89 @@ try {
     waitUntil: "domcontentloaded",
     timeout: 30000,
   });
-  await expect(page.locator("#example option")).toHaveCount(
+  await page.locator("#open-library").click();
+  await expect(page.locator("#library .board")).toHaveCount(
     options["expected-examples"],
     { timeout: 30000 },
   );
-  await expect(page.locator("#example")).toBeEnabled();
   report.checks.push(
-    `Catalog has ${options["expected-examples"]} real examples`,
+    `Library lists ${options["expected-examples"]} real example sheets`,
   );
-
   const choices = await page
-    .locator("#example option")
+    .locator("#library .board")
     .evaluateAll((nodes) =>
-      nodes.map((node) => ({ id: node.value, title: node.textContent })),
+      nodes.map((node) => ({ id: node.dataset.id, title: node.textContent })),
     );
-  const boards = [choices[0], choices[Math.floor(choices.length / 2)]];
+  const boards = [choices[0], choices[choices.length - 1]];
   if (boards[0].id === boards[1].id)
     throw new Error("At least two distinct examples are required");
   report.boards = [];
   let previousSource;
   for (const board of boards) {
-    await page.locator("#example").selectOption(board.id);
-    await expect(page.locator("#image-link")).toHaveAttribute(
-      "href",
-      `/api/examples/${board.id}/image`,
+    if (!(await page.locator("#library").evaluate((node) => node.open)))
+      await page.locator("#open-library").click();
+    await page.locator(`#library .board[data-id="${board.id}"]`).click();
+    await expect(page.locator("#doc-title")).toHaveText(
+      board.title.replace(/ · sheet \d+$/u, ""),
       { timeout: 30000 },
     );
-    await expect(page.locator("#schematic-image")).toBeVisible();
+    await expect(page.locator("#sheet")).toBeVisible();
     await page.waitForFunction(() => {
-      const image = document.getElementById("schematic-image");
-      return (
-        image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
-      );
+      const image = document.getElementById("sheet");
+      return image.complete && image.naturalWidth > 0;
     });
     const source = await page.locator("#source-link").getAttribute("href");
     expect(source).toMatch(
-      /^https:\/\/github\.com\/adafruit\/[^/]+\/blob\/[0-9a-f]{40}\/.+\.sch$/,
+      /^https:\/\/github\.com\/(adafruit|sparkfun)\/[^/]+\/blob\/[0-9a-f]{40}\/.+\.sch$/,
     );
     if (previousSource) expect(source).not.toBe(previousSource);
     previousSource = source;
-    await expect(page.locator("#source-meta")).toContainText("CC-BY-SA-3.0");
+    await expect(page.locator("#source-meta")).toContainText(
+      /CC-BY-SA-[34].0/u,
+    );
     await expect(page.locator("#error")).toBeHidden();
-    report.boards.push({
-      ...board,
-      source,
-      image: await page.locator("#schematic-image").evaluate((image) => ({
-        width: image.naturalWidth,
-        height: image.naturalHeight,
-      })),
-    });
+    report.boards.push({ ...board, source });
   }
   report.checks.push(
-    "Two distinct board images loaded with pinned source and attribution",
+    "Two distinct boards loaded from the library with pinned source and attribution",
   );
 
-  await expect(page.locator("#zoom-actual")).toBeEnabled();
-  await page.locator("#zoom-actual").click();
-  await expect(page.locator("#zoom-level")).toHaveText("100%");
-  const actualSize = await page
-    .locator("#schematic-image")
-    .evaluate((image) => ({
-      displayed: image.getBoundingClientRect().width,
-      native: image.naturalWidth,
-    }));
-  expect(Math.abs(actualSize.displayed - actualSize.native)).toBeLessThan(1);
-  expect(
-    await page
-      .locator("#image-stage")
-      .evaluate((stage) => stage.scrollWidth > stage.clientWidth),
-  ).toBe(true);
-  const zoomScreenshot = path.join(destination, "desktop-100-percent.png");
-  await page.locator("#image-stage").screenshot({ path: zoomScreenshot });
-  report.screenshots.push(zoomScreenshot);
-  await page.locator("#image-stage").focus();
-  await page.locator("#image-stage").press("+");
-  await expect(page.locator("#zoom-level")).toHaveText("135%");
-  await page.locator("#image-stage").press("0");
-  await expect(page.locator("#zoom-fit")).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  await expect
-    .poll(() =>
-      page
-        .locator("#image-stage")
-        .evaluate(
-          (stage) =>
-            stage.scrollWidth <= stage.clientWidth + 1 &&
-            stage.scrollHeight <= stage.clientHeight + 1,
-        ),
-    )
-    .toBe(true);
-  report.checks.push(
-    "100% uses native image resolution inside a bounded scrolling viewport; keyboard zoom and Fit work",
-  );
+  await page.locator("#stage").focus();
+  const fitted = await page.locator("#zoom-level").innerText();
+  await page.locator("#stage").press("+");
+  await expect(page.locator("#zoom-level")).not.toHaveText(fitted);
+  await page.locator("#stage").press("0");
+  await expect(page.locator("#zoom-level")).toHaveText(fitted);
+  await page.locator("#paper").click();
+  await expect(page.locator("#paper")).toHaveAttribute("aria-pressed", "true");
+  await page.locator("#paper").click();
+  report.checks.push("Keyboard zoom, Fit and the Paper toggle work");
 
   await page.locator("#mode").selectOption("vision");
-  await expect(page.locator("#mode-note")).toContainText("only the image");
+  await expect(page.locator("#gate-notice")).toBeVisible();
   await expect(page.locator(".message")).toHaveCount(0);
   await page.locator("#mode").selectOption("evidence");
-  await expect(page.locator("#mode-note")).toContainText(
-    "source-extracted values and connections",
-  );
+  await expect(page.locator("#gate-notice")).toBeHidden();
   report.checks.push(
-    "Evidence mode changes describe the actual prompt evidence and reset history",
+    "Image-only mode shows the accuracy-gate notice; evidence mode hides it",
   );
+  if (options.pdf) {
+    await page.locator("#open-library").click();
+    await page.locator("#upload").setInputFiles(options.pdf);
+    await expect(page.locator("#doc-title")).toHaveText(
+      path.basename(options.pdf),
+      { timeout: 30000 },
+    );
+    await expect(page.locator("#sheet")).toBeVisible();
+    await expect(page.locator("#gate-notice")).toBeVisible();
+    await expect(page.locator("#mode")).toBeDisabled();
+    const capture = path.join(destination, "pdf-upload.png");
+    await page.screenshot({ path: capture });
+    report.screenshots.push(capture);
+    report.checks.push(
+      "Uploaded PDF rendered locally in image-only mode with the gate notice",
+    );
+  }
   const healthResponse = await page.request.get(
     new URL("/health", options.url).href,
   );
@@ -236,7 +215,7 @@ try {
     ["mobile", { width: 390, height: 844 }],
   ]) {
     await page.setViewportSize(viewport);
-    await expect(page.locator("#schematic-image")).toBeVisible();
+    await expect(page.locator("#sheet")).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth + 1,

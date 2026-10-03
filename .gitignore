@@ -23,3 +23,4 @@ unsloth_compiled_cache/
 .aws
 node_modules/
 message-board.md
+data/sparkfun/

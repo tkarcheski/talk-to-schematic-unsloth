@@ -14,7 +14,7 @@ import re
 from urllib.parse import quote
 import xml.etree.ElementTree as ET
 
-from .corpus import parse_eagle
+from .corpus import PUBLISHERS, parse_eagle, publisher
 
 
 ASSETS = {
@@ -22,6 +22,8 @@ ASSETS = {
     "/favicon.svg": ("favicon.svg", "image/svg+xml"),
     "/assets/app.js": ("app.js", "text/javascript; charset=utf-8"),
     "/assets/style.css": ("style.css", "text/css; charset=utf-8"),
+    "/assets/vendor/pdf.min.mjs": ("vendor/pdf.min.mjs", "text/javascript; charset=utf-8"),
+    "/assets/vendor/pdf.worker.min.mjs": ("vendor/pdf.worker.min.mjs", "text/javascript; charset=utf-8"),
 }
 
 
@@ -30,7 +32,7 @@ def static_asset(route: str) -> tuple[bytes, str] | None:
     if asset is None:
         return None
     name, content_type = asset
-    return files("schematic_model").joinpath("web", name).read_bytes(), content_type
+    return files("schematic_model").joinpath("web", *name.split("/")).read_bytes(), content_type
 
 
 def _inside(directory: Path, relative: str) -> Path:
@@ -45,13 +47,24 @@ def _inside(directory: Path, relative: str) -> Path:
 class ExampleCatalog:
     """Load and verify a finite manifest; request paths never become file paths."""
 
-    def __init__(self, directory: str | Path):
-        directory = Path(directory).resolve()
+    def __init__(self, directories: str | Path | list[str | Path] | tuple[str | Path, ...]):
+        self.entries = {}
+        self.images = {}
+        self.sources = {}
+        self._regions = {}
+        if isinstance(directories, (str, Path)):
+            directories = [directories]
+        if not directories:
+            raise ValueError("At least one example corpus directory is required")
+        for directory in directories:
+            self._load(Path(directory).resolve())
+        if not self.entries:
+            raise ValueError("Example catalog contains no rendered schematic pages")
+
+    def _load(self, directory: Path) -> None:
         manifest = _inside(directory, "manifest.jsonl")
         if manifest.stat().st_size > 10 * 1024 * 1024:
             raise ValueError("Example manifest exceeds the 10 MiB limit")
-        self.entries = {}
-        self.images = {}
         for line in manifest.read_text(encoding="utf-8").splitlines():
             record = json.loads(line)
             if not isinstance(record, dict):
@@ -59,11 +72,14 @@ class ExampleCatalog:
             if any(not isinstance(record.get(key), str) for key in ("repository", "commit", "id", "source_path")):
                 raise ValueError("Example source identifiers must be strings")
             repository, commit = record.get("repository", ""), record.get("commit", "")
-            if (not re.fullmatch(r"adafruit/[A-Za-z0-9_.-]+", repository)
-                    or not re.fullmatch(r"[0-9a-f]{40}", commit)
+            try:
+                profile = publisher(repository)
+            except ValueError as exc:
+                raise ValueError("Examples require pinned, attributed Adafruit or SparkFun source records") from exc
+            if (not re.fullmatch(r"[0-9a-f]{40}", commit)
                     or not re.fullmatch(r"real-[0-9a-f]{16}", record.get("id", ""))
-                    or record.get("license") != "CC-BY-SA-3.0"):
-                raise ValueError("Examples require pinned, attributed Adafruit source records")
+                    or record.get("license") != profile["license"]):
+                raise ValueError("Examples require pinned, attributed Adafruit or SparkFun source records")
             source = _inside(directory, "sources/" + repository.replace("/", "__") + "/" + record["source_path"])
             try:
                 evidence = parse_eagle(source)
@@ -95,13 +111,14 @@ class ExampleCatalog:
                 prompts = [f"What value is shown for {p['refdes']}?" for p in visible_parts[:2]]
                 prompts.append("What information would require a bench measurement?")
                 title = re.sub(r"[-_]+", " ", repository.split("/", 1)[1])
-                title = title.removeprefix("Adafruit ").removesuffix(" PCB")
+                title = title.removeprefix("Adafruit ").removeprefix("SparkFun ").removesuffix(" PCB")
                 self.entries[identifier] = {
                     "id": identifier,
                     "title": title,
+                    "publisher": profile["name"],
                     "page": page, "repository": repository, "revision": commit,
                     "source_url": f"https://github.com/{repository}/blob/{commit}/{quote(record['source_path'])}",
-                    "license": record["license"], "attribution": "Adafruit Industries",
+                    "license": record["license"], "attribution": profile["name"],
                     "source_sha256": evidence["sha256"], "image_sha256": digest,
                     "image_url": f"/api/examples/{identifier}/image",
                     "image_kind": "Derivative render of original source geometry",
@@ -112,17 +129,49 @@ class ExampleCatalog:
                                         "nets": sheet["nets"]},
                 }
                 self.images[identifier] = (path, digest)
+                self.sources[identifier] = (source, page, image.get("svg_sha256"))
                 if len(self.entries) > 1000:
                     raise ValueError("Example catalog exceeds the 1000-page limit")
-        if not self.entries:
-            raise ValueError("Example catalog contains no rendered schematic pages")
 
     def index(self) -> list[dict]:
-        return [{key: entry[key] for key in ("id", "title", "page")}
-                for entry in sorted(self.entries.values(), key=lambda entry: (entry["title"], entry["id"]))]
+        order = {profile["name"]: rank for rank, profile in enumerate(reversed(list(PUBLISHERS.values())))}
+        return [{key: entry[key] for key in ("id", "title", "page", "publisher")}
+                for entry in sorted(self.entries.values(),
+                                    key=lambda entry: (order[entry["publisher"]], entry["title"], entry["id"]))]
+
+    def regions(self, identifier: str) -> dict | None:
+        """Source-geometry part and net boxes, only when the image's SVG is reproduced exactly.
+
+        A corpus rendered by an older renderer keeps its image, but its boxes
+        are withheld rather than drawn against geometry that may not match.
+        """
+        if identifier not in self.sources:
+            return None
+        if identifier not in self._regions:
+            from .render_eagle import source_layout
+
+            source, page, svg_digest = self.sources[identifier]
+            regions = None
+            if isinstance(svg_digest, str):
+                svg, layout = source_layout(source, page, attribution=publisher(
+                    self.entries[identifier]["repository"])["footer"])
+                if hashlib.sha256(svg.encode()).hexdigest() == svg_digest:
+                    regions = layout
+            self._regions[identifier] = regions
+        return self._regions[identifier]
 
     def details(self, identifier: str) -> dict | None:
-        return self.entries.get(identifier)
+        entry = self.entries.get(identifier)
+        if entry is None:
+            return None
+        regions = self.regions(identifier)
+        prompts = list(entry["suggested_questions"])
+        if regions:
+            shown = [p for p in re.findall(r"for ([A-Z][A-Z0-9_]*)\?", " ".join(prompts)) if p in regions["parts"]]
+            if shown:
+                prompts.insert(0, f"Show me {shown[0]}.")
+            prompts.append("Zoom back out to the whole sheet.")
+        return {**entry, "regions": regions, "suggested_questions": prompts}
 
     def image(self, identifier: str) -> bytes | None:
         if identifier not in self.images:

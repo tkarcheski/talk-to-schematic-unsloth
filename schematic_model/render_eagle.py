@@ -202,6 +202,27 @@ class _Drawing:
 
 
 def source_svg(path: Path, page: int, *, attribution: str = "") -> str:
+    return source_layout(path, page, attribution=attribution)[0]
+
+
+def _normalized_box(points, origin, size, pad):
+    xmin, ymin = origin
+    width, height = size
+    xs = [x for x, _ in points]
+    ys = [y for _, y in points]
+    box = [(min(xs) - pad - xmin) / width, (min(ys) - pad - ymin) / height,
+           (max(xs) + pad - xmin) / width, (max(ys) + pad - ymin) / height]
+    return [max(0, min(1000, round(value * 1000))) for value in box]
+
+
+def source_layout(path: Path, page: int, *, attribution: str = "") -> tuple[str, dict]:
+    """Return the SVG and source-geometry regions in 0–1000 image coordinates.
+
+    Regions use the same viewBox as the render: x and y are each scaled to
+    0–1000 across the full image, including the attribution footer. Part boxes
+    cover symbol primitives and instance attributes; net boxes cover wire and
+    label anchor points. Text extents are approximated by a small margin.
+    """
     _, schematic = load_eagle(path)
     sheets = schematic.findall("./sheets/sheet")
     if not 1 <= page <= len(sheets):
@@ -211,6 +232,8 @@ def source_svg(path: Path, page: int, *, attribution: str = "") -> str:
     circuit_points = []
     libraries = {x.get("name"): x for x in schematic.findall("./libraries/library")}
     parts = {x.get("name"): x for x in schematic.findall("./parts/part")}
+    part_points: dict[str, list[tuple[float, float]]] = {}
+    net_points: dict[str, list[tuple[float, float]]] = {}
     for node in sheet.findall("./plain/*"):
         drawing.primitive(node)
     for instance in sheet.findall("./instances/instance"):
@@ -235,11 +258,15 @@ def source_svg(path: Path, page: int, *, attribution: str = "") -> str:
         # in the source geometry but cannot force the circuit into a tiny view.
         if symbol.find("pin") is not None:
             circuit_points.extend(drawing.points[bounds_start:])
+            part_points.setdefault(instance.attrib["part"], []).extend(drawing.points[bounds_start:])
     bounds_start = len(drawing.points)
     for container in ("nets/net", "busses/bus"):
         for net in sheet.findall("./" + container):
+            net_start = len(drawing.points)
             for primitive in net.findall("./segment/*"):
                 drawing.primitive(primitive, substitutions={"NET": net.get("name")})
+            if container == "nets/net" and len(drawing.points) > net_start:
+                net_points.setdefault(net.get("name"), []).extend(drawing.points[net_start:])
     circuit_points.extend(drawing.points[bounds_start:])
     if not circuit_points:
         raise ValueError("No electrical source geometry available for circuit crop")
@@ -255,12 +282,19 @@ def source_svg(path: Path, page: int, *, attribution: str = "") -> str:
                      f'font-size="{font_size}" fill="#4b5563">{html.escape(line)}</text>'
                      for index, line in enumerate(footer_lines))
     metadata = html.escape(f"{RENDER_METHOD}; {CROP_POLICY}; original source retained separately")
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="{max(1, round(2400 * height / width))}" '
+    origin, size = (xmin, ymin), (width, height)
+    regions = {
+        "coordinates": "0-1000 relative to the full rendered image, x then y",
+        "parts": {name: _normalized_box(points, origin, size, 1.5) for name, points in sorted(part_points.items())},
+        "nets": {name: _normalized_box(points, origin, size, 1.0) for name, points in sorted(net_points.items())},
+    }
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="{max(1, round(2400 * height / width))}" '
             f'viewBox="{xmin} {ymin} {width} {height}"><metadata>{metadata}</metadata>'
             f'<defs><clipPath id="circuit"><rect x="{xmin}" y="{ymin}" width="{width}" height="{body_bottom - ymin}"/></clipPath></defs>'
             f'<rect x="{xmin}" y="{ymin}" width="{width}" height="{height}" fill="white"/>'
             '<g font-family="DejaVu Sans, sans-serif" stroke-linecap="round" stroke-linejoin="round">'
             + '<g clip-path="url(#circuit)">' + "".join(drawing.elements) + '</g>' + footer + '</g></svg>')
+    return svg, regions
 
 
 def render_eagle(path: Path, page: int, output: Path, *, attribution: str = "") -> None:

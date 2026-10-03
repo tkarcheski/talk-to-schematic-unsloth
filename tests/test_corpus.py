@@ -10,7 +10,8 @@ from unittest.mock import patch
 import xml.etree.ElementTree as ET
 
 from schematic_model.corpus import _archive_source, _split, build_corpus, conversation, parse_eagle
-from schematic_model.render_eagle import _Drawing, _point, source_svg
+from schematic_model.corpus import _discover, publisher
+from schematic_model.render_eagle import _Drawing, _point, source_layout, source_svg
 
 
 EAGLE = '''<?xml version="1.0"?>
@@ -261,6 +262,43 @@ class CorpusTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Unsafe archive path'):
                 _archive_source({'repository': 'adafruit/Example-PCB', 'revision': 'main'}, self.directory)
         self.assertFalse((self.directory.parent / 'escaped.sch').exists())
+
+    def test_sparkfun_profile_requires_its_own_license_text(self):
+        data = self.archive({'board.sch': EAGLE, 'LICENSE.md': 'https://creativecommons.org/licenses/by-sa/4.0/'})
+        with patch('schematic_model.corpus._fetch', return_value=data):
+            result = _archive_source({'repository': 'sparkfun/SparkFun_Qwiic_Example', 'revision': 'main'},
+                                     self.directory)
+        self.assertEqual(result['license'], 'CC-BY-SA-4.0')
+        data = self.archive({'board.sch': EAGLE, 'license.txt': 'Attribution-ShareAlike 3.0 Unported'})
+        with patch('schematic_model.corpus._fetch', return_value=data):
+            with self.assertRaisesRegex(ValueError, 'license'):
+                _archive_source({'repository': 'sparkfun/SparkFun_Other', 'revision': 'main'}, self.directory)
+
+    def test_only_reviewed_publishers_are_accepted(self):
+        self.assertEqual(publisher('sparkfun/SparkFun_Qwiic_Buzzer')['license'], 'CC-BY-SA-4.0')
+        self.assertEqual(publisher('adafruit/Adafruit-TXB0104-PCB')['license'], 'CC-BY-SA-3.0')
+        for name in ('someone/SparkFun_Qwiic_Buzzer', 'sparkfun/../x', 'sparkfun'):
+            with self.assertRaises(ValueError):
+                publisher(name)
+
+    def test_sparkfun_discovery_skips_software_only_repositories(self):
+        page = json.dumps({'items': [
+            {'full_name': 'sparkfun/SparkFun_Qwiic_Buzzer', 'default_branch': 'main'},
+            {'full_name': 'sparkfun/SparkFun_Qwiic_Buzzer_Arduino_Library', 'default_branch': 'main'},
+            {'full_name': 'sparkfun/Qwiic_Buzzer_Py', 'default_branch': 'main'},
+            {'full_name': 'sparkfun/SparkFun_Old_Breakout', 'default_branch': 'main', 'archived': True}]}).encode()
+        with patch('schematic_model.corpus._fetch', return_value=page):
+            rows = _discover(pages=1, publisher_name='sparkfun')
+        self.assertEqual(rows, [{'repository': 'sparkfun/SparkFun_Qwiic_Buzzer', 'revision': 'main'}])
+
+    def test_source_layout_regions_match_the_unchanged_render(self):
+        svg, regions = source_layout(self.source, 1, attribution='Example attribution')
+        self.assertEqual(svg, source_svg(self.source, 1, attribution='Example attribution'))
+        self.assertEqual(set(regions['parts']), {'R1', 'R2'})
+        self.assertIn('SIGNAL', regions['nets'])
+        for box in [*regions['parts'].values(), *regions['nets'].values()]:
+            self.assertTrue(0 <= box[0] < box[2] <= 1000 and 0 <= box[1] < box[3] <= 1000, box)
+        self.assertLess(regions['parts']['R1'][0], regions['parts']['R2'][0])
 
 
 if __name__ == '__main__':

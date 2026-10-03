@@ -92,6 +92,16 @@ The evidence-assisted view supplies extracted facts in the prompt. Its score mea
 
 See the [source inventory](corpora/adafruit-120.json), [corpus summary](corpora/adafruit-120-summary.json), and [render hashes](corpora/adafruit-120-rendered.json). Source hardware and derived data retain their recorded CC BY-SA 3.0 terms and attribution.
 
+### SparkFun viewer library
+
+```sh
+uv run --locked schematic-model corpus \
+  --manifest corpora/sparkfun-36.json \
+  --out data/sparkfun --limit 36
+```
+
+36 SparkFun Qwiic and breakout boards (37 sheets) under CC BY-SA 4.0, used as viewer examples only; no adapter has been trained or tested on them. A rebuild from the pinned manifest reproduced every image and SVG hash in the [render hashes](corpora/sparkfun-36-rendered.json). See the [summary](corpora/sparkfun-36-summary.json) for selection limits.
+
 Reproduce the example document after building the corpus:
 
 ```sh
@@ -184,11 +194,47 @@ uv run --locked schematic-model chat tmp/txb0104.png \
   --question 'What is connected to the OE net?'
 ```
 
-Open **http://127.0.0.1:8891/** for the chat workspace. Its dropdown contains the 120 real product schematics, with original source links and attribution. Choose native evidence plus image or image-only mode, then ask questions. The UI displays actual model availability and preserves failed questions for retry; it never substitutes stored gold answers.
+Add `--examples data/sparkfun` (repeatable) to serve both example libraries. Open **http://127.0.0.1:8891/** for the viewer described below. The UI displays actual model availability and preserves failed questions for retry; it never substitutes stored gold answers.
+
+## Schematic viewer
+
+![Viewer after a scripted "Show me U1." request](docs/images/viewer-show-u1.png)
+
+The main view shows the schematic; the chat sits on the right. **Open schematic** opens a library of 157 example sheets (37 SparkFun, 120 Adafruit) or accepts a PDF, PNG, JPEG or WebP upload. PDFs are rendered in the browser with a vendored, hash-pinned [pdf.js](schematic_model/web/vendor/README.md) build; nothing is uploaded to a remote service.
+
+The model can move the view. Each request offers three viewer functions, defined in [view_tools.py](schematic_model/view_tools.py):
+
+| Function | Effect |
+|---|---|
+| `show_label(label)` | Pans and zooms to a part reference or net label, or reports `not_found` |
+| `show_region(box)` | Frames a box in 0–1000 image coordinates |
+| `show_full_sheet()` | Returns to the whole sheet |
+
+The browser executes each call, marks the target, and returns the result to the model, which then answers. If the model is still moving the view after four rounds of calls, the request is reported as an error and the question is kept for retry. Labels resolve against source-geometry boxes for examples (only when the image's SVG is reproduced byte-for-byte) and against the PDF text layer for uploads. Calls are rendered as plain text identical to the pinned Qwen3.5 chat template, so the existing training and evaluation code reads them unchanged. Malformed calls fail with HTTP 422 rather than being guessed.
+
+Uploads have no native source evidence, so they always use image-only mode and display a notice that image-only answers have **not passed this project's accuracy gate**.
+
+Limitations: no adapter has been trained on viewer commands yet. The v1 and v3 adapters were not trained to call these functions and may answer without moving the view or produce malformed calls. The viewer has not been run against a GPU model in this change.
+
+Build viewer-command conversations and score them with the `view-commands` profile:
+
+```sh
+uv run --locked python -m schematic_model.view_data --corpus data/real --out data/real/view
+uv run --locked python -m schematic_model.view_data --corpus data/sparkfun --out data/sparkfun/view
+uv run --locked python evaluate.py --gold data/real/view/test.jsonl --pred preds.jsonl --profile view-commands
+```
+
+Each page yields five tasks: show a part, show a net, frame two parts together, report an absent label, and zoom out. Boxes are source bounding regions, not human annotations, and replies are template text. Adafruit yields 110 conversations (80/13/17) and SparkFun 30 (17/0/13).
+
+To develop the UI without a GPU, run a scripted stand-in. Its replies are fixed rules, labelled `ui-preview-scripted`, and are **not model output**:
+
+```sh
+uv run --locked python scripts/ui_preview.py --examples data/sparkfun --examples data/real --port 8891
+```
 
 The local server binds only to `127.0.0.1`. It exposes `/health`, `/v1/models`, and `/v1/chat/completions`, uses bounded concurrent HTTP handlers with one serialized GPU generation, bounds inputs and output lengths, and accepts image data URLs rather than server filesystem paths or remote image URLs. It is a local inference service, not a public multi-user hosting platform.
 
-Run `npm run browser:smoke -- --url http://127.0.0.1:8891 --out results/browser-smoke` to check the real catalog and desktop/mobile layout. Add `--question 'What value is shown for R1?'` for a real model request. This check requires Chromium at `/usr/bin/chromium`; screenshots and a JSON report are saved separately from the simulated reference conversations.
+Run `npm run browser:smoke -- --url http://127.0.0.1:8891 --out results/browser-smoke` to check the library, view controls, and desktop/mobile layout (`--expected-examples` defaults to 157, both libraries). Add `--pdf FILE` to check an upload, and `--question 'Show me R1.'` for a real model request. This check requires Chromium at `/usr/bin/chromium`; screenshots and a JSON report are saved separately from the simulated reference conversations.
 
 The HTTP client also supports a compatible Studio endpoint. It reads an existing `UNSLOTH_API_KEY` environment variable when authentication is required. It does not change Studio authentication or automatically switch its resident model.
 

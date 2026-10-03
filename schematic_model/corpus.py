@@ -29,6 +29,34 @@ SYSTEM = (
 )
 
 
+# Each publisher is an explicitly reviewed license profile. Repository owners
+# outside this table are rejected rather than inferred from search results.
+PUBLISHERS = {
+    "adafruit": {
+        "name": "Adafruit Industries", "license": "CC-BY-SA-3.0",
+        "license_marker": "Attribution-ShareAlike 3.0 Unported",
+        "attribution": "Adafruit Industries; original notices retained in source README and license",
+        "footer": "Adafruit Industries | CC BY-SA 3.0 | source notices retained",
+        "discover": ["org:adafruit PCB"],
+    },
+    "sparkfun": {
+        "name": "SparkFun Electronics", "license": "CC-BY-SA-4.0",
+        "license_marker": "creativecommons.org/licenses/by-sa/4.0",
+        "attribution": "SparkFun Electronics; original notices retained in source README and license",
+        "footer": "SparkFun Electronics | CC BY-SA 4.0 | source notices retained",
+        "discover": ["org:sparkfun Qwiic in:name", "org:sparkfun Breakout in:name"],
+    },
+}
+REPOSITORY = re.compile(r"(adafruit|sparkfun)/[A-Za-z0-9_.-]+")
+
+
+def publisher(repository: str) -> dict:
+    """Return the reviewed license profile for a pinned GitHub repository name."""
+    if not isinstance(repository, str) or not REPOSITORY.fullmatch(repository):
+        raise ValueError("The curated importer accepts official Adafruit or SparkFun repositories")
+    return PUBLISHERS[repository.split("/", 1)[0]]
+
+
 def sha256(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
@@ -131,21 +159,31 @@ def parse_eagle(path: Path | bytes) -> dict:
     return {"format": "eagle_xml", "sha256": sha256(content), "sheets": sheets}
 
 
-def _discover(pages: int = 2) -> list[dict]:
-    rows = []
-    for page in range(1, pages + 1):
-        query = urllib.parse.urlencode({"q": "org:adafruit PCB", "per_page": 100,
-                                       "sort": "updated", "order": "desc", "page": page})
-        result = json.loads(_fetch("https://api.github.com/search/repositories?" + query))
-        rows.extend({"repository": x["full_name"], "revision": x["default_branch"]}
-                    for x in result["items"] if not x.get("archived") and not x.get("fork"))
+LIBRARY_NAME = re.compile(r"(?i)(arduino|library|_py$|python|circuitpython|micropython|firmware|_lib)")
+
+
+def _discover(pages: int = 2, publisher_name: str = "adafruit") -> list[dict]:
+    rows, seen = [], set()
+    for search in PUBLISHERS[publisher_name]["discover"]:
+        for page in range(1, pages + 1):
+            query = urllib.parse.urlencode({"q": search, "per_page": 100,
+                                           "sort": "updated", "order": "desc", "page": page})
+            result = json.loads(_fetch("https://api.github.com/search/repositories?" + query))
+            for item in result["items"]:
+                name = item["full_name"]
+                if item.get("archived") or item.get("fork") or name in seen:
+                    continue
+                # Software-only repositories have no schematic; skip them before download.
+                if publisher_name != "adafruit" and LIBRARY_NAME.search(name.split("/", 1)[1]):
+                    continue
+                seen.add(name)
+                rows.append({"repository": name, "revision": item["default_branch"]})
     return rows
 
 
 def _archive_source(source: dict, directory: Path) -> dict:
     repository, revision = source["repository"], source["revision"]
-    if not re.fullmatch(r"adafruit/[A-Za-z0-9_.-]+", repository):
-        raise ValueError("The curated importer accepts official Adafruit repositories")
+    profile = publisher(repository)
     if not re.fullmatch(r"[A-Za-z0-9_.-]+", revision):
         raise ValueError("Invalid source revision")
     repo_dir = directory / repository.replace("/", "__")
@@ -170,10 +208,10 @@ def _archive_source(source: dict, directory: Path) -> dict:
         members = [m for m in archive.getmembers() if m.isfile() and m.size <= MAX_SOURCE]
         licenses = [m for m in members if PurePosixPath(m.name).name.lower() in
                     {"license.txt", "license", "license.md"}]
-        license_member = next((m for m in licenses if "Attribution-ShareAlike 3.0 Unported" in
+        license_member = next((m for m in licenses if profile["license_marker"] in
                                archive.extractfile(m).read().decode("utf-8", errors="replace")), None)
         if license_member is None:
-            raise ValueError("No explicit CC-BY-SA-3.0 license found; manual review required")
+            raise ValueError(f"No explicit {profile['license']} license found; manual review required")
         selected = [m for m in members if m.name.lower().endswith(".sch")]
         selected += licenses
         selected += [m for m in members if PurePosixPath(m.name).name.lower().startswith("readme")]
@@ -192,8 +230,8 @@ def _archive_source(source: dict, directory: Path) -> dict:
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(data)
             records.append({"path": str(relative), "sha256": sha256(data), "bytes": len(data)})
-    result = {"repository": repository, "revision": commit, "license": "CC-BY-SA-3.0",
-              "attribution": "Adafruit Industries; original notices retained in source README and license",
+    result = {"repository": repository, "revision": commit, "license": profile["license"],
+              "attribution": profile["attribution"],
               "license_path": str(PurePosixPath(*PurePosixPath(license_member.name).parts[1:])),
               "archive_sha256": sha256(archive_bytes), "files": records}
     if "files" in source and source["files"] != records:
@@ -287,7 +325,8 @@ def _atomic_text(path: Path, text: str) -> None:
 
 
 def build_corpus(output: Path, *, limit: int = 120, manifest: Path | None = None,
-                 workers: int = 6, render: bool = True, overwrite: bool = False) -> dict:
+                 workers: int = 6, render: bool = True, overwrite: bool = False,
+                 publisher_name: str = "adafruit") -> dict:
     """Fetch licensed sources and build attributable facts plus source-geometry images."""
     if limit < 1 or not 1 <= workers <= 8:
         raise ValueError("limit must be positive and workers must be 1..8")
@@ -296,7 +335,9 @@ def build_corpus(output: Path, *, limit: int = 120, manifest: Path | None = None
     output.mkdir(parents=True, exist_ok=True)
     source_dir = output / "sources"
     source_dir.mkdir(exist_ok=True)
-    sources = json.loads(manifest.read_text())["sources"] if manifest else _discover()
+    if publisher_name not in PUBLISHERS:
+        raise ValueError("Unknown publisher profile")
+    sources = json.loads(manifest.read_text())["sources"] if manifest else _discover(publisher_name=publisher_name)
     failures, downloaded = [], []
 
     def download(source):
@@ -341,7 +382,7 @@ def build_corpus(output: Path, *, limit: int = 120, manifest: Path | None = None
                         continue
                     if render:
                         render_eagle(path, sheet["page"], image_path,
-                                     attribution="Adafruit Industries | CC BY-SA 3.0 | source notices retained")
+                                     attribution=publisher(source["repository"])["footer"])
                         record["images"].append({"page": sheet["page"], "path": "images/" + image_path.name,
                                                  "sha256": sha256(image_path.read_bytes()),
                                                  "svg_sha256": sha256(image_path.with_suffix(".svg").read_bytes())})
@@ -390,10 +431,12 @@ def main(argv=None) -> int:
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--workers", type=int, default=6)
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--publisher", choices=sorted(PUBLISHERS), default="adafruit",
+                        help="license profile used for discovery when no pinned manifest is given")
     args = parser.parse_args(argv)
     try:
         summary = build_corpus(args.out, limit=args.limit, manifest=args.manifest, workers=args.workers,
-                               overwrite=args.overwrite)
+                               overwrite=args.overwrite, publisher_name=args.publisher)
     except (ValueError, OSError) as error:
         print(json.dumps({"status": "incomplete", "error": str(error)}))
         return 2
