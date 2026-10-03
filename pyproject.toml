@@ -25,14 +25,14 @@ dev = [
 
 [tool.setuptools]
 packages = ["schematic_model"]
-py-modules = ["evaluate", "predict", "chat"]
+py-modules = ["evaluate", "chat"]
 
 [tool.setuptools.package-data]
 schematic_model = ["skills/*/SKILL.md", "web/*"]
 
 [tool.coverage.run]
 branch = true
-source = ["schematic_model", "evaluate", "predict", "chat"]
+source = ["schematic_model", "evaluate", "chat"]
 
 [tool.coverage.report]
 show_missing = true

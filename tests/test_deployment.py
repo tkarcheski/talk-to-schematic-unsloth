@@ -196,33 +196,6 @@ class FakeEngine:
         return {"output": "R1 is 10k.", "finish_reason": "stop", "usage": {"total_tokens": 5}}
 
 
-def write_dataset(tmp_path):
-    Image.new("RGB", (24, 16), "white").save(tmp_path / "sheet.png")
-    row = {"id": "sheet-1", "messages": [
-        {"role": "user", "content": [{"type": "image", "image": "sheet.png"}, {"type": "text", "text": "Read R1"}]},
-        {"role": "assistant", "content": [{"type": "text", "text": "10k"}]},
-        {"role": "user", "content": [{"type": "text", "text": "Read R2"}]},
-        {"role": "assistant", "content": [{"type": "text", "text": "22k"}]},
-    ], "gold": [{"type": "value", "value": "10k"}, {"type": "value", "value": "22k"}]}
-    path = tmp_path / "test.jsonl"
-    path.write_text(json.dumps(row) + "\n")
-    return path
-
-
-def test_interrupted_batch_resumes_and_image_changes_invalidate_resume(config, tmp_path):
-    dataset, output = write_dataset(tmp_path), tmp_path / "predictions.jsonl"
-    with pytest.raises(InferenceError):
-        deploy.batch_predict(config, str(dataset), str(output), engine=FakeEngine(config, fail_at=2))
-    first_line = output.read_text()
-    resumed = FakeEngine(config)
-    deploy.batch_predict(config, str(dataset), str(output), resume=True, engine=resumed)
-    assert len(resumed.calls) == 1
-    assert output.read_text().startswith(first_line)
-    Image.new("RGB", (24, 16), "black").save(tmp_path / "sheet.png")
-    with pytest.raises(ValueError, match="provenance differs"):
-        deploy.batch_predict(config, str(dataset), str(output), resume=True, engine=FakeEngine(config))
-
-
 @pytest.fixture
 def server(config):
     engine = FakeEngine(config)
@@ -401,11 +374,3 @@ def test_invalid_adapter_metadata_is_a_validation_error(config, metadata):
     Path(config.model, "adapter_config.json").write_text(json.dumps(metadata))
     with pytest.raises(ValueError):
         deploy.LocalModel(config)
-
-
-def test_prediction_sidecars_cannot_pollute_model_fingerprint(config, tmp_path):
-    dataset = write_dataset(tmp_path)
-    output = Path(config.model) / "predictions.jsonl"
-    with pytest.raises(ValueError, match="outside model"):
-        deploy.batch_predict(config, str(dataset), str(output), engine=FakeEngine(config))
-    assert not list(Path(config.model).glob("predictions*"))

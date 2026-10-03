@@ -129,7 +129,7 @@ Adapters are saved by default. `--resume CHECKPOINT` resumes trainer state; `--e
 
 ## Compare actual model answers
 
-Use the failure-accounting benchmark for qualification. Every requested turn remains in the denominator; incomplete generations get explicit failed records with empty answers. Resource or data failures stop the run and invalidate its report. Ordinary deployment prediction continues to require complete answers.
+Use the failure-accounting benchmark for qualification. Every requested turn remains in the denominator; incomplete generations get explicit failed records with empty answers. Resource or data failures stop the run and invalidate its report.
 
 ```sh
 # Run with your Unsloth environment's Python.

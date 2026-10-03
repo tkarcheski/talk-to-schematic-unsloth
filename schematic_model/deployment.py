@@ -25,7 +25,7 @@ import time
 from typing import Any
 import uuid
 
-from schematic_model.inference import InferenceError, convert_messages
+from schematic_model.inference import InferenceError
 from schematic_model.training import gpu_inventory, installed_versions, sha256, write_manifest
 
 MAX_BODY_BYTES = 32 * 1024 * 1024
@@ -317,50 +317,6 @@ class LocalModel:
                 "elapsed_seconds": round(time.monotonic() - started, 4), "model_fingerprint": self.fingerprint}
 
 
-def batch_predict(config: DeploymentConfig, dataset: str, output: str, *, resume=False, history="gold", engine=None):
-    """Reuse the same durable prediction loop as HTTP inference, bound to image bytes."""
-    from evaluate import load_gold
-    from predict import predict
-
-    config.validate()
-    dataset_path, output_path = Path(dataset), Path(output)
-    rows = load_gold(dataset_path)
-    image_inputs = []
-    for row in rows:
-        messages = convert_messages(row["messages"], dataset_path)
-        for message in messages:
-            for block in message["content"]:
-                if block["type"] == "image_url":
-                    image_inputs.append(hashlib.sha256(block["image_url"]["url"].encode()).hexdigest())
-    client = engine if engine is not None else LocalModel(config)
-    protected = [Path(config.model).resolve()]
-    artifact = client.provenance.get("model")
-    while isinstance(artifact, dict):
-        if isinstance(artifact.get("path"), str):
-            protected.append(Path(artifact["path"]).resolve())
-        artifact = artifact.get("base_model")
-    if any(output_path.resolve().is_relative_to(directory) for directory in protected):
-        raise ValueError("Prediction output must be outside model and base-model artifact directories")
-    binding = {"deployment": client.provenance, "dataset_sha256": sha256(dataset_path),
-               "image_input_hashes": image_inputs, "history": history}
-    client.base_url = "local-unsloth://" + _digest_json(binding)
-    provenance_path = output_path.with_suffix(output_path.suffix + ".deployment.json")
-    if provenance_path.exists():
-        if not resume or json.loads(provenance_path.read_text()) != binding:
-            raise ValueError("Deployment provenance differs; use a new output file")
-    elif resume and output_path.exists():
-        raise ValueError("Cannot resume predictions without deployment provenance")
-    else:
-        if output_path.exists():
-            raise ValueError("Prediction output exists; use --resume")
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with provenance_path.open("x", encoding="utf-8") as stream:
-            json.dump(binding, stream, indent=2)
-            stream.write("\n")
-    return predict(dataset_path, output_path, config.served_model_name, client,
-                   resume=resume, history=history, max_tokens=config.max_tokens)
-
-
 def make_server(engine, port: int = 8891, *, examples=None) -> HTTPServer:
     """Bound concurrent connections while serializing GPU work; caller owns lifetime."""
     generation_lock = threading.Lock()
@@ -531,24 +487,17 @@ def _unique_object(pairs):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("predict", "serve"):
-        command = commands.add_parser(name)
-        command.add_argument("--model", required=True)
-        command.add_argument("--served-model-name", default="schematic")
-        command.add_argument("--max-seq", type=int, default=8192)
-        command.add_argument("--max-image-size", type=int, default=1024)
-        command.add_argument("--max-tokens", type=int, default=1024)
-        command.add_argument("--seed", type=int, default=3407)
-        command.add_argument("--4bit", dest="four_bit", action="store_true")
-        command.add_argument("--min-free-vram-gb", type=float, default=10)
-        if name == "predict":
-            command.add_argument("--data", required=True)
-            command.add_argument("--out", required=True)
-            command.add_argument("--resume", action="store_true")
-            command.add_argument("--history", choices=("gold", "generated"), default="gold")
-        else:
-            command.add_argument("--port", type=int, default=8891)
-            command.add_argument("--examples", help="verified real corpus directory for the browser example catalog")
+    serve = commands.add_parser("serve")
+    serve.add_argument("--model", required=True)
+    serve.add_argument("--served-model-name", default="schematic")
+    serve.add_argument("--max-seq", type=int, default=8192)
+    serve.add_argument("--max-image-size", type=int, default=1024)
+    serve.add_argument("--max-tokens", type=int, default=1024)
+    serve.add_argument("--seed", type=int, default=3407)
+    serve.add_argument("--4bit", dest="four_bit", action="store_true")
+    serve.add_argument("--min-free-vram-gb", type=float, default=10)
+    serve.add_argument("--port", type=int, default=8891)
+    serve.add_argument("--examples", help="verified real corpus directory for the browser example catalog")
     bundle = commands.add_parser("bundle", help="copy an adapter and bind it to a local base model")
     bundle.add_argument("--model", required=True)
     bundle.add_argument("--base-model", required=True)
@@ -558,9 +507,6 @@ def main(argv=None):
     try:
         if command == "bundle":
             result = prepare_bundle(args["model"], args["base_model"], args["out"])
-        elif command == "predict":
-            dataset, output, resume, history = (args.pop(key) for key in ("data", "out", "resume", "history"))
-            result = batch_predict(DeploymentConfig(**args), dataset, output, resume=resume, history=history)
         else:
             port = args.pop("port")
             examples = args.pop("examples")

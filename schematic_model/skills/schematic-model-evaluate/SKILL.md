@@ -13,7 +13,7 @@ Use CPU preflight before model loading:
 schematic-model train --data DATA_DIRECTORY --dry-run
 ```
 
-Run base and adapter on the same held-out data and settings. `schematic-model predict --data TEST.jsonl --out PREDICTIONS.jsonl --model MODEL --base-url URL` saves completed turns durably. `--resume` requires matching data and settings. Default `--history gold` isolates each turn; also use `--history generated` to assess accumulated conversational errors. Do not mix the two in a comparison.
+Run base and adapter on the same held-out data and settings. `schematic-model benchmark --model MODEL --data TEST.jsonl --out PREDICTIONS.jsonl --profile PROFILE` saves every turn durably, including failed generations. `--resume` requires matching data and settings. Default `--history gold` isolates each turn; also use `--history generated` to assess accumulated conversational errors. Do not mix the two in a comparison.
 
 Choose the declared benchmark scope:
 
