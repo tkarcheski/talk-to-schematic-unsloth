@@ -13,7 +13,7 @@ Use CPU preflight before model loading:
 schematic-model train --data DATA_DIRECTORY --dry-run
 ```
 
-Run base and adapter on the same held-out data and settings. `schematic-model predict --data TEST.jsonl --out PREDICTIONS.jsonl --model MODEL --base-url URL` saves completed turns durably. `--resume` requires matching data and settings. Default `--history gold` isolates each turn; also use `--history generated` to assess accumulated conversational errors. Do not mix the two in a comparison.
+Run base and adapter on the same held-out data and settings. `schematic-model benchmark --model MODEL --data TEST.jsonl --out PREDICTIONS.jsonl --profile PROFILE` saves every turn durably, including failed generations. `--resume` requires matching data and settings. Default `--history gold` isolates each turn; also use `--history generated` to assess accumulated conversational errors. Do not mix the two in a comparison.
 
 Choose the declared benchmark scope:
 
@@ -21,7 +21,7 @@ Choose the declared benchmark scope:
 schematic-model evaluate --gold TEST.jsonl --pred ADAPTER.jsonl --pred-base BASE.jsonl --profile real-grounding --report report.json
 ```
 
-`real-grounding` requires values, connectivity, and unsupported-fact refusals. `real-vision` requires image-only values and refusals; use its separate image-only dataset. `synthetic` also tests the fixed synthetic circuit's rule findings and calculations. Never switch profiles merely to hide a failing or missing metric.
+`real-grounding` requires values, connectivity, and unsupported-fact refusals. `real-vision` requires image-only values and refusals; use its separate image-only dataset. Never switch profiles merely to hide a failing or missing metric.
 
 Missing, duplicate, malformed, or incomplete prediction evidence blocks a result. Report metric denominators and failures. Deterministic prose matching has limited semantic understanding: inspect actual incorrect answers, correct answers, and plausible false positives before accepting a candidate.
 

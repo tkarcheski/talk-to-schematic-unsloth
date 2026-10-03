@@ -1,2 +1,0 @@
-# Compatibility installer; prefer uv sync --locked for reproducible dependencies.
--e .

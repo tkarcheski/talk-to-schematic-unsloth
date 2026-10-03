@@ -8,8 +8,6 @@ from . import __version__
 
 COMMANDS = {
     "evaluate": "evaluate",
-    "synthetic": "build_dataset",
-    "predict": "predict",
     "chat": "chat",
     "train": "schematic_model.training",
     "inspect": "schematic_model.inspect",

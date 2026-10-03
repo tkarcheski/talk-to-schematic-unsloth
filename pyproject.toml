@@ -7,11 +7,9 @@ name = "talk-to-schematic"
 version = "0.1.0"
 description = "Grounded schematic datasets, evaluation, and Unsloth fine-tuning"
 readme = "README.md"
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.13,<3.14"
 dependencies = [
   "pillow>=11,<13",
-  "matplotlib>=3.10,<4",
-  "schemdraw>=0.21,<0.23",
 ]
 
 [project.scripts]
@@ -27,14 +25,14 @@ dev = [
 
 [tool.setuptools]
 packages = ["schematic_model"]
-py-modules = ["hwsynth", "build_dataset", "evaluate", "make_mock_preds", "predict", "chat", "train_unsloth"]
+py-modules = ["evaluate", "chat"]
 
 [tool.setuptools.package-data]
 schematic_model = ["skills/*/SKILL.md", "web/*"]
 
 [tool.coverage.run]
 branch = true
-source = ["schematic_model", "build_dataset", "hwsynth", "evaluate", "predict", "chat"]
+source = ["schematic_model", "evaluate", "chat"]
 
 [tool.coverage.report]
 show_missing = true
@@ -46,7 +44,7 @@ pythonpath = ["."]
 addopts = "-ra"
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py313"
 line-length = 110
 extend-exclude = ["data", "outputs", "results"]
 

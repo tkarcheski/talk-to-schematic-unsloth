@@ -51,7 +51,6 @@ class Guard(importlib.abc.MetaPathFinder):
         if fullname.split('.')[0] in {'torch', 'unsloth', 'transformers', 'trl'}:
             raise AssertionError('GPU import: ' + fullname)
 sys.meta_path.insert(0, Guard())
-import train_unsloth
 from schematic_model.training import main
 try:
     main(['--help'])
