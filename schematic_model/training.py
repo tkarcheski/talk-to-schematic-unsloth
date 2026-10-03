@@ -19,6 +19,7 @@ import math
 from pathlib import Path
 import platform
 import random
+import re
 import signal
 import subprocess
 import sys
@@ -97,12 +98,36 @@ class TrainingConfig:
             raise ValueError("model must not be empty")
         if self.model.lower().endswith(".gguf") or "-gguf" in self.model.lower():
             raise ValueError("GGUF weights cannot be fine-tuned; use a safetensors model")
-        if self.resume and not (Path(self.resume) / "trainer_state.json").is_file():
-            raise ValueError("resume must name a checkpoint containing trainer_state.json")
+        if self.resume:
+            _validate_resume_checkpoint(Path(self.resume))
 
     @property
     def effective_revision(self) -> str | None:
         return self.revision or (DEFAULT_REVISION if self.model == DEFAULT_MODEL else None)
+
+
+def _validate_resume_checkpoint(checkpoint: Path) -> None:
+    """Require complete single-GPU PEFT state before any training side effects.
+
+    This checks file presence and trainer metadata, not binary deserialization or
+    compatibility with the current run's data and settings.
+    """
+    match = re.fullmatch(r"checkpoint-([1-9][0-9]*)", checkpoint.name)
+    if not checkpoint.is_dir() or match is None:
+        raise ValueError("resume must name a checkpoint-N directory with a positive step")
+    required = ("adapter_model.safetensors", "adapter_config.json", "trainer_state.json",
+                "optimizer.pt", "scheduler.pt", "rng_state.pth", "training_args.bin")
+    for name in required:
+        artifact = checkpoint / name
+        if not artifact.is_file() or artifact.stat().st_size == 0:
+            raise ValueError(f"Resume checkpoint requires a nonempty regular file: {name}")
+    try:
+        state = json.loads((checkpoint / "trainer_state.json").read_text(encoding="utf-8"))
+    except (ValueError, UnicodeError) as exc:
+        raise ValueError("Resume checkpoint trainer_state.json is not valid JSON") from exc
+    step = state.get("global_step") if isinstance(state, dict) else None
+    if type(step) is not int or step <= 0 or step != int(match[1]):
+        raise ValueError("Resume checkpoint global_step must be a positive integer matching checkpoint-N")
 
 
 def sha256(path: Path) -> str:

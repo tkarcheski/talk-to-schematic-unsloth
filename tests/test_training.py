@@ -183,6 +183,79 @@ def test_invalid_run_configuration_is_rejected(dataset, change):
         training.preflight(replace(dataset, **change))
 
 
+@pytest.fixture
+def resume_checkpoint(tmp_path):
+    """Structural checkpoint fixture; tests never deserialize these binary stubs."""
+    checkpoint = tmp_path / "checkpoint-300"
+    checkpoint.mkdir()
+    for name in ("adapter_model.safetensors", "optimizer.pt", "scheduler.pt",
+                 "rng_state.pth", "training_args.bin"):
+        (checkpoint / name).write_bytes(b"nonempty binary fixture")
+    (checkpoint / "adapter_config.json").write_text('{"peft_type": "LORA", "r": 16}')
+    (checkpoint / "trainer_state.json").write_text('{"global_step": 300}')
+    return checkpoint
+
+
+def assert_resume_rejected_without_side_effects(dataset, checkpoint, monkeypatch, error):
+    output = Path(dataset.out)
+    output.mkdir()
+    previous = b'{"status": "interrupted", "previous_run": true}\n'
+    manifest = output / "training_manifest.json"
+    manifest.write_bytes(previous)
+    gpu = Mock(side_effect=AssertionError("resume validation must precede GPU inspection"))
+    monkeypatch.setattr(training, "gpu_inventory", gpu)
+    with pytest.raises(ValueError, match=error):
+        training.run_training(replace(dataset, resume=str(checkpoint)))
+    gpu.assert_not_called()
+    assert manifest.read_bytes() == previous
+    assert {path.name for path in output.iterdir()} == {"training_manifest.json"}
+
+
+@pytest.mark.parametrize("name", [
+    "adapter_model.safetensors", "adapter_config.json", "trainer_state.json",
+    "optimizer.pt", "scheduler.pt", "rng_state.pth", "training_args.bin",
+])
+@pytest.mark.parametrize("problem", ["missing", "empty", "directory"])
+def test_incomplete_resume_preserves_prior_manifest_before_gpu(
+        dataset, resume_checkpoint, monkeypatch, name, problem):
+    artifact = resume_checkpoint / name
+    if problem == "empty":
+        artifact.write_bytes(b"")
+    else:
+        artifact.unlink()
+        if problem == "directory":
+            artifact.mkdir()
+    assert_resume_rejected_without_side_effects(dataset, resume_checkpoint, monkeypatch, "nonempty regular file")
+
+
+@pytest.mark.parametrize("content", [
+    b"not JSON", b"\xff", b"[]", b"null", b"{}", b'{"global_step": true}',
+    b'{"global_step": 0}', b'{"global_step": -1}', b'{"global_step": 300.0}',
+    b'{"global_step": "300"}', b'{"global_step": 299}',
+])
+def test_invalid_resume_state_preserves_prior_manifest_before_gpu(
+        dataset, resume_checkpoint, monkeypatch, content):
+    (resume_checkpoint / "trainer_state.json").write_bytes(content)
+    assert_resume_rejected_without_side_effects(dataset, resume_checkpoint, monkeypatch, "Resume checkpoint")
+
+
+@pytest.mark.parametrize("name", ["checkpoint-0", "checkpoint-latest", "arbitrary-directory"])
+def test_resume_directory_must_identify_its_positive_checkpoint_step(
+        dataset, resume_checkpoint, monkeypatch, name):
+    renamed = resume_checkpoint.with_name(name)
+    resume_checkpoint.rename(renamed)
+    assert_resume_rejected_without_side_effects(dataset, renamed, monkeypatch, "checkpoint-N")
+
+
+def test_complete_resume_checkpoint_passes_cpu_preflight_without_output(dataset, resume_checkpoint, monkeypatch):
+    gpu = Mock(side_effect=AssertionError("preflight must stay on CPU"))
+    monkeypatch.setattr(training, "gpu_inventory", gpu)
+    report = training.preflight(replace(dataset, resume=str(resume_checkpoint)))
+    assert report["config"]["resume"] == str(resume_checkpoint)
+    gpu.assert_not_called()
+    assert not Path(dataset.out).exists()
+
+
 def test_low_memory_refuses_before_gpu_import_or_output_creation(dataset, monkeypatch):
     monkeypatch.setattr(training, "gpu_inventory", lambda: [{"free_mib": 1024}])
     with pytest.raises(RuntimeError, match="GiB free VRAM"):
