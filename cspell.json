@@ -57,6 +57,7 @@
     "matplotlib",
     "maxcolors",
     "millimetres",
+    "minmax",
     "netlist",
     "netlists",
     "noheader",
