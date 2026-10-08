@@ -1,0 +1,14 @@
+# Allowlist: model weights, data, results, credentials and Git never enter builds.
+**
+!Dockerfile
+!docker/
+!docker/**
+!pyproject.toml
+!uv.lock
+!README.md
+!chat.py
+!evaluate.py
+!schematic_model/
+!schematic_model/**
+schematic_model/**/__pycache__/
+schematic_model/**/*.pyc
