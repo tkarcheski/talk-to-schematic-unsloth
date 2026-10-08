@@ -6,7 +6,8 @@
     "spellcheck": "cspell lint --no-progress --no-must-find-files --gitignore \"**/*.{md,py,yml,yaml,toml,js,mjs,css,html}\"",
     "format:check": "prettier --check \"schematic_model/web/*.{html,css,js,svg}\" \"scripts/*.mjs\"",
     "browser:smoke": "node scripts/browser_smoke.mjs",
-    "test:browser-state": "node scripts/browser_state_test.mjs"
+    "test:browser-state": "node scripts/browser_state_test.mjs",
+    "test:browser-agent": "node scripts/browser_agent_test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

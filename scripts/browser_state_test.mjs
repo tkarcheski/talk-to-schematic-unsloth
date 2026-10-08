@@ -164,6 +164,8 @@ function harness() {
   };
   const context = {
     document,
+    AbortController,
+    DOMException,
     ResizeObserver: class {
       observe() {}
     },
@@ -340,10 +342,13 @@ test("a model tool call moves the view and its result goes back to the model", a
   const followUp = await send(h, "Where is R999?");
   const third = body(completion(h, 2));
   assert.equal(third.messages.length, 6);
-  assert.deepEqual(third.messages.at(-1), {
-    role: "user",
-    content: "Where is R999?",
-  });
+  assert.equal(third.messages.at(-1).role, "user");
+  assert.ok(
+    third.messages.at(-1).content.endsWith("User question:\nWhere is R999?"),
+  );
+  const context = JSON.parse(third.messages.at(-1).content.split("\n")[1]);
+  assert.equal(context.focused_label.label, "R1");
+  assert.equal(context.focused_label.source, "native_region_map");
   completion(h, 2).resolve(
     response(toolReply("show_label", { label: "R999" })),
   );
@@ -371,6 +376,16 @@ test("invalid regions are reported to the model instead of applied", () => {
   assert.equal(h.ui.executeCall("open_url", {}).status, "error");
   const full = h.ui.executeCall("show_full_sheet", {});
   assert.deepEqual(plain(full), { status: "shown", view: "full_sheet" });
+});
+
+test("missing location metadata is not component absence", () => {
+  const h = harness();
+  seedReady(h);
+  h.ui.state.doc.regions = null;
+  h.ui.state.doc.words = [];
+  const result = h.ui.executeCall("show_label", { label: "R1" });
+  assert.equal(result.status, "location_unavailable");
+  assert.match(result.reason, /does not mean the component is absent/u);
 });
 
 test("endless viewer calls fail and keep the question for retry", async () => {
@@ -454,5 +469,20 @@ test("an older health response cannot overwrite a newer one", async () => {
   oldRequest.resolve(response({ model: "m", loaded: false, busy: true }));
   await old;
   assert.equal(h.ui.state.health.loaded, true);
-  assert.equal(h.element("model-status").textContent, "m · ready locally");
+  assert.equal(h.element("model-status").textContent, "m · ready");
+});
+
+test("model region labels cannot impersonate verified focus and full sheet clears focus", () => {
+  const h = harness();
+  seedReady(h);
+  h.ui.executeCall("show_label", { label: "R1" });
+  assert.equal(h.ui.state.focusedLabel.label, "R1");
+  h.ui.executeCall("show_region", { label: "R999", box: [100, 100, 200, 200] });
+  assert.equal(h.ui.state.focusedLabel, null);
+  h.ui.executeCall("show_label", { label: "R1" });
+  h.ui.executeCall("show_full_sheet", {});
+  assert.equal(h.ui.state.focusedLabel, null);
+  h.ui.executeCall("show_label", { label: "R1" });
+  h.ui.present(exampleDoc({ id: "new-board" }));
+  assert.equal(h.ui.state.focusedLabel, null);
 });
