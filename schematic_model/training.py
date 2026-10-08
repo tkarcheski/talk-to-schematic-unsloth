@@ -16,6 +16,7 @@ from importlib import metadata
 import io
 import json
 import math
+import os
 from pathlib import Path
 import platform
 import random
@@ -74,6 +75,7 @@ class TrainingConfig:
     save_steps: int = 50
     seed: int = 3407
     resume: str | None = None
+    continue_adapter: bool = False
     export_merged: bool = False
     finetune_vision: bool = True
     min_free_vram_gb: float = 12.0
@@ -98,12 +100,66 @@ class TrainingConfig:
             raise ValueError("model must not be empty")
         if self.model.lower().endswith(".gguf") or "-gguf" in self.model.lower():
             raise ValueError("GGUF weights cannot be fine-tuned; use a safetensors model")
+        if self.continue_adapter:
+            continuation_source(self)
         if self.resume:
             _validate_resume_checkpoint(Path(self.resume))
 
     @property
     def effective_revision(self) -> str | None:
         return self.revision or (DEFAULT_REVISION if self.model == DEFAULT_MODEL else None)
+
+
+def continuation_source(config):
+    """Bind a local existing adapter; continuing starts a new optimizer/run."""
+    source = Path(config.model).resolve()
+    output = Path(config.out).resolve()
+    if source == output or source in output.parents or output in source.parents:
+        raise ValueError("Continuation output must be separate from the source adapter")
+    if config.resume:
+        checkpoint = Path(config.resume).resolve()
+        if checkpoint.parent != output or not (output / "training_manifest.json").is_file():
+            raise ValueError("Continuation resume requires a checkpoint from the same recorded output")
+        previous = json.loads((output / "training_manifest.json").read_text())
+        for key in ("model", "data", "rank", "max_steps", "max_seq", "max_image_size", "lr", "gradient_accumulation", "finetune_vision", "seed", "max_train_rows", "epochs", "four_bit"):
+            if previous["config"].get(key) != getattr(config, key):
+                raise ValueError("Continuation resume recipe differs from recorded run")
+    files = [source / "adapter_config.json", source / "adapter_model.safetensors"]
+    if not all(path.is_file() for path in files):
+        raise ValueError("Continuation requires a local safetensors LoRA adapter")
+    settings = json.loads(files[0].read_text())
+    if (settings.get("peft_type") != "LORA" or settings.get("r") != config.rank
+            or settings.get("bias") != "none" or settings.get("modules_to_save")
+            or settings.get("rank_pattern") or settings.get("use_dora")
+            or not settings.get("target_modules")):
+        raise ValueError("Unsupported continuation adapter configuration or rank mismatch")
+    return {"path": str(source), "files": {path.name: sha256(path) for path in files},
+            "rank": settings["r"], "target_modules": settings["target_modules"],
+            "optimizer": "new; source adapter weights retained"}
+
+
+def prepare_continued_adapter(model, config, source):
+    """Reuse loaded LoRA weights; never add/reinitialize a second adapter."""
+    adapters = getattr(model, "peft_config", {})
+    if set(adapters) != {"default"}:
+        raise ValueError("Continuation requires exactly the loaded default adapter")
+    loaded = adapters["default"]
+    loaded_targets, source_targets = loaded.target_modules, source["target_modules"]
+    if not isinstance(loaded_targets, str) and not isinstance(source_targets, str):
+        loaded_targets, source_targets = set(loaded_targets), set(source_targets)
+    if loaded.r != source["rank"] or loaded_targets != source_targets:
+        raise ValueError("Loaded adapter configuration differs from source")
+    trained = []
+    for name, parameter in model.named_parameters():
+        is_lora = ".lora_A.default." in name or ".lora_B.default." in name
+        is_vision = any(part in name.lower() for part in ("visual", "vision", "image", "patch_embed"))
+        enabled = is_lora and (config.finetune_vision or not is_vision)
+        parameter.requires_grad_(enabled)
+        if enabled:
+            trained.append(name)
+    if not trained:
+        raise ValueError("Continuation found no trainable existing LoRA parameters")
+    return trained
 
 
 def _validate_resume_checkpoint(checkpoint: Path) -> None:
@@ -248,6 +304,12 @@ def preflight(config: TrainingConfig) -> dict[str, Any]:
     dataset_hashes = {split: sha256(Path(config.data, filename))
                       for split, filename in (("train", "train.jsonl"), ("validation", "val.jsonl"))}
     train, validation = _read_data(config, expected_hashes=dataset_hashes)
+    if config.continue_adapter and config.resume:
+        previous = json.loads((Path(config.out) / "training_manifest.json").read_text())
+        if {key: value["sha256"] for key, value in previous["datasets"].items()} != dataset_hashes:
+            raise ValueError("Continuation resume datasets changed")
+        if previous["continued_adapter"] != continuation_source(config):
+            raise ValueError("Continuation source adapter changed")
     from PIL import Image
 
     records, hashes = [], {}
@@ -273,6 +335,7 @@ def preflight(config: TrainingConfig) -> dict[str, Any]:
             for split, filename, rows in (("train", "train.jsonl", train), ("validation", "val.jsonl", validation))
         },
         "images": records,
+        "continued_adapter": continuation_source(config) if config.continue_adapter else None,
         "scope": "Dataset checks only. Model loading, token lengths, GPU fit and training quality are not yet verified.",
     }
 
@@ -343,8 +406,24 @@ class CheckedVisionCollator:
         return batch
 
 
+class DeadlineControl:
+    """Cooperative yield only after an optimizer step; trainer saves full state."""
+    def __init__(self, deadline):
+        self.deadline = deadline
+        self.triggered = False
+
+    def on_step_end(self, args, state, control, **kwargs):
+        if time.time() >= self.deadline and state.global_step < state.max_steps:
+            control.should_save = True
+            control.should_training_stop = True
+            self.triggered = True
+        return control
+
+
 @_interrupt_on_sigterm()
 def run_training(config: TrainingConfig) -> dict[str, Any]:
+    if os.environ.get("SCHEMATIC_DEADLINE") and not math.isfinite(float(os.environ["SCHEMATIC_DEADLINE"])):
+        raise ValueError("Scheduler deadline must be finite")
     manifest = preflight(config)
     output = Path(config.out).resolve()
     if output.exists() and any(output.iterdir()) and not config.resume:
@@ -363,6 +442,7 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
         from unsloth.trainer import UnslothVisionDataCollator
         import torch
         from trl import SFTConfig, SFTTrainer
+        from transformers import TrainerCallback
 
         if not torch.cuda.is_available():
             raise RuntimeError("CUDA is unavailable in this training environment")
@@ -385,12 +465,18 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
             local_files_only=config.local_files_only, cache_dir=str(Path(config.cache_dir).resolve()),
             trust_remote_code=False,
         )
-        model = FastVisionModel.get_peft_model(
-            model, finetune_vision_layers=config.finetune_vision,
-            finetune_language_layers=True, finetune_attention_modules=True,
-            finetune_mlp_modules=True, r=config.rank, lora_alpha=config.rank,
-            lora_dropout=0, bias="none", use_gradient_checkpointing="unsloth", random_state=config.seed,
-        )
+        if config.continue_adapter:
+            if continuation_source(config) != manifest["continued_adapter"]:
+                raise ValueError("Source adapter changed after preflight")
+            manifest["continued_trainable_parameters"] = prepare_continued_adapter(
+                model, config, manifest["continued_adapter"])
+        else:
+            model = FastVisionModel.get_peft_model(
+                model, finetune_vision_layers=config.finetune_vision,
+                finetune_language_layers=True, finetune_attention_modules=True,
+                finetune_mlp_modules=True, r=config.rank, lora_alpha=config.rank,
+                lora_dropout=0, bias="none", use_gradient_checkpointing="unsloth", random_state=config.seed,
+            )
         FastVisionModel.for_training(model)
         collator = CheckedVisionCollator(UnslothVisionDataCollator(
             model, processor, resize=config.max_image_size, resize_dimension="max",
@@ -398,9 +484,17 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
             response_part="<|im_start|>assistant\n",
         ), config.max_seq, image_hashes={record["path"]: record["sha256"] for record in manifest["images"]})
         collator([train_data[0]])
+        deadline_control = None
+        if os.environ.get("SCHEMATIC_DEADLINE"):
+            deadline = float(os.environ["SCHEMATIC_DEADLINE"])
+            if not math.isfinite(deadline):
+                raise ValueError("Scheduler deadline must be finite")
+            callback_type = type("DeadlineCallback", (DeadlineControl, TrainerCallback), {})
+            deadline_control = callback_type(deadline)
         trainer = SFTTrainer(
             model=model, processing_class=processor, data_collator=collator,
             train_dataset=train_data, eval_dataset=val_data,
+            callbacks=[deadline_control] if deadline_control else [],
             args=SFTConfig(
                 output_dir=str(output), per_device_train_batch_size=1, per_device_eval_batch_size=1,
                 gradient_accumulation_steps=config.gradient_accumulation,
@@ -421,6 +515,15 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
         write_manifest(manifest_path, manifest)
         result = trainer.train(resume_from_checkpoint=config.resume)
         validate_metrics(result.metrics)
+        if deadline_control and deadline_control.triggered:
+            checkpoint = output / f"checkpoint-{trainer.state.global_step}"
+            _validate_resume_checkpoint(checkpoint)
+            manifest.update(status="yielded", global_step=trainer.state.global_step,
+                            checkpoint=str(checkpoint), elapsed_seconds=time.monotonic() - started)
+            write_manifest(manifest_path, manifest)
+            if os.environ.get("SCHEMATIC_RESULT_PATH"):
+                write_manifest(Path(os.environ["SCHEMATIC_RESULT_PATH"]), {"checkpoint_step": trainer.state.global_step})
+            return manifest
         model.save_pretrained(str(output))
         processor.save_pretrained(str(output))
         trainer.save_state()
@@ -469,6 +572,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--save-steps", type=int, default=50)
     parser.add_argument("--seed", type=int, default=3407)
     parser.add_argument("--resume", metavar="CHECKPOINT")
+    parser.add_argument("--continue-adapter", action="store_true", help="train existing local LoRA weights in a new run with a fresh optimizer")
     parser.add_argument("--export-merged", action="store_true", help="also export a separate merged 16-bit model")
     parser.add_argument("--finetune-vision", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--min-free-vram-gb", type=float, default=12)
@@ -481,7 +585,7 @@ def main(argv: list[str] | None = None) -> int:
         config = TrainingConfig(**args)
         report = preflight(config) if dry_run else run_training(config)
         print(json.dumps(report, indent=2, allow_nan=False))
-        return 0
+        return 75 if report.get("status") == "yielded" else 0
     except _TerminationRequested as exc:
         print(f"training: interrupted by {signal.Signals(exc.signum).name}", file=sys.stderr)
         return 128 + exc.signum

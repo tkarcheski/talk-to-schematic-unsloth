@@ -149,10 +149,14 @@ Adapters are saved by default. `--resume CHECKPOINT` resumes trainer state; `--e
 The read-only training dashboard shows local progress at **http://127.0.0.1:8890/**:
 
 ```sh
-uv run --locked python scripts/training_dashboard.py
-# Select a run explicitly instead of the newest output directory:
-uv run --locked python scripts/training_dashboard.py --run outputs/schematic-lora
+uv run --locked python -m scripts.training_dashboard --follow --ledger results/research-jobs.sqlite3
+# Select a run explicitly instead of following the newest output directory:
+uv run --locked python -m scripts.training_dashboard --run outputs/schematic-lora
 ```
+
+For bounded public-source research, dataset draft PRs, local-model scheduling advice, and GPU training slices, see [research and training operations](docs/research-operations.md). Sources require provenance review before entering training or publication.
+
+The search-routing continuation improved clarification but regressed viewer-call termination; it was not promoted. See [routing validation](docs/validation/agent-routing-v1.md).
 
 The expanded v3 adapter regressed on validation and is not a release candidate. See [v3 regression findings](docs/validation/v3-regression.md) for checkpoint comparisons and the limits of the follow-up-question hypothesis.
 
