@@ -6,8 +6,6 @@
     "node_modules/**",
     "data/**",
     "corpora/**",
-    "docs/examples/**",
-    "docs/simulated_conversations.md",
     "tests/fixtures/**",
     "cspell.json",
     "uv.lock",

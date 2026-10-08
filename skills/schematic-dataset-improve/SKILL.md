@@ -5,7 +5,7 @@ description: Turn the schematic model's known weaknesses into strengths, one sma
 
 # Improve the schematic dataset
 
-Read `AGENTS.md` and `training-status.md` first. Get the user's approval of the direction before each change. Raise problems; don't work around them.
+Read `AGENTS.md`, `README.md`, and `docs/validation/v3-regression.md` first. Get the user's approval of the direction before each change. Raise problems; don't work around them.
 
 ## The weaknesses this skill exists to fix
 
@@ -21,7 +21,7 @@ Read `AGENTS.md` and `training-status.md` first. Get the user's approval of the 
 ## Rules that never bend
 
 - **Gold comes from source files, never from a model.** Every answer is computed from the native design (netlist, parts, attributes) or written by a human reviewer. A model may propose; it never labels.
-- **Splits are frozen.** Never move a board family between train/val/test. New sources get new families, assigned to a split once.
+- **Published splits stay frozen.** Never move a board family inside an existing benchmark. A separately approved re-split creates a new versioned manifest and baseline, groups boards by design similarity, and preserves the old evidence. New sources get new families, assigned to a split once. Hidden-test exclusion must be implemented and verified before claiming it is enforced by data or training scripts.
 - **Licenses first.** Record each source's repo, pinned commit, license file hash and attribution before ingesting a byte.
 - **Visible is not readable.** A picture-only target needs a readability check at the serving resolution.
 - **One module per change.** Add a test with every module. Run the CPU suite before asking to commit.
