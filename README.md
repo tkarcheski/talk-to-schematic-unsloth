@@ -6,6 +6,8 @@ The target is an RTX 4090 with 24 GB VRAM. The current base model is **Qwen3.5-4
 
 ## Start here
 
+For the application, start with [Docker Compose](docs/self-hosting.md): mount your existing model weights, run `docker compose up --build`, and open **http://127.0.0.1:8893**. The default deployment keeps runtime inference offline; web search is a separate opt-in overlay. Container builds still require verification on a host with Docker daemon access.
+
 | Task | Reference |
 |---|---|
 | Open the schematic viewer and chat with a local model | [Serve and chat](#load-the-adapter-and-chat), [viewer controls](#schematic-viewer) |
@@ -13,6 +15,8 @@ The target is an RTX 4090 with 24 GB VRAM. The current base model is **Qwen3.5-4
 | Set up CPU development | [Install and check](#install-and-check) |
 | Train or inspect a run | [Training](#train-on-the-4090), [current training findings](docs/validation/v3-regression.md) |
 | Review measured model quality | [Verified status](#verified-status), [benchmark](#compare-actual-model-answers) |
+| Configure self-hosted agent tools and data boundaries | [Agent configuration](docs/agent-security.md) |
+| Run the application with Docker Compose | [Self-hosting quickstart](docs/self-hosting.md) |
 
 CPU commands start with `uv run --locked`. Training, benchmarking, and model serving use the Unsloth environment's Python. The CPU environment does not install CUDA or replace the GPU environment's packages.
 
@@ -145,10 +149,14 @@ Adapters are saved by default. `--resume CHECKPOINT` resumes trainer state; `--e
 The read-only training dashboard shows local progress at **http://127.0.0.1:8890/**:
 
 ```sh
-uv run --locked python scripts/training_dashboard.py
-# Select a run explicitly instead of the newest output directory:
-uv run --locked python scripts/training_dashboard.py --run outputs/schematic-lora
+uv run --locked python -m scripts.training_dashboard --follow --ledger results/research-jobs.sqlite3
+# Select a run explicitly instead of following the newest output directory:
+uv run --locked python -m scripts.training_dashboard --run outputs/schematic-lora
 ```
+
+For bounded public-source research, dataset draft PRs, local-model scheduling advice, and GPU training slices, see [research and training operations](docs/research-operations.md). Sources require provenance review before entering training or publication.
+
+The search-routing continuation improved clarification but regressed viewer-call termination; it was not promoted. See [routing validation](docs/validation/agent-routing-v1.md).
 
 The expanded v3 adapter regressed on validation and is not a release candidate. See [v3 regression findings](docs/validation/v3-regression.md) for checkpoint comparisons and the limits of the follow-up-question hypothesis.
 

@@ -1,0 +1,15 @@
+{
+  "endpoint": "http://127.0.0.1:8000/v1",
+  "model": "schematic",
+  "search_endpoint": null,
+  "api_key_env": null,
+  "max_steps": 6,
+  "permission": {
+    "*": "deny",
+    "show_label": "allow",
+    "show_region": "allow",
+    "show_full_sheet": "allow",
+    "calculate": "allow",
+    "web_search": "ask"
+  }
+}

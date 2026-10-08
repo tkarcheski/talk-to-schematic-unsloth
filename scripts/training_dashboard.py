@@ -13,6 +13,7 @@ import json
 import os
 import re
 import subprocess
+import sqlite3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -32,6 +33,14 @@ def read_json(path: Path) -> dict | None:
         return json.loads(path.read_text())
     except (OSError, ValueError):
         return None
+
+
+def progress_log(run: Path, explicit: Path | None = None) -> Path | None:
+    """Discover logs on every refresh, including files created after startup."""
+    if explicit is not None:
+        return explicit
+    return max((run.parent.parent / "results").glob(f"{run.name}*.log"),
+               key=lambda path: path.stat().st_mtime, default=None)
 
 
 def trainer_state(run: Path) -> dict | None:
@@ -84,6 +93,15 @@ def gpu() -> list[dict]:
     return rows
 
 
+def gpu_owners() -> list[str]:
+    try:
+        result = subprocess.run(["nvidia-smi", "--query-compute-apps=pid", "--format=csv,noheader,nounits"],
+                                capture_output=True, text=True, timeout=5, check=True)
+        return [line.strip() for line in result.stdout.splitlines() if line.strip().isdigit()]
+    except (OSError, subprocess.SubprocessError):
+        return ["unavailable"]
+
+
 def snapshot(run: Path, log: Path | None) -> dict:
     manifest = read_json(run / "training_manifest.json") or {}
     state = trainer_state(run) or {}
@@ -107,9 +125,23 @@ def snapshot(run: Path, log: Path | None) -> dict:
                    for key in ("loss", "learning_rate", "grad_norm")},
         "eval_loss": [[e["step"], e["eval_loss"]] for e in eval_entries],
         "gpu": gpu(),
+        "gpu_owners": gpu_owners(),
         "config": {key: config.get(key) for key in ("lr", "rank", "gradient_accumulation", "max_seq", "max_image_size")},
         "elapsed_seconds": manifest.get("elapsed_seconds"),
     }
+
+
+def queue_snapshot(path: Path | None) -> list[dict]:
+    if path is None or not path.is_file():
+        return []
+    try:
+        with sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True) as db:
+            db.row_factory = sqlite3.Row
+            return [dict(row) for row in db.execute(
+                "SELECT id,kind,status,elapsed,reason,metrics FROM jobs ORDER BY created DESC LIMIT 100")]
+    except sqlite3.Error:
+        return [{"id": "", "kind": "queue", "status": "unavailable", "elapsed": 0,
+                 "reason": "Cannot read job ledger"}]
 
 
 PAGE = """<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
@@ -130,7 +162,7 @@ svg{width:100%;height:160px;display:block} .bar{height:6px;background:var(--line
 </style>
 <main><h1>Training Dashboard</h1><div class=muted id=run></div>
 <div class=grid id=tiles></div><div class=charts id=charts></div>
-<p class=muted id=foot></p></main>
+<h2>Research and training queue</h2><div id=queue class=card></div><p class=muted id=foot></p></main>
 <script>
 const $=id=>document.getElementById(id), esc=s=>String(s??"—").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 function chart(title,pts,fmt){
@@ -143,6 +175,12 @@ function chart(title,pts,fmt){
   <div class=k>step ${x0} → ${x1}</div></div>`;
 }
 const tile=(k,v,extra="")=>`<div class=card><div class=k>${k}</div><div class=v>${v}</div>${extra}</div>`;
+function jobMetrics(raw){
+  let metrics; try{metrics=typeof raw==="string"?JSON.parse(raw):raw;}catch{return "Metrics unavailable";}
+  if(!metrics||typeof metrics!=="object")return "Metrics unavailable";
+  const labels={checkpoint_step:"Checkpoint step",source_count:"Sources",proposal_count:"Proposals",error_code:"Error"};
+  return Object.entries(labels).filter(([key])=>metrics[key]!=null).map(([key,label])=>label+": "+String(metrics[key])).join(" · ")||"No checkpoint or source metrics reported";
+}
 async function tick(){
   let s; try{ s=await (await fetch("/api/state")).json(); }catch(e){ $("foot").textContent="Can't reach the dashboard server."; return; }
   const color={completed:"var(--ok)",failed:"var(--bad)",interrupted:"var(--warn)"}[s.status]||"var(--accent)";
@@ -155,6 +193,7 @@ async function tick(){
     tile("Step",`${esc(step)} / ${esc(total)}`,`<div class=bar><div style="width:${pct}%"></div></div>`),
     tile("Epoch",`${s.epoch!=null?s.epoch.toFixed(2):"—"} / ${esc(s.epochs)}`),
     tile("Speed",esc(p?.rate)),
+    tile("GPU process owners",esc((s.gpu_owners||[]).join(", ")||"none")),
     tile("Time left",esc(p?.remaining)),
     ...s.gpu.map(g=>tile(esc(g.name),`${(g.mem_used_mb/1024).toFixed(1)} / ${(g.mem_total_mb/1024).toFixed(0)} GB`,
       `<div class=k>${g.util_pct}% util</div><div class=bar><div style="width:${100*g.mem_used_mb/g.mem_total_mb}%"></div></div>`)),
@@ -162,6 +201,7 @@ async function tick(){
   const f=v=>v==null?"—":Math.abs(v)<1e-3&&v!==0?v.toExponential(2):v.toFixed(4);
   $("charts").innerHTML=chart("Loss",s.series.loss,f)+chart("Learning rate",s.series.learning_rate,f)
     +chart("Gradient norm",s.series.grad_norm,f)+chart("Validation loss",s.eval_loss,f);
+  $("queue").innerHTML=(s.jobs||[]).map(j=>`<p><strong>${esc(j.kind)}</strong> · ${esc(j.status)} · ${Number(j.elapsed).toFixed(1)} s <span class=muted>${esc(j.reason)}</span><br><small>${esc(jobMetrics(j.metrics))}</small></p>`).join("")||"No queued jobs. Submit jobs with scripts/research_scheduler.py.";
   $("foot").textContent=`Updated ${new Date().toLocaleTimeString()} · refreshes every 10 s · read-only`;
 }
 tick(); setInterval(tick,10000);
@@ -172,16 +212,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--run", type=Path, help="run directory (default: newest under outputs/)")
     parser.add_argument("--log", type=Path, help="progress log (default: newest results/<run name>*.log)")
+    parser.add_argument("--follow", action="store_true", help="follow newest manifest under the selected run parent")
+    parser.add_argument("--ledger", type=Path, help="read-only research scheduler SQLite ledger")
     parser.add_argument("--port", type=int, default=8890)
     args = parser.parse_args()
     run = (args.run or newest_run(ROOT / "outputs")).resolve()
-    log = args.log or max((run.parent.parent / "results").glob(f"{run.name}*.log"),
-                          key=lambda p: p.stat().st_mtime, default=None)
+    log = progress_log(run, args.log)
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
             if self.path == "/api/state":
-                body, kind = json.dumps(snapshot(run, log)).encode(), "application/json"
+                selected = newest_run(run.parent) if args.follow else run
+                selected_log = progress_log(selected, args.log)
+                body, kind = json.dumps({**snapshot(selected, selected_log), "jobs": queue_snapshot(args.ledger)}).encode(), "application/json"
             elif self.path == "/":
                 body, kind = PAGE.encode(), "text/html; charset=utf-8"
             else:
