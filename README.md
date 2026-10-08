@@ -4,11 +4,22 @@ A Python package for extracting schematic evidence, building attributable traini
 
 The target is an RTX 4090 with 24 GB VRAM. The current base model is **Qwen3.5-4B**, pinned to `3764fa359b9082ea5a1e4a5e3ac3aaf6e9671636`. CPU development uses **Astral uv**.
 
+## Start here
+
+| Task | Reference |
+|---|---|
+| Open the schematic viewer and chat with a local model | [Serve and chat](#load-the-adapter-and-chat), [viewer controls](#schematic-viewer) |
+| Try the UI without loading a model | [Scripted UI preview](#schematic-viewer) (fixed responses, not AI output) |
+| Set up CPU development | [Install and check](#install-and-check) |
+| Train or inspect a run | [Training](#train-on-the-4090), [current training findings](docs/validation/v3-regression.md) |
+| Review measured model quality | [Verified status](#verified-status), [benchmark](#compare-actual-model-answers) |
+
+CPU commands start with `uv run --locked`. Training, benchmarking, and model serving use the Unsloth environment's Python. The CPU environment does not install CUDA or replace the GPU environment's packages.
+
 ## Verified status
 
 - 120 real EAGLE schematics from 120 Adafruit board repositories, with immutable source revisions, original notices, and SHA256 manifests.
 - 120 evidence-assisted conversations and 119 image-only conversations. Twenty board families are reserved for held-out testing.
-- [25 complete simulated conversations](docs/simulated_conversations.md), containing 150 user prompts. These are source-derived gold examples, **not model transcripts**.
 - A two-step 4090 training smoke run saved an adapter with finite loss and 9.55 GiB peak allocated VRAM at 768-pixel images. [Recorded evidence](docs/validation/4090-smoke.json).
 - A complete three-epoch real-data fine-tune saved and reloaded an adapter from 173 mixed-view training conversations, using 12.43 GiB peak allocated VRAM. [Training evidence](docs/validation/real-crop-v1-training.json).
 - The [experimental adapter on Hugging Face](https://huggingface.co/nutinspace/talk-to-schematic-qwen3.5-4b-lora-experimental/tree/21ca688a65be235905a56ff7d4355bc08d02bab6) passes the evidence-assisted benchmark but **fails the image-only value-reading gate**. It is not a qualified release.
@@ -52,7 +63,7 @@ uv run --locked pre-commit run --all-files
 npm run spellcheck
 ```
 
-The commit hooks check source spelling, Python correctness, configuration syntax, merge conflicts, and unexpectedly large additions. The push hook runs the CPU regression suite. CSpell excludes original third-party fixtures, generated corpus records, and verbatim simulated gold; those artifacts keep their original bytes and have separate provenance checks. Its project vocabulary contains hardware terms and library identifiers.
+The commit hooks check source spelling, Python correctness, configuration syntax, merge conflicts, and unexpectedly large additions. The push hook runs the CPU regression suite. CSpell excludes original third-party fixtures and generated corpus records; those artifacts keep their original bytes and have separate provenance checks. Its project vocabulary contains hardware terms and library identifiers.
 
 Native schematic rendering requires `rsvg-convert` from librsvg. On Ubuntu the package is `librsvg2-bin`; on Arch it is `librsvg`. Tests use real source fixtures and generated failure cases. Ordinary CPU tests do not download models or initialize CUDA.
 
@@ -102,12 +113,6 @@ uv run --locked schematic-model corpus \
 
 36 SparkFun Qwiic and breakout boards (37 sheets) under CC BY-SA 4.0, used as viewer examples only; no adapter has been trained or tested on them. A rebuild from the pinned manifest reproduced every image and SVG hash in the [render hashes](corpora/sparkfun-36-rendered.json). See the [summary](corpora/sparkfun-36-summary.json) for selection limits.
 
-Reproduce the example document after building the corpus:
-
-```sh
-uv run --locked python scripts/export_examples.py --overwrite
-```
-
 ## Train on the 4090
 
 The CPU uv environment deliberately does not install CUDA or replace Studio's managed dependencies. The local tested training environment contains Unsloth 2026.8.22, Transformers 5.5.0, TRL 0.23.1, and Torch 2.11.0+cu130. See the recorded smoke manifest for exact versions.
@@ -136,6 +141,16 @@ python -m schematic_model.training \
 For an execution smoke, use `--max-steps 2 --max-train-rows 4 --gradient-accumulation 1`. That is not a useful trained-model qualification. Training validates split identity and image hashes, checks token length and supervised assistant masks, and writes a manifest with settings, losses, memory use, and artifact hashes. It fails on truncation or invalid data rather than silently dropping examples.
 
 Adapters are saved by default. `--resume CHECKPOINT` resumes trainer state; `--export-merged` additionally writes a separate merged model. Existing nonempty outputs are protected.
+
+The read-only training dashboard shows local progress at **http://127.0.0.1:8890/**:
+
+```sh
+uv run --locked python scripts/training_dashboard.py
+# Select a run explicitly instead of the newest output directory:
+uv run --locked python scripts/training_dashboard.py --run outputs/schematic-lora
+```
+
+The expanded v3 adapter regressed on validation and is not a release candidate. See [v3 regression findings](docs/validation/v3-regression.md) for checkpoint comparisons and the limits of the follow-up-question hypothesis.
 
 ## Compare actual model answers
 
@@ -234,13 +249,13 @@ uv run --locked python scripts/ui_preview.py --examples data/sparkfun --examples
 
 The local server binds only to `127.0.0.1`. It exposes `/health`, `/v1/models`, and `/v1/chat/completions`, uses bounded concurrent HTTP handlers with one serialized GPU generation, bounds inputs and output lengths, and accepts image data URLs rather than server filesystem paths or remote image URLs. It is a local inference service, not a public multi-user hosting platform.
 
-Run `npm run browser:smoke -- --url http://127.0.0.1:8891 --out results/browser-smoke` to check the library, view controls, and desktop/mobile layout (`--expected-examples` defaults to 157, both libraries). Add `--pdf FILE` to check an upload, and `--question 'Show me R1.'` for a real model request. This check requires Chromium at `/usr/bin/chromium`; screenshots and a JSON report are saved separately from the simulated reference conversations.
+Run `npm run browser:smoke -- --url http://127.0.0.1:8891 --out results/browser-smoke` to check the library, view controls, and desktop/mobile layout (`--expected-examples` defaults to 157, both libraries). Add `--pdf FILE` to check an upload, and `--question 'Show me R1.'` for a real model request. This check requires Chromium at `/usr/bin/chromium`; screenshots and a JSON report are saved as local verification artifacts.
 
 The HTTP client also supports a compatible Studio endpoint. It reads an existing `UNSLOTH_API_KEY` environment variable when authentication is required. It does not change Studio authentication or automatically switch its resident model.
 
 ## AI skills
 
-The package includes:
+The package includes the following user skills. Repository development skills under `skills/` are separate and are not packaged:
 
 - [schematic-read](schematic_model/skills/schematic-read/SKILL.md): observed component facts and evidence-assisted answers.
 - [schematic-trace](schematic_model/skills/schematic-trace/SKILL.md): exact pad/net connectivity and ambiguity handling.
