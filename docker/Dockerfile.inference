@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1
+# cspell:words PYTHONDONTWRITEBYTECODE PYTHONUNBUFFERED WANDB TORCHINDUCTOR libgomp venv torchvision
+ARG CUDA_IMAGE=nvidia/cuda:13.0.0-devel-ubuntu24.04@sha256:1e8ac7a54c184a1af8ef2167f28fa98281892a835c981ebcddb1fad04bdd452d
+ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.12.19
+FROM ${UV_IMAGE} AS uv
+FROM ${CUDA_IMAGE}
+COPY --from=uv /uv /usr/local/bin/uv
+ENV UV_LINK_MODE=copy UV_PYTHON_INSTALL_DIR=/opt/python \
+    PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
+    HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_HUB_DISABLE_TELEMETRY=1 \
+    DO_NOT_TRACK=1 WANDB_DISABLED=true HOME=/tmp \
+    HF_HOME=/tmp/huggingface TRITON_CACHE_DIR=/tmp/triton \
+    TORCHINDUCTOR_CACHE_DIR=/tmp/torchinductor \
+    UNSLOTH_COMPILE_LOCATION=/tmp/unsloth_compiled_cache
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY pyproject.toml uv.lock README.md chat.py evaluate.py ./
+COPY schematic_model ./schematic_model
+COPY docker/requirements-inference.txt /app/requirements-inference.txt
+RUN uv python install 3.13 && uv sync --locked --no-dev --no-editable \
+    && uv pip install --python /app/.venv/bin/python \
+       --index-url https://download.pytorch.org/whl/cu130 \
+       'torch==2.11.0+cu130' 'torchvision==0.26.0+cu130' \
+    && uv pip install --python /app/.venv/bin/python -r /app/requirements-inference.txt \
+    && uv pip check --python /app/.venv/bin/python
+COPY --chmod=755 docker/inference-entrypoint.sh /app/inference-entrypoint.sh
+USER 10001:10001
+WORKDIR /tmp
+ENTRYPOINT ["/app/inference-entrypoint.sh"]
