@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "purpose": "Review-required native endpoint candidate generation; not approved training gold",
+  "families": [
+    {
+      "repository": "sparkfun/SparkFun_Tsunami_Super_WAV_Trigger_Qwiic",
+      "revision": "336eb78afcebdcea91bf6caa554670940aae7bd5",
+      "split": "train",
+      "license": "CC-BY-SA-4.0",
+      "license_path": "LICENSE.md",
+      "license_sha256": "4a0a503d2dd7533f8783aa9d1532bff53bb7eafd39532ac8ce092a0c993433a1",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "sources": [
+        {
+          "path": "Hardware/SparkFun_Tsunami_Qwiic.sch",
+          "sha256": "94c18a29ed0069d88cceed35de07207b2dbe003ed87d3a96acce089404e88fa7"
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-PyPortal-PCB",
+      "revision": "90d9aa7ba3f892fd4adb31815c99ede26c10757c",
+      "split": "train",
+      "license": "CC-BY-SA-3.0",
+      "license_path": "license.txt",
+      "license_sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "sources": [
+        {
+          "path": "Adafruit PyPortal Pynt.sch",
+          "sha256": "d089ae945899d4559d3469a05f99f2159957d6b589ea9cd59ff305ff42f08218"
+        },
+        {
+          "path": "Adafruit PyPortal.sch",
+          "sha256": "e6fc1077994e71ae5d1c4b1b7e4f08d78760206d7642426b6e436a317a8f1a0d"
+        }
+      ],
+      "excluded_sources": [
+        {
+          "path": "Adafruit PyPortal Titano.sch",
+          "sha256": "cbcd8b5efc0c20de6fc3550407728baf4d49189e4b4482019a5da1e0375fc7bf",
+          "reason": "Missing embedded device set SUPPLY2; parser refuses physical-pad evidence"
+        }
+      ]
+    }
+  ]
+}

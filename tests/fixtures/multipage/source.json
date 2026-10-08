@@ -1,0 +1,12 @@
+{
+  "repository": "sparkfun/SparkFun_Tsunami_Super_WAV_Trigger_Qwiic",
+  "revision": "336eb78afcebdcea91bf6caa554670940aae7bd5",
+  "source": "Hardware/SparkFun_Tsunami_Qwiic.sch",
+  "source_sha256": "94c18a29ed0069d88cceed35de07207b2dbe003ed87d3a96acce089404e88fa7",
+  "derived_context_sha256": "2ab2ecfa1ce305bfae99fdf20eece69916958ec2533a7e4c2ee63edb1b07d053",
+  "license": "CC-BY-SA-4.0",
+  "attribution": "SparkFun Electronics",
+  "transformation": "Native EAGLE XML parsed into sheet-local BOM and physical-pad net evidence; no visual accuracy claim",
+  "text_tokens": 16446,
+  "tokenizer": "Qwen3.5-4B pinned local revision3764fa359b9082ea5a1e4a5e3ac3aaf6e9671636"
+}
