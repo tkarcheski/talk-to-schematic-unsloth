@@ -455,6 +455,22 @@ function toolEvent(event) {
   $("agent-activity").hidden = false;
   return item;
 }
+const VIEWER_ACTIONS = new Set([
+  "show_label",
+  "show_region",
+  "show_full_sheet",
+]);
+function sameArguments(left, right) {
+  if (!left || !right || typeof left !== "object" || typeof right !== "object")
+    return false;
+  const keys = Object.keys(left).sort();
+  return (
+    JSON.stringify(keys) === JSON.stringify(Object.keys(right).sort()) &&
+    keys.every(
+      (key) => JSON.stringify(left[key]) === JSON.stringify(right[key]),
+    )
+  );
+}
 async function reviewApproval(approval) {
   const item = toolEvent({
     tool: approval.tool,
@@ -463,7 +479,9 @@ async function reviewApproval(approval) {
   });
   item.open = true;
   const explanation = document.createElement("p");
-  explanation.textContent = `This action sends the displayed arguments to ${approval.destination || "the configured external service"}. Review the exact content before allowing it once.`;
+  explanation.textContent = VIEWER_ACTIONS.has(approval.tool)
+    ? "This action will move the schematic view to the displayed target. Allow only this one movement, or deny to keep your current view. Nothing is sent to an external service by this viewer action."
+    : `This action sends the displayed arguments to ${approval.destination || "the configured external service"}. Review the exact content before allowing it once.`;
   const buttons = document.createElement("div");
   buttons.className = "tool-decision";
   item.append(explanation, buttons);
@@ -503,6 +521,7 @@ async function agentCompletion(payload) {
     ? "/api/agent/chat"
     : "/v1/chat/completions";
   let body = payload;
+  let approvedNavigation = null;
   for (let attempt = 0; attempt < 16; attempt += 1) {
     addTrace("browser request", { path, body });
     const response = await api(path, {
@@ -544,9 +563,43 @@ async function agentCompletion(payload) {
     accumulateMetrics(response.metrics);
     if (response.model_details) renderModelDetails(response.model_details);
     for (const event of response.events || []) toolEvent(event);
-    if (!response.pending_approval) return response;
+    if (!response.pending_approval) {
+      const grant = response.viewer_authorization;
+      const calls = response.choices?.[0]?.message?.tool_calls || [];
+      const approvedViewerCalls = new Set();
+      if (
+        approvedNavigation &&
+        grant?.tool === approvedNavigation.tool &&
+        sameArguments(grant.arguments, approvedNavigation.arguments)
+      ) {
+        for (const call of calls) {
+          let args;
+          try {
+            args = JSON.parse(call.function.arguments);
+          } catch {
+            continue;
+          }
+          if (
+            call.id === grant.tool_call_id &&
+            call.function.name === grant.tool &&
+            sameArguments(args, grant.arguments)
+          ) {
+            approvedViewerCalls.add(call.id);
+            break;
+          }
+        }
+      }
+      return { ...response, approvedViewerCalls };
+    }
     const decision = await reviewApproval(response.pending_approval);
     if (decision === "cancel") throw new DOMException("Stopped", "AbortError");
+    approvedNavigation =
+      decision === "allow" && VIEWER_ACTIONS.has(response.pending_approval.tool)
+        ? {
+            tool: response.pending_approval.tool,
+            arguments: response.pending_approval.arguments,
+          }
+        : null;
     body = { approval_id: response.pending_approval.id, decision };
     $("activity-status").textContent = "Working…";
     updateProgress(
@@ -834,7 +887,11 @@ function actionChip(action) {
       ? "full sheet"
       : action.args.label || action.result.label || "region";
   chip.textContent =
-    action.result.status === "shown" ? `◎ ${target}` : `✕ ${target} not found`;
+    action.result.status === "shown"
+      ? `◎ ${target}`
+      : action.result.status === "denied"
+        ? `✕ ${target} not moved`
+        : `✕ ${target} not found`;
   chip.title = `${action.name} ${JSON.stringify(action.args)}`;
   chip.addEventListener("click", () => {
     if (action.result.status !== "shown") return;
@@ -957,12 +1014,43 @@ async function ask(question) {
       } catch {
         args = {};
       }
-      const outcome = executeCall(call.function.name, args);
-      updateProgress("Updating the schematic view…");
+      let allowed = false;
+      if (VIEWER_ACTIONS.has(call.function.name)) {
+        if (result.approvedViewerCalls?.has(call.id)) {
+          result.approvedViewerCalls.delete(call.id);
+          allowed = true;
+        } else {
+          const decision = await reviewApproval({
+            tool: call.function.name,
+            arguments: args,
+            destination: "schematic viewer",
+          });
+          if (decision === "cancel")
+            throw new DOMException("Stopped", "AbortError");
+          allowed = decision === "allow";
+        }
+      }
+      if (selection !== state.selection) return null;
+      const outcome = allowed
+        ? executeCall(call.function.name, args)
+        : {
+            status: "denied",
+            reason: "Viewer action was not approved for this exact call.",
+          };
+      updateProgress(
+        allowed
+          ? "Updating the schematic view…"
+          : "Continuing without moving the view…",
+      );
       actions.push({ name: call.function.name, args, result: outcome });
       toolEvent({
         tool: call.function.name,
-        status: outcome.status === "shown" ? "completed" : "error",
+        status:
+          outcome.status === "shown"
+            ? "completed"
+            : outcome.status === "denied"
+              ? "denied"
+              : "error",
         arguments: args,
         result: outcome,
       });

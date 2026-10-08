@@ -130,6 +130,10 @@ function harness() {
     querySelector(selector) {
       if (selector === ".empty-state")
         return this.children.find((child) => child.className === "empty-state");
+      if (selector === "summary")
+        return (
+          this.children.find((child) => child.tagName === "summary") || null
+        );
       return null;
     }
     querySelectorAll() {
@@ -159,7 +163,7 @@ function harness() {
   element("mode").value = "evidence";
   const document = {
     getElementById: element,
-    createElement: () => new Element(),
+    createElement: (tagName) => Object.assign(new Element(), { tagName }),
     body: new Element("body"),
   };
   const context = {
@@ -290,7 +294,7 @@ test("labels resolve to parts, then nets, then PDF words; absent labels are null
   assert.equal(h.ui.locateLabel(doc, "R999"), null);
 });
 
-test("a model tool call moves the view and its result goes back to the model", async () => {
+test("a model tool call moves only after consent and reports the actual result", async () => {
   const h = harness();
   seedReady(h);
   const done = await send(h, "Show me R1.");
@@ -307,7 +311,12 @@ test("a model tool call moves the view and its result goes back to the model", a
     request.messages[1].content[1].text,
     /native schematic evidence/u,
   );
+  const previousView = h.element("world").style.transform;
   first.resolve(response(toolReply("show_label", { label: "R1" })));
+  await drain();
+  assert.equal(h.element("world").style.transform, previousView);
+  assert.equal(typeof h.ui.state.approvalResolve, "function");
+  h.ui.state.approvalResolve("allow");
   await drain();
   const second = body(completion(h, 1));
   const tool = second.messages.at(-1);
@@ -353,6 +362,9 @@ test("a model tool call moves the view and its result goes back to the model", a
     response(toolReply("show_label", { label: "R999" })),
   );
   await drain();
+  assert.equal(typeof h.ui.state.approvalResolve, "function");
+  h.ui.state.approvalResolve("allow");
+  await drain();
   assert.deepEqual(JSON.parse(body(completion(h, 3)).messages.at(-1).content), {
     status: "not_found",
     label: "R999",
@@ -397,6 +409,10 @@ test("endless viewer calls fail and keep the question for retry", async () => {
       response(toolReply("show_full_sheet", {}, `call-${round}`)),
     );
     await drain();
+    if (h.ui.state.approvalResolve) {
+      h.ui.state.approvalResolve("allow");
+      await drain();
+    }
   }
   await finish(h, done);
   assert.equal(h.ui.state.history.length, 0);

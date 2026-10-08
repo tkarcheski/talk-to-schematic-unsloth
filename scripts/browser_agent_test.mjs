@@ -383,6 +383,7 @@ try {
   await page.screenshot({ path: path.join(out, "desktop-request-trace.png") });
   await page.locator("#question").fill("Show me R1.");
   await page.locator("#send").click();
+  await page.getByRole("button", { name: "Allow once", exact: true }).click();
   await expect(page.locator(".message.assistant").last()).toContainText(
     "R1 is now focused.",
   );
