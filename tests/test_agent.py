@@ -194,3 +194,104 @@ def test_container_gateway_bind_preserves_host_and_origin_guards():
         make_server(GatewayEngine(agent), 0, bind="0.0.0.0")
     with pytest.raises(ValueError):
         make_server(GatewayEngine(agent), 0, agent=agent, bind="192.168.1.10")
+
+
+@pytest.mark.parametrize(('name', 'arguments'), [
+    ('show_label', {'label': 'U1'}),
+    ('show_region', {'box': [100, 200, 300, 400], 'label': 'Regulator'}),
+    ('show_full_sheet', {}),
+])
+@pytest.mark.parametrize('question', ['Review this circuit.', 'Discuss U1.', 'Search for this part.', 'Show me U1.'])
+def test_every_model_navigation_needs_exact_consent(name, arguments, question):
+    agent, seen = runtime([call(name, arguments)])
+    request = payload()
+    request['messages'][0]['content'] = question
+    proposed = agent.chat(request)
+    assert proposed['choices'] == []
+    approval = proposed['pending_approval']
+    assert approval['tool'] == name
+    assert approval['arguments'] == arguments
+    assert approval['destination'] == 'schematic viewer'
+    assert next(t for t in agent.describe()['tools'] if t['name'] == name)['permission'] == 'ask'
+    # A caller cannot use an existing token to authorize a different action.
+    with pytest.raises(ValueError):
+        agent.chat({'approval_id': approval['id'], 'decision': 'allow', 'arguments': {'label': 'U2'}})
+    released = agent.chat({'approval_id': approval['id'], 'decision': 'allow'})
+    assert len(seen) == 1  # Approval must not generate a replacement command.
+    command = released['choices'][0]['message']['tool_calls'][0]
+    assert command['function']['name'] == name
+    assert json.loads(command['function']['arguments']) == arguments
+    assert released['viewer_authorization'] == {'tool_call_id': command['id'], 'tool': name, 'arguments': arguments}
+    assert released['metrics']['model_steps'] == 0
+    assert not any(m['role'] == 'tool' for m in released['messages'])
+    assert released['events'][-1]['status'] == 'approved'
+    with pytest.raises(ValueError):
+        agent.chat({'approval_id': approval['id'], 'decision': 'allow'})
+
+
+def test_navigation_denial_returns_actual_denial_and_keeps_answering():
+    agent, seen = runtime([call('show_label', {'label': 'U1'}), answer('I will discuss the circuit without moving the view.')])
+    proposed = agent.chat(payload())
+    result = agent.chat({'approval_id': proposed['pending_approval']['id'], 'decision': 'deny'})
+    assert not result['choices'][0]['message'].get('tool_calls')
+    assert 'viewer_authorization' not in result
+    assert result['events'][-1]['status'] == 'denied'
+    actual_result = json.loads(seen[-1][1]['messages'][-1]['content'])
+    assert actual_result == {'error': 'User denied tool execution'}
+    assert all('/search?' not in url for url, _ in seen)
+
+
+def test_earlier_navigation_and_result_cannot_authorize_next_navigation():
+    agent, seen = runtime([call('show_label', {'label': 'U1'}), answer('U1 is selected.'), call('show_region', {'box': [0, 0, 200, 200]})])
+    request = payload()
+    request['messages'][0]['content'] = 'Show me U1.'
+    proposed = agent.chat(request)
+    approved = agent.chat({'approval_id': proposed['pending_approval']['id'], 'decision': 'allow'})
+    assistant_call = approved['choices'][0]['message']
+    actual_browser_result = {'role': 'tool', 'tool_call_id': assistant_call['tool_calls'][0]['id'],
+                             'content': json.dumps({'status': 'shown', 'label': 'U1', 'kind': 'part', 'box': [10, 10, 100, 100]})}
+    continuation = {'model': 'test', 'messages': [*approved['messages'], assistant_call, actual_browser_result]}
+    answered = agent.chat(continuation)
+    followup = {'model': 'test', 'messages': [*answered['messages'], answered['choices'][0]['message'],
+                                             {'role': 'user', 'content': 'Discuss the regulator. Keep this view.'}]}
+    next_action = agent.chat(followup)
+    assert next_action['choices'] == []
+    assert next_action['pending_approval']['tool'] == 'show_region'
+    assert next_action['pending_approval']['id'] != proposed['pending_approval']['id']
+    assert 'viewer_authorization' not in next_action
+    assert len(seen) == 3
+
+
+def test_search_approval_never_authorizes_viewer_side_effect():
+    agent, seen = runtime([call('web_search', {'query': 'AP2112 datasheet'}), {'results': []},
+                           call('show_full_sheet', {}), answer('No results were returned.')],
+                          search_endpoint='http://127.0.0.1:8888')
+    search = agent.chat(payload())['pending_approval']
+    proposed_view = agent.chat({'approval_id': search['id'], 'decision': 'allow'})
+    assert len([url for url, _ in seen if '/search?' in url]) == 1
+    assert proposed_view['choices'] == []
+    assert proposed_view['pending_approval']['tool'] == 'show_full_sheet'
+    assert proposed_view['pending_approval']['id'] != search['id']
+    answer_result = agent.chat({'approval_id': proposed_view['pending_approval']['id'], 'decision': 'deny'})
+    assert not answer_result['choices'][0]['message'].get('tool_calls')
+
+
+def test_viewer_deny_remains_hard_deny_and_ask_configuration_is_valid():
+    agent, _ = runtime([call('show_label', {'label': 'U1'}), answer()], permission={'*': 'deny', 'show_label': 'deny'})
+    result = agent.chat(payload())
+    assert 'pending_approval' not in result
+    assert result['events'][-1]['status'] == 'denied'
+    agent, _ = runtime([call('show_label', {'label': 'U1'})], permission={'*': 'deny', 'show_label': 'ask'})
+    pending = agent.chat(payload())['pending_approval']
+    assert pending['tool'] == 'show_label'
+
+
+def test_viewer_approval_expires_and_stays_with_own_runtime(monkeypatch):
+    agent, _ = runtime([call('show_label', {'label': 'U1'})])
+    other, _ = runtime([])
+    pending = agent.chat(payload())['pending_approval']
+    with pytest.raises(ValueError):
+        other.chat({'approval_id': pending['id'], 'decision': 'allow'})
+    monkeypatch.setattr('schematic_model.agent.time.time', lambda: pending['expires_at'] + 1)
+    with pytest.raises(ValueError):
+        agent.chat({'approval_id': pending['id'], 'decision': 'allow'})
