@@ -57,6 +57,7 @@
     "micropython",
     "millimetres",
     "minmax",
+    "mypy",
     "netlist",
     "netlists",
     "noheader",

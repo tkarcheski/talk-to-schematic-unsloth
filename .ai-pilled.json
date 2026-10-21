@@ -2,19 +2,38 @@
   "version": 1,
   "commands": {
     "test": [
-      "uv",
-      "run",
-      "--locked",
+      ".venv/bin/python",
+      "-m",
       "pytest",
       "-q"
     ],
     "lint": [
-      "uv",
-      "run",
-      "--locked",
+      ".venv/bin/python",
+      "-m",
       "ruff",
       "check",
       "."
+    ],
+    "coverage": [
+      ".venv/bin/python",
+      "scripts/check_coverage.py"
+    ],
+    "deadcode": [
+      ".venv/bin/python",
+      "-m",
+      "vulture",
+      "schematic_model",
+      "evaluate.py",
+      "chat.py",
+      "scripts",
+      "tests",
+      "--min-confidence",
+      "80"
+    ],
+    "typecheck": [
+      ".venv/bin/python",
+      "-m",
+      "mypy"
     ]
   },
   "protected_branches": [
@@ -24,7 +43,7 @@
   "require_tests": true,
   "timeout": 300,
   "aggressiveness": "normal",
-  "review_on_commit": false,
-  "review_checks_on_commit": false,
+  "review_on_commit": true,
+  "review_checks_on_commit": true,
   "audit_dependencies_on_change": false
 }

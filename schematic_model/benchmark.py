@@ -132,7 +132,7 @@ def _run_benchmark(config: DeploymentConfig, dataset: str, output: str, *, profi
     if sha256(dataset_path) != dataset_hash:
         raise ValueError("Dataset changed during benchmark preflight")
     expected = validate_gold_rows(rows)
-    images = {}
+    images: dict[str, str] = {}
     for row in rows:
         for reference, digest in image_fingerprints(row["messages"], dataset_path).items():
             if reference in images and images[reference] != digest:

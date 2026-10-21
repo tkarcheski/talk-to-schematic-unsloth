@@ -5,6 +5,8 @@ answers describe source facts, not whether a circuit is electrically correct.
 """
 from __future__ import annotations
 
+from typing import BinaryIO, cast
+
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
@@ -113,17 +115,17 @@ def parse_eagle(path: Path | bytes) -> dict:
         visible_values = set()
         visible_names = set()
         for instance in instances:
-            symbol = symbol_map[(instance.get("part"), instance.get("gate"))]
+            symbol = symbol_map[(instance.attrib["part"], instance.get("gate"))]
             if symbol is None:
                 raise ValueError("Missing embedded symbol")
             if instance.get("smashed") == "yes":
                 visible = any(a.get("name") == "VALUE" and a.get("display", "value") in {"value", "both"}
                               and int(a.get("layer", "96")) in {94, 95, 96, 97, 98}
-                              and a.get("value", parts[instance.get("part")]["value"]) == parts[instance.get("part")]["value"]
+                              and a.get("value", parts[instance.attrib["part"]]["value"]) == parts[instance.attrib["part"]]["value"]
                               for a in instance.findall("attribute"))
                 name_visible = any(a.get("name") == "NAME" and a.get("display", "value") in {"value", "both"}
                                    and int(a.get("layer", "95")) in {94, 95, 96, 97, 98}
-                                   and a.get("value", instance.get("part")) == instance.get("part")
+                                   and a.get("value", instance.attrib["part"]) == instance.attrib["part"]
                                    for a in instance.findall("attribute"))
             else:
                 visible = any(t.text == ">VALUE" and int(t.get("layer", "96")) in {94, 95, 96, 97, 98}
@@ -131,12 +133,12 @@ def parse_eagle(path: Path | bytes) -> dict:
                 name_visible = any(t.text == ">NAME" and int(t.get("layer", "95")) in {94, 95, 96, 97, 98}
                                    for t in symbol.findall("text"))
             if visible and symbol.find("pin") is not None:
-                visible_values.add(instance.get("part"))
+                visible_values.add(instance.attrib["part"])
             if name_visible and symbol.find("pin") is not None:
-                visible_names.add(instance.get("part"))
+                visible_names.add(instance.attrib["part"])
         bom = [{**parts[name], "value_visible": name in visible_values and name in visible_names}
                for name in sorted(names) if parts[name]["physical"]]
-        nets = {}
+        nets: dict[str, set[str]] = {}
         for net in sheet.findall("./nets/net"):
             pins = set()
             for pin in net.findall("./segment/pinref"):
@@ -146,12 +148,12 @@ def parse_eagle(path: Path | bytes) -> dict:
                 pins.update(pad_map.get(key, []))
             if pins:
                 nets.setdefault(net.attrib["name"], set()).update(pins)
-        pin_to_net = {}
+        pin_to_net: dict[str, str] = {}
         for net_name, pins in nets.items():
-            for pin in pins:
-                if pin in pin_to_net and pin_to_net[pin] != net_name:
-                    raise ValueError(f"Physical pad {pin} belongs to conflicting sheet nets")
-                pin_to_net[pin] = net_name
+            for pad in pins:
+                if pad in pin_to_net and pin_to_net[pad] != net_name:
+                    raise ValueError(f"Physical pad {pad} belongs to conflicting sheet nets")
+                pin_to_net[pad] = net_name
         sheets.append({"page": number, "bom": bom,
                        "nets": {name: sorted(pins) for name, pins in sorted(nets.items())}})
     if not sheets:
@@ -209,7 +211,7 @@ def _archive_source(source: dict, directory: Path) -> dict:
         licenses = [m for m in members if PurePosixPath(m.name).name.lower() in
                     {"license.txt", "license", "license.md"}]
         license_member = next((m for m in licenses if profile["license_marker"] in
-                               archive.extractfile(m).read().decode("utf-8", errors="replace")), None)
+                               cast(BinaryIO, archive.extractfile(m)).read().decode("utf-8", errors="replace")), None)
         if license_member is None:
             raise ValueError(f"No explicit {profile['license']} license found; manual review required")
         selected = [m for m in members if m.name.lower().endswith(".sch")]
@@ -221,7 +223,7 @@ def _archive_source(source: dict, directory: Path) -> dict:
             if relative.is_absolute() or ".." in relative.parts or len(relative.parts) < 2:
                 raise ValueError("Unsafe archive path")
             relative = PurePosixPath(*relative.parts[1:])
-            data = archive.extractfile(member).read(MAX_SOURCE + 1)
+            data = cast(BinaryIO, archive.extractfile(member)).read(MAX_SOURCE + 1)
             if len(data) > MAX_SOURCE:
                 raise ValueError("Oversized source member")
             destination = repo_dir.joinpath(*relative.parts)

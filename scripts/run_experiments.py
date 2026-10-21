@@ -48,7 +48,7 @@ def _digest(value) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def _source(root: Path, reference: str) -> Path:
+def _source(root: Path, reference: object) -> Path:
     if not isinstance(reference, str) or not reference or Path(reference).is_absolute():
         raise ValueError("Snapshot artifacts must have relative paths")
     path = (root / reference).resolve()
@@ -100,8 +100,8 @@ def build_plan(config: ExperimentConfig) -> tuple[dict, list[Path], dict[Path, s
            for directory in [snapshot, *(Path(model) for model in models.values())]):
         raise ValueError("Experiment output must be outside snapshot and model directories")
     model_bindings = {name: model_artifacts(Path(path)) for name, path in models.items()}
-    for path in models.values():
-        protected.extend(_model_paths(Path(path)))
+    for model_path in models.values():
+        protected.extend(_model_paths(Path(model_path)))
     datasets, generated = {}, {}
     image_paths = {_source(snapshot, record["path"]) for record in manifest["images"]}
     dataset_rows = {_source(snapshot, record["path"]): record.get("rows") for record in manifest["datasets"]}

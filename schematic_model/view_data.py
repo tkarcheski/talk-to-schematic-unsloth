@@ -13,6 +13,8 @@ existing training, benchmark and evaluation code reads them unchanged.
 """
 from __future__ import annotations
 
+from typing import Any
+
 import argparse
 import hashlib
 import json
@@ -87,14 +89,14 @@ def conversation(record: dict, sheet: dict, regions: dict, image: str) -> dict |
          {"status": "shown", "view": "full_sheet"},
          "Showing the full sheet.", {"type": "view_reply"}),
     ]
-    messages = [{"role": "system", "content": SYSTEM}]
+    messages: list[dict[str, Any]] = [{"role": "system", "content": SYSTEM}]
     gold = []
     for index, (question, name, arguments, result, reply, reply_gold) in enumerate(turns):
         user = question if index else [{"type": "image_url", "image_url": {"url": image}},
                                        {"type": "text", "text": question}]
         messages += [{"role": "user", "content": user}, _call(index, name, arguments),
                      _result(index, result), {"role": "assistant", "content": reply}]
-        call_gold = {"type": "view", "name": name, "arguments": arguments}
+        call_gold: dict[str, Any] = {"type": "view", "name": name, "arguments": arguments}
         if name == "show_region":
             call_gold["min_iou"] = 0.5
         gold += [call_gold, reply_gold]

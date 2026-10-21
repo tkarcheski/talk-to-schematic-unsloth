@@ -194,7 +194,7 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def resolve_image(path: str, dataset_path: Path) -> Path:
+def resolve_image(path: object, dataset_path: Path) -> Path:
     """Support dataset-relative paths and the original repo-relative format."""
     if not isinstance(path, str) or not path or "://" in path or path.startswith("data:"):
         raise ValueError("training images must be local file paths")

@@ -69,7 +69,11 @@ def contextual_refusal(question, answer):
               "status": "manual_review", "reason": "unsupported_question"}
     if not (measured or missing):
         return result
-    kind, subject = ("measurement", measured[1]) if measured else ("missing_component", missing[1])
+    if measured:
+        kind, subject = "measurement", measured[1]
+    else:
+        assert missing is not None
+        kind, subject = "missing_component", missing[1]
     result.update(kind=kind, subject=subject)
     subject_pattern = re.escape(subject)
     scope = (r"(?:the |this )?(?:(?:supplied|provided|extracted|native) )*"
@@ -205,7 +209,7 @@ def _grade_view(g, ans):
         return result
     plain = calls == [] and bool(content)
     if t == "view_refuse":
-        return {"view.refuse_acc": plain and bool(re.search(REFUSE, content, re.I))}
+        return {"view.refuse_acc": plain and bool(re.search(REFUSE, content or "", re.I))}
     label = g.get("label")
     named = label is None or bool(re.search(rf"(?<![\w$-]){re.escape(label)}(?![\w$-])", content or "", re.I))
     return {"view.reply_acc": plain and named}
@@ -301,7 +305,7 @@ def score(gold_rows, preds, *, refusal_scorer="v1"):
         if extra:
             details.append(f"unknown {len(extra)} keys (e.g. {sorted(extra)[:3]})")
         raise EvaluationError("Prediction coverage mismatch: " + "; ".join(details))
-    acc = {}
+    acc: dict[str, list[float]] = {}
     for r in gold_rows:
         for i, g in enumerate(r["gold"]):
             ans = strip(preds[f"{r['id']}#{i}"])

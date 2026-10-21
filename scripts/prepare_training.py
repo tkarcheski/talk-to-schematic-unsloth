@@ -14,9 +14,17 @@ import json
 from pathlib import Path
 import shutil
 import tempfile
+from typing import TypedDict
+
 
 from evaluate import load_gold
 from schematic_model.training import resolve_image, sha256
+
+
+class SnapshotImage(TypedDict):
+    source: Path
+    name: str
+    split: str
 
 
 def prepare(evidence: str, vision: str, output: str) -> dict:
@@ -24,7 +32,11 @@ def prepare(evidence: str, vision: str, output: str) -> dict:
     if destination.exists():
         raise ValueError("Snapshot output already exists; choose a new path")
     sources = {"evidence": Path(evidence).resolve(), "vision": Path(vision).resolve()}
-    views, source_files, images, ownership, identifiers = {}, [], {}, {}, set()
+    views: dict[str, dict[str, list[dict]]] = {}
+    source_files = []
+    images: dict[str, SnapshotImage] = {}
+    ownership: dict[str, str] = {}
+    identifiers: set[str] = set()
     for view, directory in sources.items():
         views[view] = {}
         for split in ("train", "val", "test"):

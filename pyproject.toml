@@ -23,6 +23,8 @@ dev = [
     "pre-commit>=4,<5",
     "jinja2>=3.1,<4",
     "ai-pilled",
+    "mypy>=2.4,<3",
+    "vulture>=2.14,<3",
 ]
 
 [tool.setuptools]
@@ -34,9 +36,12 @@ schematic_model = ["skills/*/SKILL.md", "web/*", "web/vendor/*"]
 
 [tool.coverage.run]
 branch = true
-source = ["schematic_model", "evaluate", "chat"]
+source = ["."]
 
 [tool.coverage.report]
+include = ["schematic_model/*", "evaluate.py", "chat.py"]
+precision = 2
+fail_under = 75.1
 show_missing = true
 skip_empty = true
 
@@ -55,3 +60,13 @@ select = ["E9", "F63", "F7", "F82"]
 
 [tool.uv.sources]
 ai-pilled = { git = "https://github.com/tkarcheski/ai-pilled.git", rev = "798fee64662e844afa4b38da824eb2aa928be280" }
+
+[tool.mypy]
+files = ["schematic_model", "evaluate.py", "chat.py", "scripts"]
+explicit_package_bases = true
+check_untyped_defs = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["unsloth", "unsloth.*", "torch", "torch.*", "transformers", "transformers.*", "trl", "trl.*", "huggingface_hub", "huggingface_hub.*"]
+ignore_missing_imports = true

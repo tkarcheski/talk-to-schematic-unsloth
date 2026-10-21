@@ -246,7 +246,7 @@ def source_layout(path: Path, page: int, *, attribution: str = "") -> tuple[str,
         device = next(x for x in device_set.findall("./devices/device") if x.get("name", "") == part.get("device", ""))
         pads = {x.get("pin"): x.get("pad") for x in device.findall("./connects/connect") if x.get("gate") == gate.get("name")}
         angle, mirrored = _rotation(instance.get("rot", "R0"))
-        transform = (float(instance.get("x")), float(instance.get("y")), angle, mirrored)
+        transform = (float(instance.attrib["x"]), float(instance.attrib["y"]), angle, mirrored)
         substitutions = {"NAME": part.get("name"), "VALUE": part.get("value") or part.get("deviceset"),
                          "DRAWING_NAME": path.stem, "SHEET": str(page)}
         for primitive in symbol:
@@ -266,7 +266,7 @@ def source_layout(path: Path, page: int, *, attribution: str = "") -> tuple[str,
             for primitive in net.findall("./segment/*"):
                 drawing.primitive(primitive, substitutions={"NET": net.get("name")})
             if container == "nets/net" and len(drawing.points) > net_start:
-                net_points.setdefault(net.get("name"), []).extend(drawing.points[net_start:])
+                net_points.setdefault(net.attrib["name"], []).extend(drawing.points[net_start:])
     circuit_points.extend(drawing.points[bounds_start:])
     if not circuit_points:
         raise ValueError("No electrical source geometry available for circuit crop")

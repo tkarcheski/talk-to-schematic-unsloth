@@ -1,6 +1,7 @@
 """One bounded public-source collection step, producing a local review proposal."""
 from __future__ import annotations
 
+from importlib import import_module
 import argparse
 import json
 import os
@@ -10,7 +11,7 @@ import time
 try:
     from .public_research import fetch_public
 except ImportError:
-    from public_research import fetch_public
+    fetch_public = import_module("public_research").fetch_public
 
 
 def collect(plan, output):
@@ -69,6 +70,6 @@ if __name__ == '__main__':
         try:
             from .public_research import report_failure
         except ImportError:
-            from public_research import report_failure
+            report_failure = import_module("public_research").report_failure
         report_failure(error)
         raise SystemExit(1)

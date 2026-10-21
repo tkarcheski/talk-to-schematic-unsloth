@@ -25,3 +25,4 @@ node_modules/
 message-board.md
 data/sparkfun/
 .ai-pilled/
+.mypy_cache/

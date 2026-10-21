@@ -27,6 +27,7 @@ class InferenceError(RuntimeError):
 
 class _RejectRedirects(HTTPRedirectHandler):
     def redirect_request(self, request, response, code, message, headers, new_url):
+        del new_url
         raise HTTPError(request.full_url, code, "Inference redirects are disabled", headers, response)
 
 
@@ -45,7 +46,7 @@ def resolve_image(value, dataset):
     else:
         candidates = [Path(dataset).resolve().parent / path,
                       Path(dataset).resolve().parent.parent / path]
-    matches = []
+    matches: list[Path] = []
     for candidate in candidates:
         if candidate.is_file() and not any(candidate.samefile(other) for other in matches):
             matches.append(candidate.resolve())
@@ -69,7 +70,7 @@ def _read_image(path, *, expected_sha256=None):
     # Verify and encode the same bytes; reopening the path after verification
     # could otherwise transmit different evidence if the file changes.
     with Image.open(io.BytesIO(data)) as picture:
-        mime = Image.MIME.get(picture.format)
+        mime = Image.MIME.get(picture.format or "")
         picture.verify()
     if mime not in {"image/png", "image/jpeg", "image/webp"}:
         raise ValueError("Supported image formats: PNG, JPEG, WebP")
@@ -93,7 +94,7 @@ def _content_blocks(message):
 
 def image_fingerprints(messages, dataset):
     """Return verified image-byte hashes keyed by their literal dataset references."""
-    hashes = {}
+    hashes: dict[str, str] = {}
     for message in messages:
         for block in _content_blocks(message):
             if block.get("type") == "image":
