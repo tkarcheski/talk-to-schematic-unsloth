@@ -81,8 +81,13 @@ def _block_text(content: Any) -> str:
     raise ToolFormatError("tool and assistant tool-call content must be text")
 
 
-def validate_arguments(name: str, arguments: Any) -> dict[str, Any]:
+def validate_arguments(name: str, arguments: Any, registry=None) -> dict[str, Any]:
     """Return normalized arguments or raise; never silently clamp a box."""
+    if registry is not None and name not in TOOL_NAMES:
+        from .agent import validate_agent_arguments
+        if name not in {tool["function"]["name"] for tool in registry}:
+            raise ToolFormatError("tool is outside the configured registry")
+        return validate_agent_arguments(name, arguments)
     if name not in TOOL_NAMES:
         raise ToolFormatError(f"unknown viewer function {name!r}")
     if not isinstance(arguments, dict):
@@ -112,14 +117,18 @@ def validate_arguments(name: str, arguments: Any) -> dict[str, Any]:
     return result
 
 
-def validate_tools(tools: Any) -> list[dict[str, Any]]:
+def validate_tools(tools: Any, registry=None) -> list[dict[str, Any]]:
     """Only the server's own viewer functions may be offered to the model."""
+    if registry is not None:
+        if not isinstance(tools, list) or not tools or len(tools) > len(registry) or any(tool not in registry for tool in tools) or len({tool["function"]["name"] for tool in tools}) != len(tools):
+            raise ToolFormatError("tools must be a unique subset of the server registry")
+        return tools
     if tools != VIEW_TOOLS:
         raise ToolFormatError("tools must be exactly the published viewer functions")
     return VIEW_TOOLS
 
 
-def _render_call(call: Any) -> str:
+def _render_call(call: Any, registry=None) -> str:
     if not isinstance(call, dict) or call.get("type", "function") != "function":
         raise ToolFormatError("tool calls must be function calls")
     function = call.get("function")
@@ -131,7 +140,7 @@ def _render_call(call: Any) -> str:
             arguments = json.loads(arguments)
         except json.JSONDecodeError as exc:
             raise ToolFormatError("tool call arguments must be JSON") from exc
-    arguments = validate_arguments(function.get("name"), arguments)
+    arguments = validate_arguments(function.get("name"), arguments, registry)
     text = f"<tool_call>\n<function={function['name']}>\n"
     for key, value in arguments.items():
         rendered = json.dumps(value, ensure_ascii=False) if isinstance(value, (list, dict)) else str(value)
@@ -139,7 +148,7 @@ def _render_call(call: Any) -> str:
     return text + "</function>\n</tool_call>"
 
 
-def plain_messages(messages: Any, tools: Any = None) -> list[dict[str, Any]]:
+def plain_messages(messages: Any, tools: Any = None, *, registry=None) -> list[dict[str, Any]]:
     """Render tool use as text messages exactly as the Qwen3.5 template would.
 
     Without tools, messages are returned unchanged (as new lists). With tools,
@@ -154,7 +163,7 @@ def plain_messages(messages: Any, tools: Any = None) -> list[dict[str, Any]]:
         if uses_tools:
             raise ToolFormatError("tool calls and results require the viewer tool definitions")
         return [dict(m) if isinstance(m, dict) else m for m in messages]
-    validate_tools(tools)
+    validate_tools(tools, registry)
     preamble = _PREAMBLE.format(tools="".join("\n" + json.dumps(t, ensure_ascii=False) for t in tools))
     output: list[dict[str, Any]] = []
     rest = list(messages)
@@ -192,7 +201,7 @@ def plain_messages(messages: Any, tools: Any = None) -> list[dict[str, Any]]:
                 raise ToolFormatError(f"assistant messages may make 1-{MAX_CALLS} tool calls")
             content = message.get("content") or ""
             content = _block_text(content).strip() if content else ""
-            text = content + ("\n\n" if content else "") + "\n".join(_render_call(c) for c in calls)
+            text = content + ("\n\n" if content else "") + "\n".join(_render_call(c, registry) for c in calls)
             output.append({"role": "assistant", "content": text})
             pending_calls = len(calls)
             continue
@@ -207,7 +216,7 @@ _PARAMETER = re.compile(r"<parameter=([A-Za-z_][A-Za-z0-9_]*)>\n?(.*?)\n?</param
 
 def _parameter_value(name: str, raw: str) -> Any:
     raw = raw.strip()
-    if name == "box":
+    if name in {"box", "a", "b"}:
         try:
             return json.loads(raw)
         except json.JSONDecodeError as exc:
@@ -215,7 +224,7 @@ def _parameter_value(name: str, raw: str) -> Any:
     return raw
 
 
-def parse_tool_calls(text: str) -> tuple[str, list[dict[str, Any]]]:
+def parse_tool_calls(text: str, *, registry=None) -> tuple[str, list[dict[str, Any]]]:
     """Split generated text into (visible content, validated calls).
 
     Text after the last call is not allowed by the template contract; any
@@ -249,7 +258,7 @@ def parse_tool_calls(text: str) -> tuple[str, list[dict[str, Any]]]:
             if parameter[1] in arguments:
                 raise ToolFormatError("duplicate function parameter")
             arguments[parameter[1]] = _parameter_value(parameter[1], parameter[2])
-        calls.append({"name": function[1], "arguments": validate_arguments(function[1], arguments)})
+        calls.append({"name": function[1], "arguments": validate_arguments(function[1], arguments, registry)})
     return text[:blocks[0].start()].strip(), calls
 
 

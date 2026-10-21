@@ -1,0 +1,11 @@
+# Optional verified corpus, supplied by the operator rather than baked into images.
+services:
+  gateway:
+    command: [deploy, gateway, --config, /config/agent.json, --bind, 0.0.0.0, --port, "8893", --examples, /examples]
+    volumes:
+      - type: bind
+        source: ${SCHEMATIC_CORPUS_DIR:-./data/real-v3}
+        target: /examples
+        read_only: true
+        bind:
+          create_host_path: false

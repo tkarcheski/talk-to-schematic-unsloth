@@ -1,0 +1,16 @@
+# cspell:words SEARXNG
+# JSON is required by the agent's SearXNG search adapter.
+use_default_settings: true
+general:
+  debug: false
+  enable_metrics: false
+search:
+  formats:
+    - json
+server:
+  # Replaced at runtime by the required SEARXNG_SECRET environment variable.
+  secret_key: "runtime-environment-required"
+  limiter: false
+  image_proxy: false
+  bind_address: "0.0.0.0"
+  port: 8080

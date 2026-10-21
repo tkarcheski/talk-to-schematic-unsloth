@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <title>Talk to the Schematic</title>
+    <title>Ask the Schematic</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/assets/style.css" />
     <script src="/assets/app.js" defer></script>
@@ -14,7 +14,7 @@
     <header class="topbar">
       <div class="brand">
         <span class="reactor" aria-hidden="true"></span
-        ><span>Talk to the Schematic</span>
+        ><span>Ask the Schematic</span>
       </div>
       <button id="open-library" class="primary-ghost" type="button">
         Open schematic
@@ -23,8 +23,16 @@
       <div id="model-status" class="status" role="status">
         Connecting to local model…
       </div>
+      <button
+        id="open-settings"
+        class="settings-button"
+        type="button"
+        aria-label="Model and permissions"
+      >
+        Workspace settings
+      </button>
     </header>
-    <main class="shell">
+    <main id="workspace" class="shell">
       <section class="viewer" aria-label="Schematic viewer">
         <div
           id="stage"
@@ -80,12 +88,32 @@
         </div>
         <nav id="pages" class="pages" aria-label="PDF pages" hidden></nav>
       </section>
-      <aside class="chat" aria-labelledby="chat-heading">
+      <div
+        id="workspace-divider"
+        class="workspace-divider"
+        role="separator"
+        tabindex="0"
+        aria-label="Resize chat width"
+        aria-orientation="vertical"
+        aria-controls="chat-panel"
+        aria-valuemin="320"
+        aria-valuemax="800"
+        aria-valuenow="430"
+        title="Drag to resize · Arrow keys adjust · Double-click resets"
+      ></div>
+      <aside id="chat-panel" class="chat" aria-labelledby="chat-heading">
         <div class="chat-head">
-          <h2 id="chat-heading">Ask the schematic</h2>
+          <div>
+            <p class="eyebrow">ENGINEERING WORKSPACE</p>
+            <h2 id="chat-heading">Ask the schematic</h2>
+          </div>
           <button id="reset" type="button" class="text-button" disabled>
             New chat
           </button>
+        </div>
+        <div class="privacy-strip">
+          <span class="privacy-dot" aria-hidden="true"></span
+          ><span id="privacy-status">Checking privacy policy…</span>
         </div>
         <div class="mode">
           <label for="mode">Model input</label
@@ -108,6 +136,51 @@
           aria-relevant="additions text"
           aria-label="Conversation"
         ></div>
+        <section
+          id="busy-panel"
+          class="busy-panel"
+          aria-label="AI progress"
+          hidden
+        >
+          <div class="busy-heading">
+            <strong id="busy-stage" role="status">Thinking…</strong
+            ><span id="busy-elapsed" aria-hidden="true">0s</span>
+          </div>
+          <div
+            id="busy-bar"
+            class="busy-bar"
+            role="progressbar"
+            aria-label="AI request in progress"
+          >
+            <span></span>
+          </div>
+          <p id="busy-detail">
+            The self-hosted model is processing your question.
+          </p>
+        </section>
+        <section
+          id="agent-activity"
+          class="agent-activity"
+          aria-label="Agent activity"
+          hidden
+        >
+          <div class="activity-heading">
+            <span>Agent activity</span
+            ><span id="activity-status" role="status"></span>
+          </div>
+          <div
+            id="tool-timeline"
+            class="tool-timeline"
+            aria-live="polite"
+          ></div>
+        </section>
+        <details id="request-metrics" class="request-metrics" hidden>
+          <summary>
+            <span id="metrics-label">Last answer</span
+            ><span id="metrics-summary"></span>
+          </summary>
+          <p id="metrics-details"></p>
+        </details>
         <div
           id="suggestions"
           class="suggestions"
@@ -124,13 +197,16 @@
             disabled
           ></textarea>
           <div class="composer-bottom">
-            <span id="chat-status" role="status">Waiting for a schematic</span
-            ><button id="send" type="submit" disabled>Send</button>
+            <span id="chat-status" role="status">Waiting for a schematic</span>
+            <div class="composer-actions">
+              <button id="stop" type="button" hidden>Stop</button
+              ><button id="send" type="submit" disabled>Send ↗</button>
+            </div>
           </div>
         </form>
         <p class="chat-footnote">
-          The local model can move the view. Drag or zoom at any time to take it
-          back.
+          Enter to send · Shift + Enter for a new line · ↑/↓ for prompt history.
+          Verify answers against the drawing.
         </p>
       </aside>
     </main>
@@ -170,6 +246,119 @@
       <button id="retry-examples" class="text-button" type="button" hidden>
         Retry loading examples
       </button>
+    </dialog>
+    <dialog
+      id="settings"
+      class="library settings"
+      aria-labelledby="settings-heading"
+    >
+      <div class="library-head">
+        <div>
+          <p class="eyebrow">WORKSPACE CONTROL</p>
+          <h2 id="settings-heading">Workspace settings</h2>
+        </div>
+        <button id="settings-close" class="text-button" type="button">
+          Close
+        </button>
+      </div>
+      <div class="settings-content">
+        <div class="workspace-width-control">
+          <label for="chat-width"
+            >Chat panel width
+            <output id="chat-width-value" for="chat-width"
+              >430 px</output
+            ></label
+          >
+          <input
+            id="chat-width"
+            type="range"
+            min="320"
+            max="800"
+            step="10"
+            value="430"
+          />
+          <button id="reset-width" class="text-button" type="button">
+            Reset width
+          </button>
+          <p class="settings-intro">
+            Drag the divider or use this slider. Layout preference is saved on
+            this browser. Small screens use a stacked layout.
+          </p>
+        </div>
+        <p class="settings-intro">
+          Your schematic is sent to the configured inference server when you ask
+          a question. This workspace does not save chat history in browser
+          storage.
+        </p>
+        <dl class="connection-details">
+          <dt>Model</dt>
+          <dd>
+            <span id="settings-model">Checking…</span
+            ><small id="model-version" class="model-version"
+              >Version not reported</small
+            >
+          </dd>
+          <dt>Backend</dt>
+          <dd id="settings-backend">Not reported by inference server</dd>
+          <dt>Adapter SHA256</dt>
+          <dd id="settings-adapter" class="model-hash">
+            Not reported by inference server
+          </dd>
+          <dt>Base model</dt>
+          <dd id="settings-base">Not reported by inference server</dd>
+          <dt>Base SHA256</dt>
+          <dd id="settings-base-hash" class="model-hash">
+            Not reported by inference server
+          </dd>
+          <dt>Model fingerprint</dt>
+          <dd id="settings-fingerprint" class="model-hash">
+            Not reported by inference server
+          </dd>
+          <dt>Inference</dt>
+          <dd id="settings-provider">Checking…</dd>
+          <dt>Data boundary</dt>
+          <dd id="settings-boundary">Checking…</dd>
+        </dl>
+        <section class="prompt-settings" aria-labelledby="prompt-heading">
+          <h3 id="prompt-heading">Your system prompt</h3>
+          <label class="sr-only" for="system-prompt"
+            >Custom instructions for the AI</label
+          >
+          <textarea
+            id="system-prompt"
+            rows="5"
+            maxlength="4000"
+            placeholder="Tell the model how you want it to work…"
+          ></textarea>
+          <p id="system-prompt-count" class="settings-intro">
+            0/4000 · applies to your next question
+          </p>
+          <div class="prompt-actions">
+            <button id="prompt-example" class="text-button" type="button">
+              Use schematic review example</button
+            ><button id="prompt-reset" class="text-button" type="button">
+              Reset prompt
+            </button>
+          </div>
+          <p class="settings-intro">
+            Kept only in this page's memory. Applies to new questions in the
+            current chat. Server permissions and evidence requirements still
+            apply.
+          </p>
+        </section>
+        <h3>Agent permissions</h3>
+        <p class="mode-note settings-note">
+          Permissions are enforced by the server. An approval applies only to
+          the displayed action.
+        </p>
+        <div id="permissions-list" class="permissions-list">
+          Loading permission policy…
+        </div>
+        <p id="settings-config-note" class="settings-intro">
+          Model endpoints and permissions are configured by your server
+          operator.
+        </p>
+      </div>
     </dialog>
   </body>
 </html>

@@ -1,0 +1,43 @@
+# cspell:words SEARXNG tmpfs nosuid nodev pids
+# Explicit opt-in: only search receives an internet-capable network.
+services:
+  gateway:
+    volumes:
+      - type: bind
+        source: ./config/compose-agent-search.json
+        target: /config/agent.json
+        read_only: true
+        bind:
+          create_host_path: false
+  search:
+    image: ${SEARXNG_IMAGE:-docker.io/searxng/searxng:latest@sha256:cc026dbee25b864d7f9731957cd5ef36ba2e2d61abd2996d57f1b863483e7409}
+    user: "10001:10001"
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?Set a random SEARXNG_SECRET before enabling search}
+      SEARXNG_PORT: "8080"
+      FORCE_OWNERSHIP: "false"
+    volumes:
+      - type: bind
+        source: ./config/compose-searxng.yml
+        target: /etc/searxng/settings.yml
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      private:
+        ipv4_address: 172.30.91.3
+      search_outbound: {}
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=128m,mode=1777
+      - /var/cache/searxng:rw,nosuid,nodev,size=128m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 1g
+    init: true
+    restart: unless-stopped
+    logging:
+      driver: none
+networks:
+  search_outbound: {}

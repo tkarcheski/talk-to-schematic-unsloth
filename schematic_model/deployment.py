@@ -26,6 +26,7 @@ from typing import Any
 import uuid
 
 from schematic_model.inference import InferenceError
+from schematic_model.metrics import InferenceMetrics, native_model_details
 from schematic_model.training import gpu_inventory, installed_versions, sha256, write_manifest
 from schematic_model.view_tools import (VIEW_TOOLS, VIEWER_INSTRUCTIONS, ToolFormatError, openai_tool_calls,
                                         parse_tool_calls, plain_messages)
@@ -49,6 +50,7 @@ class DeploymentConfig:
     seed: int = 3407
     four_bit: bool = False
     min_free_vram_gb: float = 10.0
+    agent_tools: bool = False
 
     def validate(self) -> None:
         if not Path(self.model).is_dir():
@@ -241,17 +243,21 @@ def validate_request(payload: Any, config: DeploymentConfig) -> dict[str, Any]:
     tools = payload.get("tools")
     # Viewer tool use is rendered to the exact text the model was trained on;
     # ToolFormatError is a ValueError, so malformed tool traffic is a 400.
-    messages = plain_messages(payload.get("messages"), tools)
+    registry = None
+    if config.agent_tools:
+        from .agent import AGENT_TOOLS
+        registry = AGENT_TOOLS
+    messages = plain_messages(payload.get("messages"), tools, registry=registry)
     return {"messages": normalize_messages(messages, config.max_image_size),
             "max_tokens": max_tokens, "temperature": float(temperature), "tools": tools}
 
 
-def assistant_message(output: str, tools: Any, prefix: str) -> tuple[dict[str, Any], str]:
+def assistant_message(output: str, tools: Any, prefix: str, *, registry=None) -> tuple[dict[str, Any], str]:
     """Return an OpenAI assistant message; viewer calls are parsed only when offered."""
     if tools is None:
         return {"role": "assistant", "content": output}, "stop"
     try:
-        content, calls = parse_tool_calls(output)
+        content, calls = parse_tool_calls(output, registry=registry)
     except ToolFormatError as exc:
         raise InferenceError("The model produced a malformed viewer command") from exc
     if not calls:
@@ -340,7 +346,7 @@ class LocalModel:
                 "elapsed_seconds": round(time.monotonic() - started, 4), "model_fingerprint": self.fingerprint}
 
 
-def make_server(engine, port: int = 8891, *, examples=None) -> HTTPServer:
+def make_server(engine, port: int = 8891, *, examples=None, agent=None, bind="127.0.0.1") -> HTTPServer:
     """Bound concurrent connections while serializing GPU work; caller owns lifetime."""
     generation_lock = threading.Lock()
 
@@ -413,8 +419,13 @@ def make_server(engine, port: int = 8891, *, examples=None) -> HTTPServer:
             if self.path == "/health":
                 self.send_json(200, {"status": "ok", "model": engine.config.served_model_name,
                                      "model_fingerprint": engine.fingerprint,
+                                     "model_details": agent.model_details if agent else native_model_details(engine),
                                      "loaded": getattr(engine, "model", None) is not None,
+                                     "provider": "self_hosted" if agent else "embedded",
+                                     "readiness": "endpoint_configured" if agent else "model_loaded",
                                      "busy": generation_lock.locked()})
+            elif self.path == "/api/agent/config":
+                self.send_json(200, agent.describe() if agent else {"enabled": False, "provider": "embedded", "network": "disabled", "tools": [], "max_steps": 0})
             elif self.path == "/api/view-tools":
                 self.send_json(200, {"tools": VIEW_TOOLS, "instructions": VIEWER_INSTRUCTIONS})
             elif self.path == "/v1/models":
@@ -446,7 +457,7 @@ def make_server(engine, port: int = 8891, *, examples=None) -> HTTPServer:
                     self.send_json(404, {"error": {"message": "Unknown endpoint"}})
 
         def do_POST(self):
-            if self.path != "/v1/chat/completions":
+            if self.path not in {"/v1/chat/completions", "/api/agent/chat"}:
                 self.send_json(404, {"error": {"message": "Unknown endpoint"}})
                 return
             if not self.valid_host():
@@ -473,6 +484,21 @@ def make_server(engine, port: int = 8891, *, examples=None) -> HTTPServer:
                 if len(body) != length:
                     raise ValueError("incomplete request body")
                 payload = json.loads(body, object_pairs_hook=_unique_object)
+                if self.path == "/api/agent/chat":
+                    if agent is None:
+                        self.send_json(409, {"error": {"message": "Agent gateway is not configured"}})
+                        return
+                    if not isinstance(payload, dict):
+                        raise ValueError("Expected an object")
+                    if not generation_lock.acquire(blocking=False):
+                        self.send_json(503, {"error": {"message": "Agent is busy; retry when idle"}})
+                        return
+                    try:
+                        result = agent.chat(payload)
+                    finally:
+                        generation_lock.release()
+                    self.send_json(200, result)
+                    return
                 request = validate_request(payload, engine.config)
                 if not generation_lock.acquire(blocking=False):
                     self.send_json(503, {"error": {"message": "Local generation is busy; retry when idle"}})
@@ -485,8 +511,15 @@ def make_server(engine, port: int = 8891, *, examples=None) -> HTTPServer:
                 finally:
                     generation_lock.release()
                 identifier = "chatcmpl-" + uuid.uuid4().hex
-                message, finish = assistant_message(result["output"], request["tools"], "call-" + identifier[9:21])
+                registry = None
+                if engine.config.agent_tools:
+                    from .agent import AGENT_TOOLS
+                    registry = AGENT_TOOLS
+                message, finish = assistant_message(result["output"], request["tools"], "call-" + identifier[9:21], registry=registry)
+                metrics = InferenceMetrics()
+                metrics.add(result.get("usage"), result.get("elapsed_seconds"), "model_inference_including_prefill")
                 self.send_json(200, {"id": identifier, "object": "chat.completion",
+                                     "metrics": metrics.result(), "model_details": native_model_details(engine),
                                      "created": int(time.time()), "model": engine.config.served_model_name,
                                      "choices": [{"index": 0, "message": message, "finish_reason": finish}],
                                      "usage": result["usage"]})
@@ -501,7 +534,9 @@ def make_server(engine, port: int = 8891, *, examples=None) -> HTTPServer:
 
     if type(port) is not int or not 0 <= port <= 65535:
         raise ValueError("port must be between 0 and 65535")
-    return BoundedServer(("127.0.0.1", port), Handler)
+    if bind not in {"127.0.0.1", "0.0.0.0"} or bind != "127.0.0.1" and agent is None:
+        raise ValueError("Only the gateway may bind 0.0.0.0 for a private container network")
+    return BoundedServer((bind, port), Handler)
 
 
 def _unique_object(pairs):
@@ -518,6 +553,7 @@ def main(argv=None):
     commands = parser.add_subparsers(dest="command", required=True)
     serve = commands.add_parser("serve")
     serve.add_argument("--model", required=True)
+    serve.add_argument("--agent-tools", action="store_true", help="accept the bounded gateway tool registry (does not execute tools)")
     serve.add_argument("--served-model-name", default="schematic")
     serve.add_argument("--max-seq", type=int, default=8192)
     serve.add_argument("--max-image-size", type=int, default=1024)
@@ -528,6 +564,12 @@ def main(argv=None):
     serve.add_argument("--port", type=int, default=8891)
     serve.add_argument("--examples", action="append",
                        help="verified real corpus directory for the browser example catalog; repeat to combine")
+    gateway = commands.add_parser("gateway", help="serve the UI with an operator-configured self-hosted endpoint")
+    gateway.add_argument("--config", required=True)
+    gateway.add_argument("--port", type=int, default=8891)
+    gateway.add_argument("--bind", choices=("127.0.0.1", "0.0.0.0"), default="127.0.0.1",
+                         help="0.0.0.0 is for a private container network; publish only to host loopback")
+    gateway.add_argument("--examples", action="append")
     bundle = commands.add_parser("bundle", help="copy an adapter and bind it to a local base model")
     bundle.add_argument("--model", required=True)
     bundle.add_argument("--base-model", required=True)
@@ -539,13 +581,20 @@ def main(argv=None):
             result = prepare_bundle(args["model"], args["base_model"], args["out"])
         else:
             port = args.pop("port")
+            bind = args.pop("bind", "127.0.0.1")
             examples = args.pop("examples")
             if examples is not None:
                 from .web_ui import ExampleCatalog
                 examples = ExampleCatalog(examples)
-            engine = LocalModel(DeploymentConfig(**args))
-            engine.load()
-            with make_server(engine, port, examples=examples) as server:
+            agent = None
+            if command == "gateway":
+                from .agent import AgentConfig, AgentRuntime, GatewayEngine
+                agent = AgentRuntime(AgentConfig(**_read_object(Path(args["config"]))))
+                engine = GatewayEngine(agent)
+            else:
+                engine = LocalModel(DeploymentConfig(**args))
+                engine.load()
+            with make_server(engine, port, examples=examples, agent=agent, bind=bind) as server:
                 print(json.dumps({"url": f"http://127.0.0.1:{server.server_port}/v1", "provenance": engine.provenance}), flush=True)
                 try:
                     server.serve_forever()

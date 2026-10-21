@@ -1,0 +1,91 @@
+# cspell:words tmpfs nosuid nodev pids healthcheck venv urllib urlopen
+name: ask-the-schematic
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8893:8893"
+    volumes:
+      - type: bind
+        source: ./config/compose-agent.json
+        target: /config/agent.json
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      private:
+        ipv4_address: 172.30.91.2
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=128m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 1g
+    init: true
+    restart: unless-stopped
+    logging:
+      driver: none
+    healthcheck:
+      test: [CMD, /app/.venv/bin/python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8893/health', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 3
+  inference:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.inference
+    # Native serving stays loopback-only; only the gateway publishes a port.
+    network_mode: service:gateway
+    depends_on:
+      gateway:
+        condition: service_started
+        restart: true
+    volumes:
+      - type: bind
+        source: ${SCHEMATIC_ADAPTER_DIR:-./models/adapter}
+        target: /models/adapter
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${SCHEMATIC_BASE_DIR:-./models/base}
+        target: /models/base
+        read_only: true
+        bind:
+          create_host_path: false
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=4g,mode=1777
+    shm_size: 2g
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 1024
+    init: true
+    restart: "no"
+    logging:
+      driver: none
+    healthcheck:
+      test: [CMD, /app/.venv/bin/python, -c, "import json,urllib.request; assert json.load(urllib.request.urlopen('http://127.0.0.1:8892/health', timeout=5))['loaded']"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+      start_period: 10m
+networks:
+  private:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.91.0/24

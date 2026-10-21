@@ -1,0 +1,13 @@
+# Core versions match the inspected native serving environment (2026-10-07).
+# These are core pins, not a complete GPU transitive dependency lock.
+unsloth==2026.8.22
+unsloth_zoo==2026.8.16
+torch==2.11.0+cu130
+torchvision==0.26.0+cu130
+transformers==5.5.0
+peft==0.18.1
+bitsandbytes==0.50.2
+triton==3.6.0
+accelerate==1.14.0
+huggingface_hub==1.29.0
+safetensors==0.8.0

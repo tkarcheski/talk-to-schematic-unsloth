@@ -167,10 +167,10 @@ try {
     await expect(page.locator("#chat-status")).toHaveText(
       "Waiting for model to load",
     );
-    await expect(page.locator("#question")).toBeDisabled();
+    await expect(page.locator("#question")).toBeEnabled();
     await expect(page.locator("#send")).toBeDisabled();
     report.checks.push(
-      "Unloaded model is reported accurately and chat inputs remain disabled",
+      "Unloaded model is reported accurately; drafting remains available while Send is disabled",
     );
   }
 
@@ -200,6 +200,9 @@ try {
     await expect(page.locator("#question")).toHaveValue("");
     await expect(page.locator("#send")).toBeEnabled();
     report.answer = answer;
+    report.toolActivity = await page
+      .locator(".tool-event summary")
+      .allTextContents();
     report.checks.push(
       "Real model returned a complete answer through the browser chat",
     );
