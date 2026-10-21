@@ -8,7 +8,7 @@ import pytest
 
 from schematic_model.multiturn_data import scenario, training_rows, tool_call
 from schematic_model.training import sha256
-from scripts.evaluate_multiturn import rollout
+from scripts.evaluate_multiturn import final_matches, rollout, run
 
 
 @pytest.fixture
@@ -129,3 +129,47 @@ def test_page_change_replaces_image_evidence_and_clears_old_focus(candidate):
     text = seen[-1][-1]['content'][-1]['text']
     assert '"page": 2' in text and '"focused_label": null' in text and '10K' in text
     assert records[-1]['viewport_before'] == {'box': [0, 0, 1000, 1000], 'full_sheet': True}
+
+
+@pytest.mark.parametrize('text', [
+    'The measured startup voltage is 3.3 V.',
+    'The measurement confirms startup voltage.',
+    'Notably the measured startup voltage is nominal.',
+    'No doubt the measured startup voltage is 3.3 volts.',
+])
+def test_refusal_rejects_measurement_claims(text):
+    assert not final_matches(text, {'refusal': True})
+
+
+@pytest.mark.parametrize('text', [
+    'The schematic does not provide measured startup voltage.',
+    'No measurement is supplied.',
+    'The measured voltage is unknown.',
+    'The nominal rail is 3.3 V, but the schematic does not provide measured startup voltage.',
+])
+def test_refusal_accepts_evidence_boundary(text):
+    assert final_matches(text, {'refusal': True})
+
+
+def test_http_failure_counts_blocked_dependents_and_excludes_sensitive_body(candidate, tmp_path, monkeypatch):
+    import io
+    from urllib.error import HTTPError
+    from scripts import evaluate_multiturn
+
+    sensitive = 'private schematic token=secret'
+    def fail(*args, **kwargs):
+        raise HTTPError('http://private.invalid/' + sensitive, 422, sensitive,
+                        {'Authorization': sensitive}, io.BytesIO(sensitive.encode()))
+    monkeypatch.setattr(evaluate_multiturn, 'request_json', fail)
+    cases = tmp_path / 'cases.jsonl'
+    cases.write_text(json.dumps(scenario(candidate, 'discussion')) + '\n')
+    output = tmp_path / 'evaluation'
+    report = run(cases, output, 'http://127.0.0.1:8892/v1', 'fixture')
+    assert report['user_turns'] == 4 and report['passed_turns'] == 0
+    assert report['attempted_turns'] == report['failed_attempted_turns'] == report['http_failed_turns'] == 1
+    assert report['blocked_turns'] == 3 and not report['passed']
+    raw = (output / 'turns.jsonl').read_text()
+    assert sensitive not in raw
+    records = [json.loads(line) for line in raw.splitlines()]
+    assert records[0]['error']['http_status'] == 422
+    assert all(not r['attempted'] for r in records[1:])

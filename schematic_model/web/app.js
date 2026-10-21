@@ -356,7 +356,7 @@ function updateProgress(stage) {
   $("busy-bar").setAttribute("aria-label", label);
   $("busy-panel").classList.toggle("awaiting-approval", waiting);
   $("busy-detail").textContent = waiting
-    ? "Review the exact query and destination below. Nothing is sent until you approve."
+    ? "Review the exact action below. It will run only if you approve it."
     : !state.pending
       ? "Another request is still running on the server. You can send when it finishes."
       : seconds >= 30
@@ -1090,8 +1090,11 @@ async function submit(event) {
   $("activity-status").textContent = "Thinking…";
   showError("");
   controls();
+  // Return to drafting now; completion must not steal focus from later work.
+  $("question").focus();
   const bubble = message("user", question);
   createTrace(bubble);
+  let outcomeLabel = "Completed";
   try {
     const outcome = await ask(question);
     if (!outcome) return;
@@ -1100,6 +1103,7 @@ async function submit(event) {
     renderMetrics("Last answer");
     state.notice = "Answer received";
   } catch (error) {
+    outcomeLabel = error.name === "AbortError" ? "Stopped" : "Failed";
     addTrace("request failed", {
       message: error.message,
       cancelled: error.name === "AbortError",
@@ -1127,9 +1131,8 @@ async function submit(event) {
     state.pending = false;
     state.controller = null;
     state.approvalResolve = null;
-    $("activity-status").textContent = "Finished";
+    $("activity-status").textContent = outcomeLabel;
     await health();
-    $("question").focus();
   }
 }
 
@@ -1630,6 +1633,7 @@ function bind() {
     if (!state.pending) openFile(event.dataTransfer?.files?.[0]);
   });
   $("question").addEventListener("keydown", (event) => {
+    if (event.isComposing || event.keyCode === 229) return;
     if (navigateHistory(event)) return;
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();

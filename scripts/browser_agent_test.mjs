@@ -114,6 +114,10 @@ try {
     releaseFailure = resolve;
   });
   let releaseThinking;
+  let releaseFocusAnswer;
+  const focusAnswer = new Promise((resolve) => {
+    releaseFocusAnswer = resolve;
+  });
   const thinking = new Promise((resolve) => {
     releaseThinking = resolve;
   });
@@ -122,8 +126,21 @@ try {
     const body = route.request().postDataJSON();
     sent.push(body);
     const raw = body.messages?.at(-1)?.content;
-    const last =
-      typeof raw === "string" ? raw.split("User question:\n").at(-1) : raw;
+    const userText =
+      typeof raw === "string"
+        ? raw
+        : raw?.find((block) => block.type === "text")?.text;
+    const last = userText?.split("User question:\n").at(-1);
+    if (last === "Check focus preservation")
+      return focusAnswer.then(() =>
+        fulfill(route, {
+          choices: [
+            {
+              message: { role: "assistant", content: "Focus check complete." },
+            },
+          ],
+        }),
+      );
     if (last === "Show me R1.")
       return fulfill(route, {
         choices: [
@@ -352,6 +369,7 @@ try {
   await expect(page.locator("#question")).toHaveValue(
     "Draft survives cancellation",
   );
+  await expect(page.locator("#activity-status")).toHaveText("Stopped");
   await page
     .getByRole("button", { name: "Copy failed question to draft" })
     .last()
@@ -362,7 +380,13 @@ try {
   await page.locator("#question").fill("Trigger failure");
   await page.locator("#send").click();
   await page.locator("#question").fill("Draft survives failure");
+  await page.locator("#open-settings").click();
+  await page.locator("#system-prompt").focus();
   releaseFailure();
+  await expect(page.locator("#activity-status")).toHaveText("Failed");
+  await expect(page.locator("#send")).toBeEnabled();
+  await expect(page.locator("#system-prompt")).toBeFocused();
+  await page.locator("#settings-close").click();
   await expect(page.locator("#error")).toContainText(
     "Scripted unavailable service",
   );
@@ -383,6 +407,12 @@ try {
   await page.screenshot({ path: path.join(out, "desktop-request-trace.png") });
   await page.locator("#question").fill("Show me R1.");
   await page.locator("#send").click();
+  await expect(page.locator("#busy-stage")).toHaveText(
+    "Waiting for your approval",
+  );
+  await expect(page.locator("#busy-detail")).toHaveText(
+    "Review the exact action below. It will run only if you approve it.",
+  );
   await page.getByRole("button", { name: "Allow once", exact: true }).click();
   await expect(page.locator(".message.assistant").last()).toContainText(
     "R1 is now focused.",
@@ -428,6 +458,25 @@ try {
   );
   await page.locator("#question").press("ArrowDown");
   await expect(page.locator("#question")).toHaveValue("line one\nline two");
+  // IME confirmation and candidate navigation must not send or recall history.
+  const beforeComposition = requests;
+  await page.locator("#question").fill("Composing draft");
+  for (const key of ["Enter", "ArrowUp", "ArrowDown"]) {
+    await page.locator("#question").dispatchEvent("keydown", {
+      key,
+      isComposing: true,
+    });
+    await expect(page.locator("#question")).toHaveValue("Composing draft");
+  }
+  expect(requests).toBe(beforeComposition);
+  await page.locator("#question").fill("Check focus preservation");
+  await page.locator("#send").click();
+  await expect(page.locator("#question")).toBeFocused();
+  await page.locator("#stage").focus();
+  releaseFocusAnswer();
+  await expect(page.locator("#activity-status")).toHaveText("Completed");
+  await expect(page.locator("#send")).toBeEnabled();
+  await expect(page.locator("#stage")).toBeFocused();
   const divider = page.getByRole("separator", { name: "Resize chat width" });
   await divider.focus();
   await page.keyboard.press("ArrowLeft");

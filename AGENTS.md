@@ -1,10 +1,13 @@
+<!-- cspell:words worktrees -->
+
 # Agent rules
 
-## Get approval before changing direction
+## Autonomous development and recovery
 
-- Do not make changes without the user's approval of the direction. This covers code, data, config, Git (commits, pushes, branches), training runs, publications and board posts.
-- When you see a problem, raise it to the user. Do not work around it, and do not copy a workaround a previous agent used.
-- Propose the direction, wait for approval, then act. Approval covers only what was approved; ask again for anything beyond it.
+- The user authorized autonomous Git audit and salvage, model-quality improvements, and UI cleanup on 2026-10-20. Proceed with investigation, reversible code/data/config changes, local branches and commits, tests, and recoverable worktree repairs without repeated direction approvals.
+- Prioritize measurable model improvements and a clear, polished Ask the Schematic UI. Preserve source provenance, held-out evaluation splits, existing adapters, and useful unmerged work.
+- Preserve recovery copies before repairing damaged worktrees. Do not force-push, discard unique work, delete model artifacts, merge or close PRs, or publish sensitive material without explicit authorization.
+- Keep the user informed about findings and material tradeoffs. Ask only for missing decisions that materially change scope, irreversible actions, or access the platform requires. Authentication does not bypass platform sandbox restrictions.
 
 ## Product requirements approved by the user
 
@@ -39,3 +42,13 @@
 - Review all open PRs and post useful comments with findings, context, and verification. Prepare reviewable PRs for completed work. The user will merge or close PRs; agents must not do either on the user's behalf.
 - Bring major conflicts to the user, including incompatible branch changes, deletion of useful evidence, security tradeoffs, and changes to sensitive-data handling. Preserve unmerged work until its disposition is approved.
 - Record requirement changes here as the user makes decisions. Separate requirements from implemented capabilities and verified results; do not describe planned controls as already enforced.
+
+## GitHub SSH authentication on dev1
+
+- GitHub account: `tkarcheski`. A dedicated passphrase-free authentication key was approved and configured on 2026-10-20 for unattended Git operations.
+- Private key path: `/home/tkarcheski/.ssh/id_ed25519_github_automation`; public key uses the same path with `.pub`. Never print, copy into the repository, or commit the private key.
+- GitHub key title: `dev1 GitHub automation`. Public key fingerprint: `SHA256:FwCDbE+t5Kyk6V21mbl6McGPaq8I9gQ1wdz1/hNTCIg`.
+- This repository's local Git configuration sets `core.sshCommand` to `ssh -i /home/tkarcheski/.ssh/id_ed25519_github_automation -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes`. Linked worktrees inherit this common configuration unless overridden. New clones need their own configuration; the key exists only on dev1.
+- SSH authentication and `git ls-remote origin HEAD` were verified successfully. No push was performed.
+- In this agent environment, sandboxed SSH encountered a system configuration ownership error; the approved execution outside the sandbox succeeded. Request execution approval when required rather than bypassing SSH configuration or host verification.
+- Authentication supports the autonomous scope above; irreversible actions and publication remain subject to those limits.

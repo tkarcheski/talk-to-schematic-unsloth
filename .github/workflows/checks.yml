@@ -1,3 +1,4 @@
+# cspell:words SEARXNG tmpfs nosuid nodev venv urllib urlopen
 name: Package checks
 on:
   push:
@@ -21,6 +22,9 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run test:browser-state
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npm run test:browser-agent
+      - run: npm run test:browser-navigation
       - run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
       - run: uv sync --locked
       - run: uv run --locked ruff check .
@@ -28,3 +32,25 @@ jobs:
       - run: uv run --locked coverage run -m pytest -q
       - run: uv run --locked coverage report
       - run: uv build
+  gateway-container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: docker compose config --quiet
+      - run: docker compose -f compose.yaml -f compose.examples.yaml config --quiet
+      - run: docker compose -f compose.yaml -f compose.search.yaml config --quiet
+        env:
+          SEARXNG_SECRET: ci-configuration-validation-only
+      - run: docker build -t schematic-gateway:test .
+      - name: Verify isolated gateway image
+        shell: bash
+        run: |
+          docker run -d --name gateway-test --network none --read-only --tmpfs /tmp:rw,nosuid,nodev,size=128m --cap-drop ALL --security-opt no-new-privileges --mount type=bind,src="$PWD/config/compose-agent.json",dst=/config/agent.json,readonly schematic-gateway:test
+          trap 'docker rm -f gateway-test' EXIT
+          for attempt in {1..20}; do
+            if docker exec gateway-test /app/.venv/bin/python -c "import json,urllib.request; data=json.load(urllib.request.urlopen('http://127.0.0.1:8893/api/agent/config',timeout=2)); assert data['network']=='disabled'"; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1

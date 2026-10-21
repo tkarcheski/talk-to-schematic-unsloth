@@ -10,6 +10,7 @@ import mimetypes
 from pathlib import Path
 import re
 import time
+from urllib.error import HTTPError
 
 from schematic_model.agent import AGENT_TOOLS, private_endpoint, request_json, validate_agent_arguments
 from schematic_model.multiturn_data import SYSTEM, current_context, tool_result, wrap
@@ -41,8 +42,18 @@ def final_matches(content, turn):
     if turn.get('clarify') and not (re.search(r'\b(which|select|specify|provide)\b', content, re.I)
                                     and re.search(r'\b(part|component|reference|designator)\b', content, re.I)):
         return False
-    if turn.get('refusal') and not any(word in content.lower() for word in ('not', 'cannot', "can't", 'unavailable', 'measurement', 'measure')):
-        return False
+    if turn.get('refusal'):
+        # Mentioning a measurement is not a refusal to invent one.
+        # Require a local evidence-boundary phrase, rather than unrelated
+        # negation ("no doubt") or excluding legitimate nominal rail values.
+        subject = r'(?:measured(?:\s+startup)?\s+voltage|startup\s+voltage|measurements?)'
+        boundary = re.search(
+            rf"\b(?:does\s+not|doesn't|cannot|can't)\s+(?:provide|establish|determine|show|specify|infer)\s+(?:the\s+)?{subject}\b"
+            rf'|\bno\s+(?:measured\s+(?:startup\s+)?voltage|measurements?)\s+(?:is|are|was|were|has\s+been)\s+(?:supplied|provided|reported|shown|available)\b'
+            rf'|\b{subject}\s+(?:is|are)\s+(?:unknown|unavailable|not\s+(?:provided|supplied|reported|shown|available))\b',
+            content, re.I)
+        if not boundary:
+            return False
     return True
 
 
@@ -54,7 +65,8 @@ def rollout(case, complete, max_rounds=4):
     blocked = False
     for index, turn in enumerate(case['turns']):
         record = {'case_id': case['id'], 'turn': index, 'question': turn['question'], 'allow_navigation': turn['allow_navigation'],
-                  'passed': False, 'events': [], 'responses': [], 'viewport_invariant': False, 'terminated': False}
+                  'passed': False, 'events': [], 'responses': [], 'viewport_invariant': False, 'terminated': False,
+                  'attempted': not blocked}
         if blocked:
             record['error'] = 'blocked_by_prior_incomplete_turn'
             records.append(record)
@@ -117,7 +129,14 @@ def rollout(case, complete, max_rounds=4):
             record['passed'] = actions_match and final_matches(final, turn) and (turn['allow_navigation'] or record['viewport_invariant'])
             record['answer'] = final
         except Exception as error:
-            record['error'] = {'type': type(error).__name__, 'message': str(error)}
+            if isinstance(error, HTTPError):
+                # Never persist response bodies, headers, or URLs: upstream errors
+                # may echo private prompts or credentials. Status is safe metadata.
+                record['error'] = {'type': 'HTTPError', 'http_status': error.code,
+                                   'message': 'Completion endpoint returned an HTTP error'}
+                error.close()
+            else:
+                record['error'] = {'type': type(error).__name__, 'message': str(error)}
             blocked = True
         record['elapsed_seconds'] = time.monotonic() - started
         record['viewport_after'] = copy.deepcopy(viewer['viewport'])
@@ -147,6 +166,10 @@ def run(cases_path, output, endpoint, model, max_tokens=256):
     report = {'cases_sha256': sha256(cases_path), 'endpoint': endpoint, 'model': model, 'max_tokens': max_tokens,
               'cases': len(cases), 'user_turns': len(all_records), 'passed_turns': sum(r['passed'] for r in all_records),
               'terminated_turns': sum(r['terminated'] for r in all_records),
+              'attempted_turns': sum(r['attempted'] for r in all_records),
+              'failed_attempted_turns': sum(r['attempted'] and not r['passed'] for r in all_records),
+              'blocked_turns': sum(not r['attempted'] for r in all_records),
+              'http_failed_turns': sum(isinstance(r.get('error'), dict) and r['error'].get('type') == 'HTTPError' for r in all_records),
               'non_navigation_turns': len(non_navigation), 'viewport_invariant_turns': sum(r['viewport_invariant'] for r in non_navigation),
               'unsolicited_navigation_calls': sum(e['tool'] in NAVIGATION for r in non_navigation for e in r['events']),
               'passed': all(r['passed'] for r in all_records),
