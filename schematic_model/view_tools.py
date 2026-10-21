@@ -81,7 +81,7 @@ def _block_text(content: Any) -> str:
     raise ToolFormatError("tool and assistant tool-call content must be text")
 
 
-def validate_arguments(name: str, arguments: Any, registry=None) -> dict[str, Any]:
+def validate_arguments(name: Any, arguments: Any, registry=None) -> dict[str, Any]:
     """Return normalized arguments or raise; never silently clamp a box."""
     if registry is not None and name not in TOOL_NAMES:
         from .agent import validate_agent_arguments

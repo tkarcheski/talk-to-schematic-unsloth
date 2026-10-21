@@ -106,8 +106,8 @@ def plan_generalization(snapshot: str, source_root: str, *, seed: int = 3407,
                         overrides: list[dict] | None = None) -> GeneralizationPlan:
     if type(seed) is not int or seed < 0:
         raise ValueError("seed must be a nonnegative integer")
-    base, source_root = Path(snapshot).resolve(), Path(source_root).resolve()
-    inputs = {}
+    base, source_path = Path(snapshot).resolve(), Path(source_root).resolve()
+    inputs: dict[str, str] = {}
     override_by_board = {}
     if overrides is not None:
         if not isinstance(overrides, list):
@@ -150,7 +150,7 @@ def plan_generalization(snapshot: str, source_root: str, *, seed: int = 3407,
     if (set(families["val"]) & (set(families["train"]) | set(families["test"]))
             or set(families["train"]) & set(families["test"])):
         raise ValueError("Snapshot family inventories overlap")
-    inventory = {}
+    inventory: dict[Path, tuple[dict, str | None]] = {}
     for section in ("datasets", "images"):
         if not isinstance(manifest.get(section), list):
             raise ValueError("Snapshot needs dataset and image inventories")
@@ -162,9 +162,9 @@ def plan_generalization(snapshot: str, source_root: str, *, seed: int = 3407,
     views = {}
     for view in ("evidence", "vision"):
         path = base / view / "val.jsonl"
-        artifact, section = inventory.get(path, ({}, None))
+        artifact, artifact_section = inventory.get(path, ({}, None))
         data = _read(path, inputs)
-        if section != "datasets" or digest(data) != artifact.get("sha256"):
+        if artifact_section != "datasets" or digest(data) != artifact.get("sha256"):
             raise ValueError("Validation dataset differs from frozen manifest")
         rows = read_rows(data)
         if len(rows) != 13 or artifact.get("rows") != 13:
@@ -185,7 +185,7 @@ def plan_generalization(snapshot: str, source_root: str, *, seed: int = 3407,
                 or any(prov.get(key) != vision["provenance"].get(key)
                        for key in ("sha256", "repository", "commit", "source_path", "page"))):
             raise ValueError("Validation source identity differs across modes")
-        source = _artifact_path(source_root, prov["repository"].replace("/", "__") + "/" + prov["source_path"])
+        source = _artifact_path(source_path, prov["repository"].replace("/", "__") + "/" + prov["source_path"])
         raw = _read(source, inputs)
         if digest(raw) != prov["sha256"]:
             raise ValueError("Native source hash differs from validation provenance")
@@ -206,8 +206,8 @@ def plan_generalization(snapshot: str, source_root: str, *, seed: int = 3407,
             if len(blocks) != 1:
                 raise ValueError("Each validation row must contain exactly one image")
             path = (base / view / blocks[0]["image"]).resolve()
-            artifact, section = inventory.get(path, ({}, None))
-            if not path.is_relative_to(base) or section != "images" or artifact.get("split") != "val":
+            artifact, artifact_section = inventory.get(path, ({}, None))
+            if not path.is_relative_to(base) or artifact_section != "images" or artifact.get("split") != "val":
                 raise ValueError("Validation image is not bound to its split")
             data = _read(path, inputs)
             declared = [item for item in row["provenance"]["images"] if item["page"] == page]
@@ -221,7 +221,7 @@ def plan_generalization(snapshot: str, source_root: str, *, seed: int = 3407,
         if len(set(image_digests)) != 1:
             raise ValueError("Validation modes do not use the same frozen image")
         boards.append((native, vision, sheet, refs, image_name))
-    result = {"vision": [], "evidence": []}
+    result: dict[str, list[dict]] = {"vision": [], "evidence": []}
     cases = []
 
     def add(board, category, index, question, answer, gold, target):
@@ -232,7 +232,7 @@ def plan_generalization(snapshot: str, source_root: str, *, seed: int = 3407,
                       "mode": row["training_view"], "category": category, "question": question,
                       "proposed_answer": answer, "gold": gold, "target": target,
                       "source_url": native["provenance"]["source_url"], "source_sha256": native["provenance"]["sha256"],
-                      "native_source_path": str(source_root / native["provenance"]["repository"].replace("/", "__")
+                      "native_source_path": str(source_path / native["provenance"]["repository"].replace("/", "__")
                                                 / native["provenance"]["source_path"]),
                       "frozen_image_path": image_origins[image_name],
                       "page": native["provenance"]["page"], "image": image_name,
@@ -246,15 +246,15 @@ def plan_generalization(snapshot: str, source_root: str, *, seed: int = 3407,
                       and (native["id"], part["refdes"]) not in SOURCE_OVERLAP_EXCLUSIONS
                       and re.fullmatch(REFDES, part["refdes"])]
         part = _choose(candidates, seed, native["id"] + ":value", lambda item: item["refdes"])
-        override = override_by_board.get(native["id"])
-        if override is not None:
-            if (part["refdes"] != override["original_refdes"] or part["value"] != override["original_value"]
-                    or native["provenance"]["sha256"] != override["source_sha256"]
-                    or digest(images[board[4]]) != override["image_sha256"]):
+        selected_override = override_by_board.get(native["id"])
+        if selected_override is not None:
+            if (part["refdes"] != selected_override["original_refdes"] or part["value"] != selected_override["original_value"]
+                    or native["provenance"]["sha256"] != selected_override["source_sha256"]
+                    or digest(images[board[4]]) != selected_override["image_sha256"]):
                 raise ValueError("Reviewed override original selection/source/image changed")
-            replacements = [item for item in candidates if item["refdes"] == override["refdes"]
-                            and item["value"] == override["value"]]
-            if len(replacements) != 1 or override["refdes"] == override["original_refdes"]:
+            replacements = [item for item in candidates if item["refdes"] == selected_override["refdes"]
+                            and item["value"] == selected_override["value"]]
+            if len(replacements) != 1 or selected_override["refdes"] == selected_override["original_refdes"]:
                 raise ValueError("Reviewed replacement is not a different source-visible exact value")
             part = replacements[0]
             applied_overrides.add(native["id"])
@@ -324,15 +324,15 @@ def plan_generalization(snapshot: str, source_root: str, *, seed: int = 3407,
         report["selection_policy"] += "; explicit source-verified visual-review replacements recorded in value_overrides"
         report["limitations"].append("Serving-scale visual review binds this versioned plan in a separate report; no model-processor readability certification is implied.")
     report["plan_sha256"] = digest(json.dumps(report, sort_keys=True, separators=(",", ":")).encode())
-    return GeneralizationPlan(report, result, images, inputs, (base, source_root))
+    return GeneralizationPlan(report, result, images, inputs, (base, source_path))
 
 
 def write_snapshot(plan: GeneralizationPlan, output: str) -> dict:
     destination = Path(output).resolve()
     if destination.exists() or Path(output).is_symlink() or any(destination.is_relative_to(root) for root in plan.protected_roots):
         raise ValueError("Output must be a new path outside input roots")
-    for path, expected in plan.inputs.items():
-        if digest(Path(path).read_bytes()) != expected:
+    for input_path, expected in plan.inputs.items():
+        if digest(Path(input_path).read_bytes()) != expected:
             raise ValueError("Input changed after generalization planning")
     destination.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix=destination.name + ".partial-", dir=destination.parent))

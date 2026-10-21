@@ -1,6 +1,8 @@
 """Frozen source-grounded multi-turn routing lessons; never modifies existing splits."""
 from __future__ import annotations
 
+from typing import Any
+
 import argparse
 import copy
 import hashlib
@@ -82,7 +84,7 @@ def training_rows(case):
     candidate = case['candidate']
     viewer = copy.deepcopy(case['initial_context'])
     evidence = {'page': candidate['page'], 'bom': [candidate['part']], 'scope': 'selected native component; not a full electrical review'}
-    messages = [{'role': 'system', 'content': SYSTEM}]
+    messages: list[dict[str, Any]] = [{'role': 'system', 'content': SYSTEM}]
     rows = []
 
     def row(suffix):
@@ -126,7 +128,7 @@ def training_rows(case):
 def collect(corpus, replay):
     original = json.loads((replay / 'manifest.json').read_text())
     families = {family: split for split, group in original['families'].items() for family in group}
-    candidates = {'train': [], 'val': []}
+    candidates: dict[str, list[dict[str, Any]]] = {'train': [], 'val': []}
     for line in (corpus / 'manifest.jsonl').read_text().splitlines():
         record = json.loads(line)
         split = families.get(record['repository'])
@@ -151,7 +153,8 @@ def collect(corpus, replay):
                         'provenance': {k: record[k] for k in ('repository', 'commit', 'source_path', 'sha256', 'license')}})
     train_values = {c['part']['value'].casefold() for c in candidates['train']}
     candidates['val'] = [c for c in candidates['val'] if c['part']['value'].casefold() not in train_values]
-    unique, selected = set(), []
+    unique: set[str] = set()
+    selected: list[dict[str, Any]] = []
     for candidate in candidates['train']:
         value = candidate['part']['value'].casefold()
         if value not in unique and len(selected) < 12:
@@ -167,7 +170,8 @@ def build(corpus, replay, output):
     candidates = collect(corpus, replay)
     if not all(candidates.values()):
         raise ValueError('Both train and unseen validation parts are required')
-    rows, cases = {'train': [], 'val': []}, []
+    rows: dict[str, list[dict[str, Any]]] = {'train': [], 'val': []}
+    cases = []
     for split, selected in candidates.items():
         for candidate in selected:
             for kind in ('discussion', 'search', 'stale_focus'):

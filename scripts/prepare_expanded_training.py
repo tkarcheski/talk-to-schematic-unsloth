@@ -133,7 +133,9 @@ def _load_base(base: Path, inputs: dict) -> tuple[dict, dict, dict, dict]:
     required |= {f"{split}.jsonl" for split in SPLITS}
     if not required <= datasets.keys():
         raise ValueError("Base snapshot lacks required combined/evidence/vision splits")
-    ownership, source_ownership, image_ownership = {}, {}, {}
+    ownership: dict[str, str] = {}
+    source_ownership: dict[str, str] = {}
+    image_ownership: dict[str, str] = {}
     for relative, rows in datasets.items():
         split = Path(relative).stem
         if split not in SPLITS:
@@ -165,7 +167,7 @@ def _load_base(base: Path, inputs: dict) -> tuple[dict, dict, dict, dict]:
     return manifest, datasets, preserved, image_data
 
 
-def _absent_ref(source_refs: set[str], identity: str, seed: int) -> str:
+def _absent_ref(source_refs: set[str | None], identity: str, seed: int) -> str:
     # Include plausible low-numbered designators and several component kinds;
     # every candidate is checked against *all* source parts, not just visible BOM.
     candidates = [f"{prefix}{number}" for prefix in ("R", "C", "U", "L", "D", "Q", "JP")
@@ -192,7 +194,7 @@ def plan_snapshot(corpus: str, base_snapshot: str, source_root: str, *, seed: in
                   exclusions: str | None = None) -> ExpandedPlan:
     if type(seed) is not int or seed < 0:
         raise ValueError("seed must be a nonnegative integer")
-    corpus, base, source_root = (Path(p).resolve() for p in (corpus, base_snapshot, source_root))
+    corpus_path, base, source_path = (Path(p).resolve() for p in (corpus, base_snapshot, source_root))
     inputs = {}
     excluded = {}
     if exclusions is not None:
@@ -211,7 +213,7 @@ def plan_snapshot(corpus: str, base_snapshot: str, source_root: str, *, seed: in
                 raise ValueError("Duplicate target exclusion")
             excluded[key] = item
     base_manifest, base_rows, preserved, images = _load_base(base, inputs)
-    native_path, vision_path = corpus / "train.jsonl", corpus / "vision/train.jsonl"
+    native_path, vision_path = corpus_path / "train.jsonl", corpus_path / "vision/train.jsonl"
     raw = {path: path.read_bytes() for path in (native_path, vision_path)}
     for path, data in raw.items():
         inputs[str(path)] = digest(data)
@@ -226,7 +228,9 @@ def plan_snapshot(corpus: str, base_snapshot: str, source_root: str, *, seed: in
     if len(vision_by_board) != len(vision_rows):
         raise ValueError("Duplicate source vision board/page")
     native_out, vision_out, selections, refusals = [], [], [], []
-    exclusions_seen, dropped_groups, visible_count = set(), [], 0
+    exclusions_seen: set[tuple[str, str]] = set()
+    dropped_groups = []
+    visible_count = 0
     source_cache = {}
     heldout_hashes = {item["sha256"] for item in images.values() if item["split"] != "train"}
     original_training_images = {item["sha256"] for item in images.values() if item["split"] == "train"}
@@ -242,7 +246,7 @@ def plan_snapshot(corpus: str, base_snapshot: str, source_root: str, *, seed: in
                for k in ("sha256", "repository", "commit", "source_path", "page")):
             raise ValueError("Source training provenance differs from frozen board identity")
         relative = str(Path(provenance["repository"].replace("/", "__")) / provenance["source_path"])
-        source = _inside(source_root, relative)
+        source = _inside(source_path, relative)
         if source not in source_cache:
             data = source.read_bytes()
             if digest(data) != provenance["sha256"]:
@@ -301,7 +305,7 @@ def plan_snapshot(corpus: str, base_snapshot: str, source_root: str, *, seed: in
         if not vision["messages"] or vision["messages"][0].get("role") != "system":
             raise ValueError("Vision template must include an image-only system message")
         system = vision["messages"][0]
-        by_value = {}
+        by_value: dict[str, list[dict]] = {}
         for part in eligible:
             by_value.setdefault(part["value"], []).append(part)
         for value, candidates in sorted(by_value.items()):
@@ -385,7 +389,7 @@ def plan_snapshot(corpus: str, base_snapshot: str, source_root: str, *, seed: in
                         "Native training wording and labels are preserved, including original missing-part identifiers; only image paths/training_view change.",
                         "Validation/test JSONL bytes and referenced images are copied unchanged from the base snapshot."]}
     return ExpandedPlan({"evidence": native_out, "vision": vision_out}, preserved, images, inputs,
-                        manifest, (corpus, base, source_root))
+                        manifest, (corpus_path, base, source_path))
 
 
 def write_snapshot(plan: ExpandedPlan, output: str) -> dict:
@@ -395,9 +399,9 @@ def write_snapshot(plan: ExpandedPlan, output: str) -> dict:
     if any(destination.is_relative_to(root) for root in plan.protected_roots):
         raise ValueError("Snapshot output must be outside input roots")
     # A reviewed plan is bound to all inputs, including source XML and images.
-    for path, expected in plan.inputs.items():
-        if digest(Path(path).read_bytes()) != expected:
-            raise ValueError(f"Input changed after planning: {path}")
+    for input_path, expected in plan.inputs.items():
+        if digest(Path(input_path).read_bytes()) != expected:
+            raise ValueError(f"Input changed after planning: {input_path}")
     destination.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=destination.name + ".partial-", dir=destination.parent))
     try:

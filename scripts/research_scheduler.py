@@ -1,6 +1,7 @@
 """Bounded, operator-configured research/training queue. No shell or model switching."""
 from __future__ import annotations
 
+from importlib import import_module
 import argparse
 import fcntl
 import json
@@ -184,7 +185,7 @@ def run_once(ledger, config, *, probe=gpu_state, runner=subprocess.run, recommen
                 try:
                     from .public_research import SAFE_FAILURE_CODES
                 except ImportError:
-                    from public_research import SAFE_FAILURE_CODES
+                    SAFE_FAILURE_CODES = import_module("public_research").SAFE_FAILURE_CODES
                 if isinstance(supplied.get('error_code'), str) and supplied['error_code'] in SAFE_FAILURE_CODES:
                     metrics['error_code'] = supplied['error_code']
                 next_job = supplied.get('next_job_id')
@@ -263,7 +264,7 @@ def main():
             try:
                 from .public_research import studio_recommend
             except ImportError:
-                from public_research import studio_recommend
+                studio_recommend = import_module("public_research").studio_recommend
             if set(advisor) != {'endpoint', 'model', 'enabled'} or advisor['enabled'] is not True:
                 parser.error('advisor requires explicit enabled, endpoint and resident model')
             recommend = lambda candidates: studio_recommend(advisor['endpoint'], advisor['model'], candidates)

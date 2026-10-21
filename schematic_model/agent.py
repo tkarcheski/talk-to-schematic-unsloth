@@ -63,6 +63,7 @@ def private_endpoint(value):
 
 class NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, new_url):
+        del fp, msg, new_url
         raise ValueError("Endpoint redirects are disabled")
 
 
@@ -234,7 +235,7 @@ class AgentRuntime:
             seconds, scope = wall_seconds, "upstream_wall_time"
             if isinstance(upstream_metrics, dict):
                 reported = upstream_metrics.get("inference_seconds")
-                if type(reported) in (int, float) and math.isfinite(reported) and reported > 0 and upstream_metrics.get("timing_scope") == "model_inference_including_prefill":
+                if isinstance(reported, (int, float)) and type(reported) in (int, float) and math.isfinite(reported) and reported > 0 and upstream_metrics.get("timing_scope") == "model_inference_including_prefill":
                     seconds, scope = reported, "model_inference_including_prefill"
             metrics.add(response.get("usage"), seconds, scope)
             details = safe_model_details(response.get("model_details"))

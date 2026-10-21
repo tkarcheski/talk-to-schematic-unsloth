@@ -51,8 +51,8 @@ def native_model_details(engine):
 class InferenceMetrics:
     """One HTTP response's model steps; approval/search wait time is excluded."""
     def __init__(self):
-        self.counts = {key: 0 for key in ("prompt_tokens", "completion_tokens", "total_tokens")}
-        self.seconds = 0.0
+        self.counts: dict[str, int | None] = {key: 0 for key in ("prompt_tokens", "completion_tokens", "total_tokens")}
+        self.seconds: float | None = 0.0
         self.scopes = set()
         self.steps = 0
 
@@ -63,8 +63,10 @@ class InferenceMetrics:
             value = usage.get(key)
             if type(value) is not int or not 0 <= value <= 1_000_000_000:
                 self.counts[key] = None
-            elif self.counts[key] is not None:
-                self.counts[key] += value
+            else:
+                previous = self.counts[key]
+                if previous is not None:
+                    self.counts[key] = previous + value
         if type(seconds) not in (int, float) or not math.isfinite(seconds) or seconds <= 0:
             self.seconds = None
         elif self.seconds is not None:

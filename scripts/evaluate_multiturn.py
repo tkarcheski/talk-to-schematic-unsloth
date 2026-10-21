@@ -49,7 +49,7 @@ def final_matches(content, turn):
 def rollout(case, complete, max_rounds=4):
     candidate = case['candidate']
     viewer = copy.deepcopy(case['initial_context'])
-    messages = [{'role': 'system', 'content': SYSTEM}]
+    messages: list[dict] = [{'role': 'system', 'content': SYSTEM}]
     records = []
     blocked = False
     for index, turn in enumerate(case['turns']):

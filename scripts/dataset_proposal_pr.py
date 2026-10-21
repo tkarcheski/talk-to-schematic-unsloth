@@ -1,4 +1,5 @@
 """Explicit public-manifest draft PR adapter. Never merges or closes PRs."""
+from importlib import import_module
 import argparse
 import hashlib
 import json
@@ -10,7 +11,7 @@ from urllib.parse import urlsplit
 try:
     from .public_research import ALLOWED_LICENSES
 except ImportError:
-    from public_research import ALLOWED_LICENSES
+    ALLOWED_LICENSES = import_module("public_research").ALLOWED_LICENSES
 
 
 def publish(repo, manifest, branch, github_repo, *, run=subprocess.run):

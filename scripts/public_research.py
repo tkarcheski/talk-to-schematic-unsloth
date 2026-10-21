@@ -30,7 +30,7 @@ def fetch_public(source, hosts, *, max_bytes=8_000_000):
     addresses = socket.getaddrinfo(target.hostname, 443, type=socket.SOCK_STREAM)
     if not addresses or any(not ipaddress.ip_address(a[4][0]).is_global for a in addresses):
         raise ValueError('nonpublic destination')
-    address = addresses[0][4][0]
+    address = str(addresses[0][4][0])
     connection = http.client.HTTPSConnection(target.hostname, timeout=20)
     raw = socket.create_connection((address, 443), timeout=20)
     connection.sock = ssl.create_default_context().wrap_socket(raw, server_hostname=target.hostname)

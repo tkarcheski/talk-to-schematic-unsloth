@@ -351,6 +351,7 @@ class Labels:
         return self
 
     def any(self, dim):
+        del dim
         return self
 
     def all(self):

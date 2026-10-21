@@ -1,6 +1,8 @@
 """Source-grounded routing lessons and frozen validation prompts; no web results invented."""
 from __future__ import annotations
 
+from typing import Any
+
 import argparse
 import copy
 import json
@@ -78,7 +80,7 @@ def build(corpus: Path, replay: Path, output: Path, max_parts=24):
         raise ValueError("Choose a new routing snapshot directory")
     original = json.loads((replay / "manifest.json").read_text())
     ownership = {family: split for split, families in original["families"].items() for family in families}
-    candidates = {"train": [], "val": []}
+    candidates: dict[str, list[tuple[Any, Any, Any, Any, Path]]] = {"train": [], "val": []}
     for line in (corpus / "manifest.jsonl").read_text().splitlines():
         record = json.loads(line)
         split = ownership.get(record["repository"])
@@ -107,7 +109,8 @@ def build(corpus: Path, replay: Path, output: Path, max_parts=24):
                         and re.search('[0-9]', part["value"]) and part["refdes"] in regions["parts"]):
                     candidates[split].append((record, sheet, part, regions["parts"][part["refdes"]], image_path))
     all_train_values = {x[2]["value"].casefold() for x in candidates["train"]}
-    selected, used = [], set()
+    selected: list[tuple[Any, Any, Any, Any, Path]] = []
+    used: set[str] = set()
     for candidate in candidates["train"]:
         value = candidate[2]["value"].casefold()
         if value not in used and len(selected) < max_parts:
@@ -117,7 +120,7 @@ def build(corpus: Path, replay: Path, output: Path, max_parts=24):
     candidates["val"] = [x for x in candidates["val"] if x[2]["value"].casefold() not in all_train_values]
     if not candidates["train"] or not candidates["val"]:
         raise ValueError("Need nonempty training and unseen-part validation candidates")
-    rows = {"train": [], "val": []}
+    rows: dict[str, list[dict[str, Any]]] = {"train": [], "val": []}
     cases = []
     for split, values in candidates.items():
         for candidate in values:

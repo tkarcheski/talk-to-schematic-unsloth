@@ -99,7 +99,7 @@ def model_artifacts(path: Path) -> dict[str, Any]:
                         or not (path / shard).is_file()):
                     raise ValueError("Safetensors index references an invalid or missing local shard")
     hashes = [{"name": item.name, "bytes": item.stat().st_size, "sha256": sha256(item)} for item in files]
-    result = {"path": str(path), "files": hashes, "sha256": _digest_json(hashes)}
+    result: dict[str, Any] = {"path": str(path), "files": hashes, "sha256": _digest_json(hashes)}
     adapter = path / "adapter_config.json"
     if adapter.is_file():
         config = _read_object(adapter)
@@ -173,9 +173,9 @@ def decode_image(value: str, max_side: int):
             if image.width * image.height > MAX_IMAGE_PIXELS or image.width < 1 or image.height < 1:
                 raise ValueError("image exceeds the pixel limit")
             image.load()
-            image = image.convert("RGB")
-            image.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
-            return image
+            converted = image.convert("RGB")
+            converted.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+            return converted
     except (OSError, Image.DecompressionBombError) as exc:
         raise ValueError("invalid raster image") from exc
 
@@ -289,7 +289,9 @@ class LocalModel:
                            "model": model_artifacts(Path(config.model)), "packages": installed_versions()}
         self.fingerprint = _digest_json(self.provenance)
         self.base_url = "local-unsloth://" + self.fingerprint
-        self.model = self.processor = self.torch = None
+        self.model: Any = None
+        self.processor: Any = None
+        self.torch: Any = None
 
     def load(self) -> None:
         if self.model is not None:
@@ -380,6 +382,7 @@ def make_server(engine, port: int = 8891, *, examples=None, agent=None, bind="12
                 self.connection_slots.release()
 
     class Handler(BaseHTTPRequestHandler):
+        server: HTTPServer
         server_version = "SchematicLocal/1"
 
         def setup(self):
@@ -590,7 +593,7 @@ def main(argv=None):
             if command == "gateway":
                 from .agent import AgentConfig, AgentRuntime, GatewayEngine
                 agent = AgentRuntime(AgentConfig(**_read_object(Path(args["config"]))))
-                engine = GatewayEngine(agent)
+                engine: GatewayEngine | LocalModel = GatewayEngine(agent)
             else:
                 engine = LocalModel(DeploymentConfig(**args))
                 engine.load()

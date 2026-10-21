@@ -6,6 +6,8 @@ stored assistant answers. No model is imported or started by this module.
 
 from __future__ import annotations
 
+from typing import Any
+
 import hashlib
 from importlib.resources import files
 import json
@@ -48,10 +50,10 @@ class ExampleCatalog:
     """Load and verify a finite manifest; request paths never become file paths."""
 
     def __init__(self, directories: str | Path | list[str | Path] | tuple[str | Path, ...]):
-        self.entries = {}
-        self.images = {}
-        self.sources = {}
-        self._regions = {}
+        self.entries: dict[str, Any] = {}
+        self.images: dict[str, Any] = {}
+        self.sources: dict[str, Any] = {}
+        self._regions: dict[str, Any] = {}
         if isinstance(directories, (str, Path)):
             directories = [directories]
         if not directories:

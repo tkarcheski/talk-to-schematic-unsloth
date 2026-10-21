@@ -1,4 +1,5 @@
 """Validated finite training slice; resumes only checkpoints bound to the same plan."""
+from importlib import import_module
 import argparse
 import hashlib
 import json
@@ -66,6 +67,6 @@ if __name__ == '__main__':
         try:
             from .public_research import report_failure
         except ImportError:
-            from public_research import report_failure
+            report_failure = import_module("public_research").report_failure
         report_failure(error)
         raise SystemExit(1)

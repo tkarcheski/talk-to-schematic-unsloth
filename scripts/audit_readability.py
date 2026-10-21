@@ -70,7 +70,7 @@ def source_name_value_labels(source: Path, page: int) -> dict[str, list[dict]]:
     sheet = schematic.findall("./sheets/sheet")[page - 1]
     parts = {part.get("name"): part for part in schematic.findall("./parts/part")}
     libraries = {library.get("name"): library for library in schematic.findall("./libraries/library")}
-    labels = {}
+    labels: dict[str, list[dict]] = {}
     for instance in sheet.findall("./instances/instance"):
         part = parts[instance.get("part")]
         library = libraries[part.get("library")]
@@ -78,7 +78,7 @@ def source_name_value_labels(source: Path, page: int) -> dict[str, list[dict]]:
         gate = next(node for node in device_set.findall("./gates/gate") if node.get("name") == instance.get("gate"))
         symbol = next(node for node in library.findall("./symbols/symbol") if node.get("name") == gate.get("symbol"))
         angle, mirrored = _rotation(instance.get("rot", "R0"))
-        transform = (float(instance.get("x")), float(instance.get("y")), angle, mirrored)
+        transform = (float(instance.attrib["x"]), float(instance.attrib["y"]), angle, mirrored)
         substitutions = {"NAME": part.get("name"), "VALUE": part.get("value") or part.get("deviceset")}
         nodes = [(node, transform) for node in symbol.findall("text") if node.text in {">NAME", ">VALUE"}]
         nodes += [(node, IDENTITY) for node in instance.findall("attribute") if node.get("name") in {"NAME", "VALUE"}]
@@ -87,9 +87,9 @@ def source_name_value_labels(source: Path, page: int) -> dict[str, list[dict]]:
             drawing.primitive(node, placement, substitutions, instance.get("smashed") == "yes")
             if not drawing.elements:
                 continue
-            kind = node.get("name") if node.tag == "attribute" else node.text[1:]
+            kind = node.get("name") if node.tag == "attribute" else (node.text or "")[1:]
             rendered = text_record(ET.fromstring(drawing.elements[0]))
-            labels.setdefault(part.get("name"), []).append({
+            labels.setdefault(part.attrib["name"], []).append({
                 "kind": kind, "gate": instance.get("gate"),
                 "source": {"node": node.tag, "x_mm": float(node.get("x", "0")), "y_mm": float(node.get("y", "0")),
                            "size_mm": float(node.get("size", "1.778")), "rotation": node.get("rot", "R0"),

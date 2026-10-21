@@ -20,8 +20,16 @@ repos:
         language: system
         stages: [commit-msg]
         always_run: true
+      - id: ai-pilled-checks
+        name: ai-pilled comprehensive staged checks
+        entry: uv run --locked ai-pilled hook pre-commit
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
       - id: ai-pilled-scan
         name: ai-pilled staged credential scan
+        stages: [pre-push]
         entry: uv run --locked ai-pilled scan
         language: system
         pass_filenames: false
