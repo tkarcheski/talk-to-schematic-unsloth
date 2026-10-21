@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "commands": {
+    "test": [
+      "uv",
+      "run",
+      "--locked",
+      "pytest",
+      "-q"
+    ],
+    "lint": [
+      "uv",
+      "run",
+      "--locked",
+      "ruff",
+      "check",
+      "."
+    ]
+  },
+  "protected_branches": [
+    "main",
+    "master"
+  ],
+  "require_tests": true,
+  "timeout": 300,
+  "aggressiveness": "normal",
+  "review_on_commit": false,
+  "review_checks_on_commit": false,
+  "audit_dependencies_on_change": false
+}

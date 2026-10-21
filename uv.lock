@@ -3,6 +3,11 @@ revision = 3
 requires-python = "==3.13.*"
 
 [[package]]
+name = "ai-pilled"
+version = "0.1.0"
+source = { git = "https://github.com/tkarcheski/ai-pilled.git?rev=798fee64662e844afa4b38da824eb2aa928be280#798fee64662e844afa4b38da824eb2aa928be280" }
+
+[[package]]
 name = "cfgv"
 version = "3.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -282,6 +287,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "ai-pilled" },
     { name = "coverage" },
     { name = "jinja2" },
     { name = "pre-commit" },
@@ -294,6 +300,7 @@ requires-dist = [{ name = "pillow", specifier = ">=11,<13" }]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "ai-pilled", git = "https://github.com/tkarcheski/ai-pilled.git?rev=798fee64662e844afa4b38da824eb2aa928be280" },
     { name = "coverage", specifier = ">=7,<8" },
     { name = "jinja2", specifier = ">=3.1,<4" },
     { name = "pre-commit", specifier = ">=4,<5" },

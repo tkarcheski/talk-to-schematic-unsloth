@@ -13,6 +13,12 @@ repos:
         exclude: ^data/manifest\.json$
   - repo: local
     hooks:
+      - id: ai-pilled-scan
+        name: ai-pilled staged credential scan
+        entry: uv run --locked ai-pilled scan
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: ruff
         name: Ruff correctness checks
         entry: uv run --locked ruff check

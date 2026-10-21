@@ -24,3 +24,4 @@ unsloth_compiled_cache/
 node_modules/
 message-board.md
 data/sparkfun/
+.ai-pilled/

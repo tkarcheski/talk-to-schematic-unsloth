@@ -22,6 +22,7 @@ dev = [
     "coverage>=7,<8",
     "pre-commit>=4,<5",
     "jinja2>=3.1,<4",
+    "ai-pilled",
 ]
 
 [tool.setuptools]
@@ -51,3 +52,6 @@ extend-exclude = ["data", "outputs", "results"]
 
 [tool.ruff.lint]
 select = ["E9", "F63", "F7", "F82"]
+
+[tool.uv.sources]
+ai-pilled = { git = "https://github.com/tkarcheski/ai-pilled.git", rev = "798fee64662e844afa4b38da824eb2aa928be280" }
