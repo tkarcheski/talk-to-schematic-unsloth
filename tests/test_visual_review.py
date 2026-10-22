@@ -179,3 +179,27 @@ def test_output_root_is_runtime_working_directory(review_source, monkeypatch):
     new_output = other / "outputs" / "review"
     visual_review.build(source, new_output, max_side=100)
     assert (new_output / "manifest.json").is_file()
+
+
+@pytest.mark.parametrize("field", ["family_id", "split", "provenance"])
+def test_rejects_duplicate_json_fields_with_source_line(review_source, field):
+    source, output, row = review_source
+    # Keep the ambiguous row outside the selected prefix too: all raw input must
+    # be parsed strictly, including nested objects and unselected records.
+    second = copy.deepcopy(row)
+    second["id"] = "second"
+    payload = json.dumps(second)
+    payload = "{" + json.dumps(field) + ":" + json.dumps(second[field]) + "," + payload[1:]
+    source.write_text(json.dumps(row) + "\n\n" + payload)
+    with pytest.raises(ValueError, match=f"Source line 3: Duplicate JSON field: {field}"):
+        visual_review.build(source, output, max_side=100, max_rows=1)
+    assert not output.parent.exists()
+
+
+def test_rejects_nested_duplicate_provenance_hash(review_source):
+    source, output, row = review_source
+    payload = json.dumps(row).replace('"sha256":', '"sha256": "' + "b" * 64 + '", "sha256":', 1)
+    source.write_text(payload)
+    with pytest.raises(ValueError, match="Source line 1: Duplicate JSON field: sha256"):
+        visual_review.build(source, output, max_side=100)
+    assert not output.parent.exists()

@@ -16,6 +16,8 @@ import tempfile
 
 from PIL import Image
 
+from evaluate import _invalid_constant, _unique_object
+
 from schematic_model.training import resolve_image
 
 MAX_PIXELS = 40_000_000
@@ -134,7 +136,10 @@ def build(source: Path, output: Path, *, max_side: int, max_rows: int = 25) -> d
     for line_number, line in enumerate(raw.decode("utf-8").splitlines(), 1):
         if not line.strip():
             continue
-        row = json.loads(line)
+        try:
+            row = json.loads(line, object_pairs_hook=_unique_object, parse_constant=_invalid_constant)
+        except (ValueError, TypeError) as exc:
+            raise ValueError(f"Source line {line_number}: {exc}") from exc
         if not isinstance(row, dict):
             raise ValueError("Source rows must be objects")
         identity = {key: _identity(row.get(key)) for key in ("id", "design_id", "family_id", "split")}
