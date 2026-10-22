@@ -16,7 +16,9 @@ def test_export_preserves_existing_destination(tmp_path):
 def test_export_contains_complete_packaged_skills(tmp_path):
     output = tmp_path / "bundle"
     paths = export_skills(output)
-    assert len(paths) == 3
+    assert len(paths) >= 3
+    assert {"schematic-read", "schematic-trace", "schematic-model-evaluate"} <= {
+        path.parent.name for path in output.glob("*/SKILL.md")}
     for path in output.glob("*/SKILL.md"):
         content = path.read_text()
         assert content.startswith("---\nname: ")
