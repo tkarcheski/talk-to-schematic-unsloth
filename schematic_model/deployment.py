@@ -313,7 +313,7 @@ class LocalModel:
         FastVisionModel.for_inference(model)
         self.model, self.processor, self.torch = model, processor, torch
 
-    def complete(self, model, messages, *, max_tokens=None, temperature=0.0, tools=None):
+    def complete(self, model, messages, *, max_tokens=None, temperature=0.0, tools=None, failure_diagnostic=None):
         payload = {"model": model, "messages": messages,
                    "max_tokens": self.config.max_tokens if max_tokens is None else max_tokens,
                    "temperature": temperature}
@@ -342,7 +342,15 @@ class LocalModel:
         if eos is None:
             eos = self.processor.tokenizer.eos_token_id
         eos_ids = {eos} if isinstance(eos, int) else set(eos or [])
-        answer = final_answer(text, token_ids, eos_ids)
+        try:
+            answer = final_answer(text, token_ids, eos_ids)
+        except InferenceError:
+            # Offline diagnostics are an explicit operator choice. The HTTP API never
+            # supplies this callback, and incomplete text remains an error.
+            if failure_diagnostic is not None:
+                failure_diagnostic({"partial_output": text, "completion_tokens": len(token_ids),
+                                    "ended_with_eos": bool(token_ids and token_ids[-1] in eos_ids)})
+            raise
         return {"output": answer, "finish_reason": "stop", "model": self.config.served_model_name,
                 "usage": {"prompt_tokens": input_length, "completion_tokens": len(token_ids), "total_tokens": input_length + len(token_ids)},
                 "elapsed_seconds": round(time.monotonic() - started, 4), "model_fingerprint": self.fingerprint}

@@ -374,3 +374,22 @@ def test_invalid_adapter_metadata_is_a_validation_error(config, metadata):
     Path(config.model, "adapter_config.json").write_text(json.dumps(metadata))
     with pytest.raises(ValueError):
         deploy.LocalModel(config)
+
+
+def test_failed_generation_diagnostic_is_explicit_and_does_not_return_answer(config):
+    engine, _ = fake_loaded_engine(config)
+    engine.processor.decode = lambda *args, **kwargs: "<think>unfinished"
+    captured = []
+    with pytest.raises(InferenceError):
+        engine.complete("schematic", messages(), max_tokens=16, failure_diagnostic=captured.append)
+    assert captured == [{"partial_output": "<think>unfinished", "completion_tokens": 2, "ended_with_eos": True}]
+    with pytest.raises(InferenceError):
+        engine.complete("schematic", messages(), max_tokens=16)
+    assert len(captured) == 1
+
+
+def test_successful_generation_never_emits_failure_diagnostic(config):
+    engine, _ = fake_loaded_engine(config)
+    captured = []
+    assert engine.complete("schematic", messages(), max_tokens=16, failure_diagnostic=captured.append)["finish_reason"] == "stop"
+    assert captured == []
