@@ -73,6 +73,9 @@ class TrainingConfig:
     rank: int = 16
     gradient_accumulation: int = 4
     save_steps: int = 50
+    eval_steps: int | None = None
+    load_best_model_at_end: bool = False
+    early_stopping_patience: int | None = None
     seed: int = 3407
     resume: str | None = None
     continue_adapter: bool = False
@@ -86,6 +89,16 @@ class TrainingConfig:
         for name in ("max_seq", "max_image_size", "rank", "gradient_accumulation", "save_steps"):
             if getattr(self, name) < 1:
                 raise ValueError(f"{name} must be positive")
+        if self.eval_steps is not None and self.eval_steps < 1:
+            raise ValueError("eval_steps must be positive")
+        if self.load_best_model_at_end:
+            if self.eval_steps is None or self.save_steps != self.eval_steps:
+                raise ValueError("Best loss selection requires eval_steps equal to save_steps")
+            if self.max_steps > 0 and self.max_steps < self.eval_steps:
+                raise ValueError("max_steps must reach at least one evaluation for best loss selection")
+        if self.early_stopping_patience is not None:
+            if self.early_stopping_patience < 1 or not self.load_best_model_at_end:
+                raise ValueError("Early stopping requires positive patience and best loss selection")
         if self.max_steps != -1 and self.max_steps < 1:
             raise ValueError("max_steps must be positive, or -1 to use epochs")
         if self.max_train_rows is not None and self.max_train_rows < 1:
@@ -104,10 +117,60 @@ class TrainingConfig:
             continuation_source(self)
         if self.resume:
             _validate_resume_checkpoint(Path(self.resume))
+            _validate_resume_evaluation(self)
 
     @property
     def effective_revision(self) -> str | None:
         return self.revision or (DEFAULT_REVISION if self.model == DEFAULT_MODEL else None)
+
+
+def evaluation_arguments(config: TrainingConfig) -> dict[str, Any]:
+    """Loss-only evaluation; generated-answer benchmarks remain a separate gate."""
+    if config.eval_steps is None:
+        return {"eval_strategy": "no"}
+    return {
+        "eval_strategy": "steps", "eval_steps": config.eval_steps,
+        "prediction_loss_only": True,
+        "load_best_model_at_end": config.load_best_model_at_end,
+        "metric_for_best_model": "eval_loss", "greater_is_better": False,
+        "restore_callback_states_from_checkpoint": config.early_stopping_patience is not None,
+    }
+
+
+def evaluation_summary(config: TrainingConfig, state, *, require_best: bool = True) -> dict[str, Any]:
+    observations = [{"step": entry.get("step"), "eval_loss": entry["eval_loss"]}
+                    for entry in getattr(state, "log_history", []) if "eval_loss" in entry]
+    for observation in observations:
+        if not math.isfinite(observation["eval_loss"]):
+            raise ValueError("Validation loss is nonfinite")
+    best_checkpoint = getattr(state, "best_model_checkpoint", None)
+    best_metric = getattr(state, "best_metric", None)
+    if config.load_best_model_at_end and require_best:
+        if best_checkpoint is None or best_metric is None or not math.isfinite(best_metric):
+            raise ValueError("Best loss selection completed without a valid evaluated checkpoint")
+    return {
+        "enabled": config.eval_steps is not None,
+        "selection_metric": "eval_loss" if config.load_best_model_at_end else None,
+        "best_checkpoint": best_checkpoint, "best_metric": best_metric,
+        "observations": observations,
+        "scope": "Teacher-forced validation loss only; generated-answer quality is not measured.",
+    }
+
+
+def _validate_resume_evaluation(config: TrainingConfig) -> None:
+    """Bind loss history and restored early-stop state to their recorded recipe."""
+    manifest_path = Path(config.resume or "").parent / "training_manifest.json"
+    try:
+        previous = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeError) as exc:
+        raise ValueError("Resume requires a readable training_manifest.json beside the checkpoint") from exc
+    if not isinstance(previous, dict) or not isinstance(previous.get("config"), dict):
+        raise ValueError("Resume manifest requires a recorded training config")
+    # Manifests from before opt-in evaluation represent the disabled recipe.
+    for key, default in (("eval_steps", None), ("load_best_model_at_end", False),
+                         ("early_stopping_patience", None)):
+        if previous["config"].get(key, default) != getattr(config, key):
+            raise ValueError("Resume evaluation recipe differs from recorded run; start a separate candidate")
 
 
 def continuation_source(config):
@@ -298,12 +361,32 @@ def installed_versions() -> dict[str, str | None]:
     return versions
 
 
+def training_step_budget(config: TrainingConfig, available_rows: int) -> dict[str, Any]:
+    """Mirror Trainer's single-GPU, batch-size-one optimizer-step rounding.
+
+    A final partial accumulation group is an update. Fractional epochs round
+    the total update budget upward; explicit max_steps overrides epochs.
+    """
+    selected_rows = min(available_rows, config.max_train_rows or available_rows)
+    updates_per_epoch = max(math.ceil(selected_rows / config.gradient_accumulation), 1)
+    total_steps = config.max_steps if config.max_steps > 0 else math.ceil(config.epochs * updates_per_epoch)
+    if config.load_best_model_at_end and (config.eval_steps is None or total_steps < config.eval_steps):
+        raise ValueError("Effective training step budget cannot reach the first evaluation for best loss selection")
+    return {
+        "selected_rows": selected_rows, "per_device_train_batch_size": 1, "world_size": 1,
+        "gradient_accumulation_steps": config.gradient_accumulation,
+        "optimizer_steps_per_epoch": updates_per_epoch, "max_optimizer_steps": total_steps,
+        "source": "max_steps" if config.max_steps > 0 else "epochs",
+    }
+
+
 def preflight(config: TrainingConfig) -> dict[str, Any]:
     """Check complete data splits on CPU, without modifying any files."""
     config.validate()
     dataset_hashes = {split: sha256(Path(config.data, filename))
                       for split, filename in (("train", "train.jsonl"), ("validation", "val.jsonl"))}
     train, validation = _read_data(config, expected_hashes=dataset_hashes)
+    step_budget = training_step_budget(config, len(train))
     if config.continue_adapter and config.resume:
         previous = json.loads((Path(config.out) / "training_manifest.json").read_text())
         if {key: value["sha256"] for key, value in previous["datasets"].items()} != dataset_hashes:
@@ -328,6 +411,7 @@ def preflight(config: TrainingConfig) -> dict[str, Any]:
         "schema_version": 1, "status": "preflight",
         "created_at": datetime.now(timezone.utc).isoformat(), "config": asdict(config),
         "model_revision": config.effective_revision, "python": platform.python_version(),
+        "training_step_budget": step_budget,
         "packages": installed_versions(),
         "datasets": {
             split: {"path": str(Path(config.data, filename).resolve()), "sha256": dataset_hashes[split],
@@ -491,16 +575,21 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
                 raise ValueError("Scheduler deadline must be finite")
             callback_type = type("DeadlineCallback", (DeadlineControl, TrainerCallback), {})
             deadline_control = callback_type(deadline)
+        callbacks = [deadline_control] if deadline_control else []
+        if config.early_stopping_patience is not None:
+            from transformers import EarlyStoppingCallback
+            callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))
         trainer = SFTTrainer(
             model=model, processing_class=processor, data_collator=collator,
             train_dataset=train_data, eval_dataset=val_data,
-            callbacks=[deadline_control] if deadline_control else [],
+            callbacks=callbacks,
             args=SFTConfig(
                 output_dir=str(output), per_device_train_batch_size=1, per_device_eval_batch_size=1,
                 gradient_accumulation_steps=config.gradient_accumulation,
                 num_train_epochs=config.epochs, max_steps=config.max_steps,
                 learning_rate=config.lr, warmup_ratio=0.05, lr_scheduler_type="cosine",
-                logging_steps=1, eval_strategy="no", save_steps=config.save_steps, save_total_limit=2,
+                logging_steps=1, save_steps=config.save_steps, save_total_limit=2,
+                **evaluation_arguments(config),
                 optim="adamw_8bit", weight_decay=0.01,
                 bf16=is_bf16_supported(), fp16=not is_bf16_supported(),
                 max_length=config.max_seq, remove_unused_columns=False,
@@ -515,6 +604,8 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
         write_manifest(manifest_path, manifest)
         result = trainer.train(resume_from_checkpoint=config.resume)
         validate_metrics(result.metrics)
+        manifest["validation"] = evaluation_summary(
+            config, trainer.state, require_best=not (deadline_control and deadline_control.triggered))
         if deadline_control and deadline_control.triggered:
             checkpoint = output / f"checkpoint-{trainer.state.global_step}"
             _validate_resume_checkpoint(checkpoint)
@@ -570,6 +661,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--rank", type=int, default=16)
     parser.add_argument("--gradient-accumulation", type=int, default=4)
     parser.add_argument("--save-steps", type=int, default=50)
+    parser.add_argument("--eval-steps", type=int, help="opt-in teacher-forced validation loss interval")
+    parser.add_argument("--load-best-model-at-end", action="store_true",
+                        help="save the lowest validation-loss adapter; requires equal eval/save intervals")
+    parser.add_argument("--early-stopping-patience", type=int,
+                        help="stop after this many unimproved evaluations; requires best loss selection")
     parser.add_argument("--seed", type=int, default=3407)
     parser.add_argument("--resume", metavar="CHECKPOINT")
     parser.add_argument("--continue-adapter", action="store_true", help="train existing local LoRA weights in a new run with a fresh optimizer")
