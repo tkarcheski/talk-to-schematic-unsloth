@@ -125,6 +125,32 @@ def derive(rows):
     return output, dict(sorted(counts.items()))
 
 
+def _verify_source_images(rows, source):
+    """Bind each row image to exactly one declared source-page fingerprint."""
+    for row in rows:
+        provenance = row.get('provenance', {})
+        page = provenance.get('page')
+        declarations = provenance.get('images')
+        if type(page) is not int or page < 1 or not isinstance(declarations, list):
+            raise ValueError('Image provenance requires a page and image records')
+        matches = [item for item in declarations if isinstance(item, dict) and item.get('page') == page]
+        if len(matches) != 1 or not isinstance(matches[0].get('sha256'), str):
+            raise ValueError('Require one image fingerprint for the source page')
+        digest = matches[0]['sha256']
+        if re.fullmatch(r'[0-9a-f]{64}', digest) is None:
+            raise ValueError('Malformed image fingerprint')
+        images = [block for message in row.get('messages', []) for block in message.get('content', [])
+                  if isinstance(block, dict) and block.get('type') == 'image']
+        if len(images) != 1 or not isinstance(images[0].get('image'), str):
+            raise ValueError('Exactly one source image is required')
+        original = Path(images[0]['image'])
+        resolved = original if original.is_absolute() else source.parent / original
+        if not resolved.is_file():
+            raise ValueError('Source image is missing')
+        if hashlib.sha256(resolved.read_bytes()).hexdigest() != digest:
+            raise ValueError('Source image fingerprint differs from page provenance')
+
+
 def build(source: Path, output: Path):
     """Write a new local snapshot; do not alter or overwrite the source."""
     if output.exists():
@@ -133,6 +159,7 @@ def build(source: Path, output: Path):
     rows = load_gold(source)
     if source.read_bytes() != source_bytes:
         raise ValueError('Source changed during loading')
+    _verify_source_images(rows, source)
     probes, counts = derive(rows)
     if not probes:
         raise ValueError('No supported value pairs; inspect source conversation coverage')
@@ -209,6 +236,7 @@ def summarize_probes(rows, records, *, history=None, metadata=None):
     totals = {variant: {'targets': 0, 'attempted': 0, 'completed': 0, 'value_correct': 0,
                         'failed': 0, 'blocked': 0} for variant in variants}
     pairs: dict[str, dict[str, Any]] = {}
+    contexts: dict[str, dict[str, Any]] = {}
     for row in rows:
         diagnostic = row.get('diagnostic', {})
         variant = diagnostic.get('variant')
@@ -222,6 +250,16 @@ def summarize_probes(rows, records, *, history=None, metadata=None):
         pair = pairs.setdefault(source_id, {})
         if variant in pair:
             raise ValueError('Duplicate variant for a diagnostic source')
+        messages = row.get('messages', [])
+        if not messages or messages[0].get('role') != 'system':
+            raise ValueError('Diagnostic requires its source system prompt')
+        for message in messages:
+            _text(message)
+        images = [(index, block) for index, message in enumerate(messages) for block in message['content']
+                  if block['type'] == 'image']
+        if len(images) != 1 or images[0][0] != 1:
+            raise ValueError('Diagnostic requires one image on its first user turn')
+        contexts.setdefault(source_id, {})[variant] = row
         pair[variant] = (row['gold'][target], row.get('family_id'), row.get('split'),
                          diagnostic.get('target_refdes'))
         if history == 'generated':
@@ -247,6 +285,18 @@ def summarize_probes(rows, records, *, history=None, metadata=None):
     for pair in pairs.values():
         if set(pair) != set(variants) or any(value != pair['standalone'] for value in pair.values()):
             raise ValueError('Require complete matched triplets with identical source target gold and split')
+    for triplet in contexts.values():
+        standalone, explicit, contextual = (triplet[variant] for variant in variants)
+        def image_blocks(row):
+            return [block for message in row['messages'] for block in message['content'] if block['type'] == 'image']
+        for row in (explicit, contextual):
+            if (row['messages'][0] != standalone['messages'][0]
+                    or image_blocks(row) != image_blocks(standalone)
+                    or row.get('provenance') != standalone.get('provenance')):
+                raise ValueError('Matched triplet image, system prompt, or provenance differs')
+        if (explicit['messages'][:3] != contextual['messages'][:3]
+                or explicit['gold'][0] != contextual['gold'][0]):
+            raise ValueError('Matched two-turn control context differs')
     report_variants = {variant: {**total, 'completion_rate': total['completed'] / total['targets'],
                                 'value_accuracy': total['value_correct'] / total['targets']}
                        for variant, total in totals.items()}

@@ -1,5 +1,6 @@
 """Diagnostic derivation preserves gold and isolates conversation context."""
 import copy
+import hashlib
 import json
 
 import pytest
@@ -22,7 +23,9 @@ def source_row():
                         message('assistant', 'R2 is marked 22K.')],
            'gold': [{'type': 'value', 'value': '10K'}, {'type': 'value', 'value': '22K'}],
            'provenance': {'repository': 'public/fixture', 'source_path': 'example.sch', 'sha256': 'a' * 64,
-                          'license': 'CC-BY-SA-4.0', 'page': 1, 'evidence_mode': 'image_only_values_and_refusals'}}
+                          'license': 'CC-BY-SA-4.0', 'page': 1,
+                          'images': [{'page': 1, 'sha256': hashlib.sha256(b'fixture image').hexdigest()}],
+                          'evidence_mode': 'image_only_values_and_refusals'}}
     row['messages'][1]['content'].insert(0, {'type': 'image', 'image': 'sheet.png'})
     return row
 
@@ -230,3 +233,40 @@ def test_prediction_cli_binds_metadata_dataset_and_history(tmp_path, source_row,
     with pytest.raises(SystemExit):
         main()
     assert 'different probe dataset' in capsys.readouterr().err
+
+
+@pytest.mark.parametrize('change', ['image', 'system', 'control_question', 'control_answer', 'control_gold'])
+def test_reducer_rejects_unmatched_contexts(source_row, change):
+    from schematic_model.conversation_diagnostics import summarize_probes
+    probes, _ = derive([source_row])
+    if change == 'image':
+        probes[2]['messages'][1]['content'][0]['image'] = 'different.png'
+    elif change == 'system':
+        probes[1]['messages'][0]['content'][0]['text'] = 'A different instruction.'
+    elif change == 'control_question':
+        probes[2]['messages'][1]['content'][1]['text'] = 'Ask about a different component.'
+    elif change == 'control_answer':
+        probes[2]['messages'][2]['content'][0]['text'] = 'Different prior answer.'
+    else:
+        probes[2]['gold'][0]['value'] = '33K'
+    with pytest.raises(ValueError, match='differs'):
+        summarize_probes(probes, benchmark_records(probes), history='gold')
+
+
+@pytest.mark.parametrize('change', ['modified_image', 'duplicate_page', 'missing_page', 'missing_hash'])
+def test_build_requires_unique_matching_image_fingerprint(tmp_path, source_row, change):
+    source = tmp_path / 'source.jsonl'
+    (tmp_path / 'sheet.png').write_bytes(b'fixture image')
+    if change == 'modified_image':
+        (tmp_path / 'sheet.png').write_bytes(b'altered image')
+    elif change == 'duplicate_page':
+        source_row['provenance']['images'].append(copy.deepcopy(source_row['provenance']['images'][0]))
+    elif change == 'missing_page':
+        source_row['provenance']['images'][0]['page'] = 2
+    else:
+        del source_row['provenance']['images'][0]['sha256']
+    source.write_text(json.dumps(source_row) + '\n')
+    output = tmp_path / 'diagnostics'
+    with pytest.raises(ValueError, match='fingerprint'):
+        build(source, output)
+    assert not output.exists()
