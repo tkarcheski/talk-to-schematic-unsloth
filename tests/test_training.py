@@ -192,6 +192,7 @@ def resume_checkpoint(tmp_path):
         (checkpoint / name).write_bytes(b"nonempty binary fixture")
     (checkpoint / "adapter_config.json").write_text('{"peft_type": "LORA", "r": 16}')
     (checkpoint / "trainer_state.json").write_text('{"global_step": 300}')
+    (checkpoint.parent / "training_manifest.json").write_text(json.dumps({"config": {}}))
     return checkpoint
 
 
@@ -440,3 +441,176 @@ def test_collator_decodes_the_verified_bytes_when_path_changes_after_read(datase
 def test_numerical_failure_cannot_be_published_as_completed(value):
     with pytest.raises(RuntimeError, match="nonfinite train_loss"):
         training.validate_metrics({"train_loss": value})
+
+
+@pytest.mark.parametrize("change", [
+    {"eval_steps": 0},
+    {"load_best_model_at_end": True},
+    {"load_best_model_at_end": True, "eval_steps": 25, "save_steps": 50},
+    {"load_best_model_at_end": True, "eval_steps": 50, "max_steps": 10},
+    {"early_stopping_patience": 1},
+    {"early_stopping_patience": 0, "load_best_model_at_end": True, "eval_steps": 50},
+])
+def test_invalid_loss_evaluation_recipe_fails_before_gpu(dataset, change, monkeypatch):
+    gpu = Mock(side_effect=AssertionError("GPU must not be queried"))
+    monkeypatch.setattr(training, "gpu_inventory", gpu)
+    with pytest.raises(ValueError):
+        training.run_training(replace(dataset, **change))
+    gpu.assert_not_called()
+    assert not Path(dataset.out).exists()
+
+
+def test_loss_evaluation_is_opt_in_and_dry_run_records_recipe(dataset, capsys):
+    assert training.evaluation_arguments(dataset) == {"eval_strategy": "no"}
+    assert training.main([
+        "--data", dataset.data, "--out", dataset.out, "--dry-run",
+        "--eval-steps", "10", "--save-steps", "10", "--max-steps", "10", "--load-best-model-at-end",
+        "--early-stopping-patience", "3",
+    ]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["config"]["eval_steps"] == 10
+    assert report["config"]["load_best_model_at_end"] is True
+    assert report["config"]["early_stopping_patience"] == 3
+    assert not Path(dataset.out).exists()
+
+
+def test_loss_history_rejects_nonfinite_or_missing_best_checkpoint(dataset):
+    config = replace(dataset, eval_steps=50, load_best_model_at_end=True)
+    state = SimpleNamespace(log_history=[{"step": 50, "eval_loss": float("nan")}])
+    with pytest.raises(ValueError, match="nonfinite"):
+        training.evaluation_summary(config, state)
+    state.log_history = [{"step": 50, "eval_loss": 0.5}]
+    with pytest.raises(ValueError, match="without a valid evaluated checkpoint"):
+        training.evaluation_summary(config, state)
+    assert training.evaluation_summary(config, state, require_best=False)["best_checkpoint"] is None
+
+
+def test_mocked_training_wires_loss_selection_callback_and_records_history(dataset, monkeypatch):
+    """Exercise the training integration without importing GPU/Transformers packages."""
+    config = replace(dataset, max_steps=100, eval_steps=50, load_best_model_at_end=True, early_stopping_patience=2)
+    model = SimpleNamespace(config=SimpleNamespace(_commit_hash="test-revision"), save_pretrained=Mock())
+    processor = SimpleNamespace(chat_template="fixture", save_pretrained=Mock())
+    state = SimpleNamespace(
+        global_step=100, best_model_checkpoint="checkpoint-50", best_metric=0.3,
+        log_history=[{"step": 50, "eval_loss": 0.3}, {"step": 100, "eval_loss": 0.4}],
+    )
+    trainer = SimpleNamespace(state=state, train=Mock(return_value=SimpleNamespace(metrics={"train_loss": 0.2})),
+                              save_state=Mock())
+    trainer_factory = Mock(return_value=trainer)
+    early_stop = Mock()
+    cuda = SimpleNamespace(
+        is_available=lambda: True, mem_get_info=lambda: (20 * 1024**3, 24 * 1024**3),
+        reset_peak_memory_stats=lambda: None, get_device_name=lambda: "test GPU",
+        max_memory_allocated=lambda: 1, max_memory_reserved=lambda: 2,
+    )
+    modules = {
+        "unsloth": SimpleNamespace(FastVisionModel=SimpleNamespace(
+            from_pretrained=Mock(return_value=(model, processor)), get_peft_model=lambda model, **kw: model,
+            for_training=lambda model: None), is_bf16_supported=lambda: True),
+        "unsloth.trainer": SimpleNamespace(UnslothVisionDataCollator=lambda *a, **kw: NativeCollator(10)),
+        "torch": SimpleNamespace(cuda=cuda, bfloat16="bf16", float16="fp16"),
+        "trl": SimpleNamespace(SFTConfig=lambda **kw: SimpleNamespace(**kw), SFTTrainer=trainer_factory),
+        "transformers": SimpleNamespace(TrainerCallback=object, EarlyStoppingCallback=early_stop),
+    }
+    for key, value in modules.items():
+        monkeypatch.setitem(sys.modules, key, value)
+    monkeypatch.delenv("SCHEMATIC_DEADLINE", raising=False)  # cspell:ignore delenv
+    monkeypatch.setattr(training, "gpu_inventory", lambda: [{"free_mib": 20480}])
+    report = training.run_training(config)
+    kwargs = trainer_factory.call_args.kwargs
+    assert kwargs["args"].eval_strategy == "steps"
+    assert kwargs["args"].eval_steps == kwargs["args"].save_steps == 50
+    assert kwargs["args"].load_best_model_at_end is True
+    assert kwargs["args"].metric_for_best_model == "eval_loss"
+    assert kwargs["args"].greater_is_better is False
+    assert kwargs["args"].prediction_loss_only is True
+    assert kwargs["args"].restore_callback_states_from_checkpoint is True
+    early_stop.assert_called_once_with(early_stopping_patience=2)
+    assert kwargs["callbacks"] == [early_stop.return_value]
+    assert len(kwargs["eval_dataset"]) == 1
+    assert report["status"] == "completed"
+    assert report["validation"]["best_checkpoint"] == "checkpoint-50"
+    assert report["validation"]["best_metric"] == 0.3
+    assert report["validation"]["observations"] == state.log_history
+    assert "quality is not measured" in report["validation"]["scope"]
+    model.save_pretrained.assert_called_once()
+
+
+@pytest.mark.parametrize("recorded", [
+    {"eval_steps": 25},
+    {"load_best_model_at_end": True},
+    {"early_stopping_patience": 3},
+])
+def test_plain_resume_rejects_changed_evaluation_recipe(dataset, resume_checkpoint, monkeypatch, recorded):
+    (resume_checkpoint.parent / "training_manifest.json").write_text(json.dumps({"config": recorded}))
+    gpu = Mock(side_effect=AssertionError("GPU must not be queried"))
+    monkeypatch.setattr(training, "gpu_inventory", gpu)
+    with pytest.raises(ValueError, match="Resume evaluation recipe differs"):
+        training.run_training(replace(dataset, resume=str(resume_checkpoint)))
+    gpu.assert_not_called()
+    assert not Path(dataset.out).exists()
+
+
+def test_plain_resume_accepts_identical_evaluation_recipe(dataset, resume_checkpoint):
+    recipe = {"eval_steps": 50, "load_best_model_at_end": True, "early_stopping_patience": 3}
+    (resume_checkpoint.parent / "training_manifest.json").write_text(json.dumps({"config": recipe}))
+    report = training.preflight(replace(dataset, max_steps=50, resume=str(resume_checkpoint), **recipe))
+    assert report["config"]["early_stopping_patience"] == 3
+
+
+def test_plain_resume_requires_manifest_before_gpu(dataset, resume_checkpoint, monkeypatch):
+    (resume_checkpoint.parent / "training_manifest.json").unlink()
+    gpu = Mock(side_effect=AssertionError("GPU must not be queried"))
+    monkeypatch.setattr(training, "gpu_inventory", gpu)
+    with pytest.raises(ValueError, match="Resume requires a readable training_manifest"):
+        training.run_training(replace(dataset, resume=str(resume_checkpoint)))
+    gpu.assert_not_called()
+    assert not Path(dataset.out).exists()
+
+
+@pytest.mark.parametrize("rows,epochs,limit,explicit,updates,total", [
+    (1, 2.0, None, -1, 1, 2),
+    (4, 1.0, None, -1, 1, 1),
+    (5, 1.0, None, -1, 2, 2),
+    (5, 0.5, None, -1, 2, 1),
+    (5, 0.51, None, -1, 2, 2),
+    (5, 1.01, None, -1, 2, 3),
+    (5, 1.01, 4, -1, 1, 2),
+    (5, 1.0, 99, -1, 2, 2),
+    (1, 0.01, None, 50, 1, 50),
+])
+def test_optimizer_step_budget_matches_single_gpu_remainder_rounding(
+        dataset, rows, epochs, limit, explicit, updates, total):
+    config = replace(dataset, epochs=epochs, max_train_rows=limit, max_steps=explicit)
+    budget = training.training_step_budget(config, rows)
+    assert budget["optimizer_steps_per_epoch"] == updates
+    assert budget["max_optimizer_steps"] == total
+    assert budget["selected_rows"] == min(rows, limit or rows)
+
+
+@pytest.mark.parametrize("row_count,epochs,limit,eval_steps", [
+    (1, 2.0, None, 3),
+    (5, 1.0, 4, 2),
+    (5, 0.5, None, 2),
+])
+def test_epoch_best_selection_refuses_unreachable_evaluation_before_gpu(
+        dataset, monkeypatch, row_count, epochs, limit, eval_steps):
+    source = Path(dataset.data, "train.jsonl")
+    original = json.loads(source.read_text())
+    rows = [dict(original, id=f"training-{index}") for index in range(row_count)]
+    source.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    gpu = Mock(side_effect=AssertionError("GPU must not be queried"))
+    monkeypatch.setattr(training, "gpu_inventory", gpu)
+    config = replace(dataset, epochs=epochs, max_train_rows=limit, eval_steps=eval_steps,
+                     save_steps=eval_steps, load_best_model_at_end=True)
+    with pytest.raises(ValueError, match="cannot reach the first evaluation"):
+        training.run_training(config)
+    gpu.assert_not_called()
+    assert not Path(dataset.out).exists()
+
+
+def test_epoch_best_selection_accepts_evaluation_at_exact_final_step(dataset):
+    config = replace(dataset, epochs=2, eval_steps=2, save_steps=2, load_best_model_at_end=True)
+    report = training.preflight(config)
+    assert report["training_step_budget"]["max_optimizer_steps"] == 2
+    assert not Path(dataset.out).exists()
