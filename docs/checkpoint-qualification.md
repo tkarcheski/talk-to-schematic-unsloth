@@ -29,7 +29,7 @@ paths from the original repository root when qualifying historical runs.
 Missing or mismatched evidence is an error, not a failed model score. Historical
 prediction/report files are never rewritten, and their old scores remain intact.
 
-Seven rates are scored separately, with failed and dependency-blocked turns still
+Nine rates are scored separately, with failed and dependency-blocked turns still
 in the denominators:
 
 | Measurement | Required rate |
@@ -39,8 +39,10 @@ in the denominators:
 | Missing-component refusals | 0.98 |
 | Missing-measurement refusals | 0.98 |
 | Completed final answers | 1.00 |
+| Completed answers without standalone dialogue role labels | 1.00 |
 | Literal values after the first turn | 0.95 |
 | Completed answers after the first turn | 1.00 |
+| Completed follow-up answers without standalone dialogue role labels | 1.00 |
 
 Each measurement requires evidence. Each must also be at least the baseline's
 rate. Follow-up completion covers every turn after the first, including refusals;
@@ -50,6 +52,17 @@ Both supported refusal question families must appear; an absent group or an
 unrecognized refusal question cannot qualify a checkpoint. A value-only probe
 report is useful diagnostics, but needs the full validation refusal coverage for
 this gate.
+
+Transport completion and clean-answer completion are separate. The versioned
+`standalone-dialogue-roles-v1` format check flags lines consisting only of `user`,
+`assistant`, or `system`, case-insensitively, with optional surrounding horizontal
+whitespace and a colon. Historical v3 outputs can reach a stop token and include
+the correct value while continuing fabricated user/assistant dialogue. Such an
+answer remains transport-complete and literal-correct but fails the clean-answer
+gate. Failed/blocked empty outputs also fail clean completion. Reports identify
+the affected turn keys; original outputs and historical scores remain unchanged.
+Ordinary sentences mentioning these words do not trigger the check. This narrow
+grammar does not catch every form of extra dialogue or unsupported claim.
 
 `v2` is the default explicit contextual refusal scorer. `--refusal-scorer v1`
 selects the historical keyword scorer for a separate, clearly labeled report.

@@ -407,3 +407,40 @@ def test_report_and_preservation_cannot_mutate_evaluated_base(evidence):
     assert model_artifacts(base) == fingerprint
     assert not (base / 'qualification.json').exists()
     assert not (base / 'snapshot').exists()
+
+
+@pytest.mark.parametrize('role_line', ['user', 'assistant', 'system', '  USER:  ', '\tAssistant:\r'])
+def test_stopped_literal_correct_dialogue_spill_fails_separate_clean_gate(evidence, role_line):
+    dataset, paths, models, answers = evidence
+    spill = answers[1] + '\n' + role_line + '\nWhat is the value of C11?'
+    write_evidence(dataset, paths[0], models[0], [answers[0], spill, *answers[2:]])
+    report = qualify(evidence)
+    assert report['candidate_metrics']['value.literal_accuracy']['rate'] == 1
+    assert report['candidate_metrics']['completion.rate']['rate'] == 1
+    assert report['candidate_metrics']['completion.clean_rate'] == {'correct': 3, 'total': 4, 'rate': 0.75}
+    assert report['candidate_metrics']['followup.clean_completion_rate']['correct'] == 2
+    assert report['clean_answer_scorer'] == 'standalone-dialogue-roles-v1'
+    assert report['role_spill_keys'] == {'candidate': ['fixture#1'], 'baseline': []}
+    assert not report['qualified']
+
+
+@pytest.mark.parametrize('prose', ['The user requested this label.',
+                                   'The assistant can read this marking.',
+                                   'This is a system reference.',
+                                   'A user: a person reading the schematic.'])
+def test_ordinary_prose_role_words_are_not_dialogue_markers(evidence, prose):
+    dataset, paths, models, answers = evidence
+    write_evidence(dataset, paths[0], models[0], [answers[0], answers[1] + '\n' + prose, *answers[2:]])
+    report = qualify(evidence)
+    assert report['qualified']
+    assert report['candidate_metrics']['completion.clean_rate']['rate'] == 1
+    assert report['role_spill_keys']['candidate'] == []
+
+
+def test_empty_failed_answer_is_not_clean_completion(evidence):
+    dataset, paths, models, answers = evidence
+    write_evidence(dataset, paths[0], models[0], [answers[0], None, *answers[2:]])
+    report = qualify(evidence)
+    assert report['candidate_metrics']['completion.clean_rate']['correct'] == 3
+    assert report['candidate_metrics']['followup.clean_completion_rate']['correct'] == 2
+    assert report['role_spill_keys']['candidate'] == []

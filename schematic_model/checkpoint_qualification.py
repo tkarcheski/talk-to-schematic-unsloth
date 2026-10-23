@@ -12,6 +12,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import shutil
 import tempfile
 
@@ -23,7 +24,10 @@ from schematic_model.inference import image_fingerprints
 FLOORS = {"value.literal_accuracy": 0.95, "refusal.accuracy": 0.98,
           "refusal.missing_component_accuracy": 0.98, "refusal.measurement_accuracy": 0.98,
           "completion.rate": 1.0, "followup.value_literal_accuracy": 0.95,
-          "followup.completion_rate": 1.0}
+          "followup.completion_rate": 1.0, "completion.clean_rate": 1.0,
+          "followup.clean_completion_rate": 1.0}
+CLEAN_ANSWER_SCORER = "standalone-dialogue-roles-v1"
+ROLE_LINE = re.compile(r"^[ \t]*(?:user|assistant|system)[ \t]*:?[ \t\r]*$", re.MULTILINE | re.IGNORECASE)
 
 
 def _digest(raw):
@@ -142,7 +146,9 @@ def _evidence(dataset, predictions, model, rows, image_hashes):
 def _measure(rows, records, refusal_scorer):
     outputs = {key: item["output"] for key, item in records.items()}
     metrics, counts = score(rows, outputs, refusal_scorer=refusal_scorer)
-    followup_values, followup_complete = [], []
+    clean = {key: item["status"] == "success" and ROLE_LINE.search(item["output"]) is None
+             for key, item in records.items()}
+    followup_values, followup_complete, followup_clean = [], [], []
     refusals: dict[str, list[bool]] = {"missing_component": [], "measurement": []}
     for row in rows:
         for turn, label in enumerate(row["gold"]):
@@ -157,19 +163,24 @@ def _measure(rows, records, refusal_scorer):
             if turn == 0:
                 continue
             followup_complete.append(records[key]["status"] == "success")
+            followup_clean.append(clean[key])
             if label["type"] == "value":
                 followup_values.append(grade(label, outputs[key])["value.acc"])
     numerator = {
         "value.literal_accuracy": round(metrics.get("value.acc", 0) * counts.get("value.acc", 0)),
         "refusal.accuracy": round(metrics.get("refuse.acc", 0) * counts.get("refuse.acc", 0)),
         "completion.rate": sum(record["status"] == "success" for record in records.values()),
+        "completion.clean_rate": sum(clean.values()),
         "followup.value_literal_accuracy": sum(followup_values),
         "followup.completion_rate": sum(followup_complete),
+        "followup.clean_completion_rate": sum(followup_clean),
     }
     denominators = {"value.literal_accuracy": counts.get("value.acc", 0),
                     "refusal.accuracy": counts.get("refuse.acc", 0), "completion.rate": len(records),
+                    "completion.clean_rate": len(records),
                     "followup.value_literal_accuracy": len(followup_values),
-                    "followup.completion_rate": len(followup_complete)}
+                    "followup.completion_rate": len(followup_complete),
+                    "followup.clean_completion_rate": len(followup_clean)}
     for kind, values in refusals.items():
         numerator[f"refusal.{kind}_accuracy"] = sum(values)
         denominators[f"refusal.{kind}_accuracy"] = len(values)
@@ -225,6 +236,11 @@ def qualify(dataset: Path, predictions: Path, model: Path, *, baseline_predictio
             raise ValueError("Image changed during qualification")
     return {
         "schema_version": 1, "qualified": not failures, "refusal_scorer": REFUSAL_SCORERS[refusal_scorer],
+        "clean_answer_scorer": CLEAN_ANSWER_SCORER,
+        "clean_answer_scope": "Completed final answers without standalone user/assistant/system role lines "
+                              "(case-insensitive, optional colon). A limited format check, not semantic correctness.",
+        "role_spill_keys": {"candidate": sorted(key for key, item in candidate_records.items() if ROLE_LINE.search(item["output"])),
+                            "baseline": sorted(key for key, item in baseline_records.items() if ROLE_LINE.search(item["output"]))},
         "dataset_sha256": _digest(dataset_raw), "candidate": candidate, "baseline": baseline,
         "candidate_metrics": candidate_metrics, "baseline_metrics": baseline_metrics,
         "floors": FLOORS, "failures": failures,
