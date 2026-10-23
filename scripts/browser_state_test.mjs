@@ -12,6 +12,10 @@ const source = readFileSync(
   new URL("../schematic_model/web/app.js", import.meta.url),
   "utf8",
 );
+const comparisonSource = readFileSync(
+  new URL("../schematic_model/web/comparison.js", import.meta.url),
+  "utf8",
+);
 assert.match(source, /\ninit\(\);\s*$/u);
 const isolatedSource = source.replace(/\ninit\(\);\s*$/u, "");
 const drain = async () => {
@@ -169,6 +173,7 @@ function harness() {
   const context = {
     document,
     AbortController,
+    structuredClone,
     DOMException,
     ResizeObserver: class {
       observe() {}
@@ -193,7 +198,7 @@ function harness() {
     },
   };
   vm.runInNewContext(
-    `${isolatedSource}\nglobalThis.ui = { state, health, controls, fitView, viewForBox, textWords, locateLabel, executeCall, present, reset, submit, openExample, bind };`,
+    `${isolatedSource}\n${comparisonSource}\nglobalThis.ui = { comparison, resetComparison, submitComparison, comparisonControls, state, health, controls, fitView, viewForBox, textWords, locateLabel, executeCall, present, reset, submit, openExample, bind };`,
     context,
   );
   context.ui.bind();
@@ -501,4 +506,161 @@ test("model region labels cannot impersonate verified focus and full sheet clear
   h.ui.executeCall("show_label", { label: "R1" });
   h.ui.present(exampleDoc({ id: "new-board" }));
   assert.equal(h.ui.state.focusedLabel, null);
+});
+
+function comparisonReady(h, history = "shared") {
+  seedReady(h);
+  h.ui.comparison.config = {
+    enabled: true,
+    max_tokens: 64,
+    profiles: [
+      { id: "baseline", label: "Baseline", model: "v1" },
+      { id: "candidate", label: "Candidate", model: "v3" },
+    ],
+  };
+  h.element("compare-a").value = "baseline";
+  h.element("compare-b").value = "candidate";
+  h.element("compare-history").value = history;
+  h.ui.resetComparison();
+}
+function comparisonRequests(h) {
+  return h.requests.filter(
+    (request) => request.path === "/api/comparison/complete",
+  );
+}
+function comparisonAnswer(lane, text = lane ? "R1 is 20k." : "R1 is 10k.") {
+  return {
+    profile: lane ? "candidate" : "baseline",
+    model: lane ? "v3" : "v1",
+    answer: text,
+    identity: "endpoint_reported",
+    model_details: { adapter_sha256: (lane ? "b" : "a").repeat(64) },
+    metrics: {
+      completion_tokens: 5,
+      prompt_tokens: 10,
+      inference_seconds: 2,
+      tokens_per_second: 2.5,
+      timing_scope: "upstream_wall_time",
+    },
+  };
+}
+async function comparePair(h, question = "Read R1.") {
+  h.element("compare-question").value = question;
+  const done = h.ui.submitComparison({ preventDefault() {} });
+  await drain();
+  return { done };
+}
+async function completePair(h, pending) {
+  const start = comparisonRequests(h).length - 1;
+  comparisonRequests(h)[start].resolve(response(comparisonAnswer(0)));
+  await drain();
+  comparisonRequests(h)[start + 1].resolve(response(comparisonAnswer(1)));
+  await finish(h, pending);
+}
+
+test("comparison freezes input before either lane, preserves drafts, and requires shared history choice", async () => {
+  const h = harness();
+  comparisonReady(h);
+  const originalView = plain(h.ui.state.view);
+  const pending = await comparePair(h);
+  assert.equal(comparisonRequests(h).length, 1, "B waits for A");
+  assert.equal(
+    h.element("question").disabled,
+    false,
+    "normal draft remains editable",
+  );
+  h.ui.state.customSystemPrompt = "Changed during generation";
+  h.ui.state.doc.image = "new-image";
+  h.element("compare-question").value = "Unfinished next question";
+  await completePair(h, pending);
+  const [a, b] = comparisonRequests(h).map(body);
+  assert.deepEqual(a.messages, b.messages, "both inputs were frozen before A");
+  assert.equal(
+    a.messages[1].content[0].image_url.url,
+    "data:image/png;base64,AAAA",
+  );
+  assert.equal(a.tools, undefined);
+  assert.equal(h.element("compare-question").value, "Unfinished next question");
+  assert.equal(
+    h.element("compare-send").disabled,
+    true,
+    "shared next turn needs explicit context",
+  );
+  assert.equal(
+    h.ui.state.history.length,
+    0,
+    "comparison cannot change regular chat",
+  );
+  assert.deepEqual(
+    plain(h.ui.state.view),
+    originalView,
+    "comparison cannot navigate",
+  );
+  h.element("compare-use-b").onclick();
+  assert.equal(h.element("compare-send").disabled, false);
+  const next = await comparePair(h, "And R2?");
+  await completePair(h, next);
+  const [nextA, nextB] = comparisonRequests(h).slice(2).map(body);
+  assert.deepEqual(nextA.messages, nextB.messages);
+  assert.equal(nextA.messages[2].content, "R1 is 20k.");
+  assert.match(nextA.messages[0].content, /Changed during generation/u);
+});
+
+test("independent comparison follow-ups contain only their own previous answer", async () => {
+  const h = harness();
+  comparisonReady(h, "independent");
+  await completePair(h, await comparePair(h));
+  assert.equal(h.ui.comparison.awaitingChoice, false);
+  const next = await comparePair(h, "And R2?");
+  await completePair(h, next);
+  const [a, b] = comparisonRequests(h).slice(2).map(body);
+  assert.equal(a.messages[2].content, "R1 is 10k.");
+  assert.equal(b.messages[2].content, "R1 is 20k.");
+  assert.deepEqual(a.messages.at(-1), b.messages.at(-1));
+});
+
+test("failed or cancelled comparison never advances histories or overwrites an edited draft", async () => {
+  for (const cancel of [false, true]) {
+    const h = harness();
+    comparisonReady(h, "independent");
+    const pending = await comparePair(h);
+    h.element("compare-question").value = "Keep my next draft";
+    if (cancel) h.ui.comparison.controller.abort();
+    comparisonRequests(h)[0].reject(
+      cancel
+        ? new DOMException("Stopped", "AbortError")
+        : new Error("Endpoint unavailable"),
+    );
+    await finish(h, pending);
+    assert.equal(
+      comparisonRequests(h).length,
+      1,
+      "unknown/unfinished A must not launch B",
+    );
+    assert.equal(h.element("compare-question").value, "Keep my next draft");
+    assert.deepEqual(plain(h.ui.comparison.histories), [[], []]);
+    assert.equal(h.ui.comparison.pending, false);
+    assert.equal(h.ui.state.pending, false);
+    assert.match(
+      h.element("compare-error").textContent,
+      /not added to either history/u,
+    );
+  }
+});
+
+test("comparison prevents duplicate profiles and bounds failed attempts", () => {
+  const h = harness();
+  comparisonReady(h);
+  h.element("compare-b").value = "baseline";
+  h.ui.comparisonControls();
+  assert.equal(h.element("compare-send").disabled, true);
+  h.element("compare-b").value = "candidate";
+  h.ui.comparison.attempts = 20;
+  h.ui.comparisonControls();
+  assert.equal(h.element("compare-send").disabled, true);
+  assert.equal(h.element("compare-limit").hidden, false);
+  h.element("compare-question").value = "Keep draft across reset";
+  h.ui.resetComparison();
+  assert.equal(h.ui.comparison.attempts, 0);
+  assert.equal(h.element("compare-question").value, "Keep draft across reset");
 });
