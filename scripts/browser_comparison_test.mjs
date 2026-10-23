@@ -160,7 +160,7 @@ try {
   await page.locator("#compare-question").fill("And R2?");
   duplicate = true;
   await page.locator("#compare-send").click();
-  await expect(page.locator(".comparison-warning")).toContainText(
+  await expect(page.locator("#comparison .comparison-warning")).toContainText(
     "same artifact identity",
   );
   assert.deepEqual(requests[2].messages, requests[3].messages);

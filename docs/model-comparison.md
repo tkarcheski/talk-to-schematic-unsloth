@@ -77,5 +77,72 @@ visibly and there is no alternate/cloud fallback.
 
 CPU and scripted-browser tests validate transport, isolation and interaction.
 They do not establish that distinct real models fit together or that a candidate
-is better. Saved benchmark import, correctness annotations, review queues and
-training-feedback export are separate follow-up work for [issue #25](https://github.com/tkarcheski/talk-to-schematic-unsloth/issues/25).
+is better. Correctness annotations, review queues and training-feedback export
+are separate follow-up work for [issue #25](https://github.com/tkarcheski/talk-to-schematic-unsloth/issues/25).
+
+
+## Review saved checkpoint answers
+
+Choose **Compare models → Saved benchmarks**. This works with no loaded model,
+no open schematic and no live comparison configuration. Select the exact benchmark
+dataset JSONL and, for each run, all three files produced by
+`python -m schematic_model.benchmark`: `run.jsonl`, `run.jsonl.meta.json` and
+`run.jsonl.report.json`. The files must retain their matching sidecar names.
+Optional A/B operator labels (for example, v1 and v3) make the lanes easier to
+recognize; the recorded adapter hashes remain visible. Labels are not verified
+model identities. Files are read in the browser; no content is uploaded, stored in browser storage,
+published or converted into training labels. Reloading the page clears them.
+Use HTTPS or localhost for browser SHA-256 support.
+
+Import requires version 1 failure-accounted benchmark reports, identical dataset
+and image hashes, history mode and generation settings, and exact turn-key
+coverage. Prediction bytes must match the report hash, and the report provenance
+must equal the metadata. Duplicate JSON fields, repeated/missing/unknown turn
+keys, contradictory generated-history failures, incomplete successes and partial
+text in scored failure outputs are rejected. A failed import preserves the last
+valid comparison. Limits are 16 MiB per file, 64 MiB total, 5000 turns and 64 turns
+per conversation. These checks establish file consistency; they do not authenticate
+a report or prove that inference used the declared model/preprocessing.
+
+Browse real questions with **All turns**, **Any failed or blocked turn**, either
+lane's exclusive failures, or **Different complete text**. Each pair includes the
+dataset reference answer, recorded finish reason, available tokens/time/rate and
+expandable prior context. Gold history uses the identical dataset reference
+answers. Generated history shows each run's own earlier answers, including
+blocked follow-ups after a failure. Neither mode imports anything into live chat.
+
+Scores are the report's **aggregate recorded metrics**, with denominators. The
+browser does not recompute semantic correctness or assign per-answer verdicts.
+A text difference may be equally correct. A recorded stop does not establish
+correctness or clean termination; a response may still contain spurious role
+markers or other malformed text.
+Artifact hashes are recorded identities; identical adapters are flagged. Base
+model/runtime differences are flagged because they prevent attribution to
+training alone. Raw model/source paths and raw error messages are not displayed.
+A failed generation has no scored answer. Supplemental partial-output sidecars
+are not imported: the current format does not bind them to the report hash, so
+attaching a partial to a model would imply evidence that the files do not supply.
+
+**Inspect source image** accepts deliberately selected original PNG files, up to
+16 MiB, 40 megapixels and 32768 pixels on either axis per image. Choose multiple
+files once to browse their matching conversations without picking a file for each
+question. Each image must match a hash recorded for the dataset. The session cache
+is bounded to 32 images, 64 MiB of source bytes and 80 megapixels in total; matching duplicates do not
+consume extra cache entries. A rejected batch preserves existing previews.
+**Clear previews** releases them. Dataset paths are never fetched or resolved, and an open
+schematic is never substituted for the recorded image. Without a selected match,
+the view explicitly says the source pixels have not been verified in this
+session. The original image preview does not establish how readable the model's resized input was.
+
+Run `npm run test:saved-benchmark` for CPU integrity tests and
+`npm run test:browser-saved` for scripted desktop/mobile browser checks. The latter
+uses artificial responses and does not measure a model. To review existing local
+predictions in the same browser check, deliberately set `SCHEMATIC_SAVED_DATASET`,
+`SCHEMATIC_SAVED_A` and `SCHEMATIC_SAVED_B` to the dataset and two prediction files.
+Their matching sidecars are required. Optional `SCHEMATIC_SAVED_LABEL_A` and
+`SCHEMATIC_SAVED_LABEL_B` provide operator labels for that inspection. `SCHEMATIC_SAVED_IMAGES` optionally
+accepts a JSON array of explicitly selected original PNG paths for hash-checked
+source previews. The test does not resolve paths found in dataset content. Screenshots
+stay in the local test-output
+directory; review them for private content before any publication. Reading such
+existing predictions is distinct from running new inference or re-scoring them.
