@@ -232,6 +232,8 @@ def test_incomplete_resume_preserves_prior_manifest_before_gpu(
     b"not JSON", b"\xff", b"[]", b"null", b"{}", b'{"global_step": true}',
     b'{"global_step": 0}', b'{"global_step": -1}', b'{"global_step": 300.0}',
     b'{"global_step": "300"}', b'{"global_step": 299}',
+    b'{"global_step": NaN}', b'{"global_step": Infinity}',
+    b'{"global_step": 301, "global_step": 300}',
 ])
 def test_invalid_resume_state_preserves_prior_manifest_before_gpu(
         dataset, resume_checkpoint, monkeypatch, content):
@@ -554,7 +556,7 @@ def test_plain_resume_rejects_changed_evaluation_recipe(dataset, resume_checkpoi
 def test_plain_resume_accepts_identical_evaluation_recipe(dataset, resume_checkpoint):
     recipe = {"eval_steps": 50, "load_best_model_at_end": True, "early_stopping_patience": 3}
     (resume_checkpoint.parent / "training_manifest.json").write_text(json.dumps({"config": recipe}))
-    report = training.preflight(replace(dataset, max_steps=50, resume=str(resume_checkpoint), **recipe))
+    report = training.preflight(replace(dataset, max_steps=350, resume=str(resume_checkpoint), **recipe))
     assert report["config"]["early_stopping_patience"] == 3
 
 
@@ -613,4 +615,23 @@ def test_epoch_best_selection_accepts_evaluation_at_exact_final_step(dataset):
     config = replace(dataset, epochs=2, eval_steps=2, save_steps=2, load_best_model_at_end=True)
     report = training.preflight(config)
     assert report["training_step_budget"]["max_optimizer_steps"] == 2
+    assert not Path(dataset.out).exists()
+
+
+@pytest.mark.parametrize("max_steps", [299, 300])
+def test_resume_exhausted_explicit_budget_rejected_before_gpu(
+        dataset, resume_checkpoint, monkeypatch, max_steps):
+    assert_resume_rejected_without_side_effects(
+        replace(dataset, max_steps=max_steps), resume_checkpoint, monkeypatch,
+        "requested budget is exhausted")
+
+
+@pytest.mark.parametrize("max_steps", [301, -1])
+def test_resume_remaining_explicit_budget_and_epoch_mode_preflight(
+        dataset, resume_checkpoint, monkeypatch, max_steps):
+    gpu = Mock(side_effect=AssertionError("preflight must stay on CPU"))
+    monkeypatch.setattr(training, "gpu_inventory", gpu)
+    report = training.preflight(replace(dataset, max_steps=max_steps, resume=str(resume_checkpoint)))
+    assert report["config"]["max_steps"] == max_steps
+    gpu.assert_not_called()
     assert not Path(dataset.out).exists()

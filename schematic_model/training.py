@@ -116,7 +116,9 @@ class TrainingConfig:
         if self.continue_adapter:
             continuation_source(self)
         if self.resume:
-            _validate_resume_checkpoint(Path(self.resume))
+            step = _validate_resume_checkpoint(Path(self.resume))
+            if self.max_steps > 0 and step >= self.max_steps:
+                raise ValueError("Resume checkpoint global_step must be below max_steps; requested budget is exhausted")
             _validate_resume_evaluation(self)
 
     @property
@@ -225,7 +227,7 @@ def prepare_continued_adapter(model, config, source):
     return trained
 
 
-def _validate_resume_checkpoint(checkpoint: Path) -> None:
+def _validate_resume_checkpoint(checkpoint: Path) -> int:
     """Require complete single-GPU PEFT state before any training side effects.
 
     This checks file presence and trainer metadata, not binary deserialization or
@@ -240,13 +242,17 @@ def _validate_resume_checkpoint(checkpoint: Path) -> None:
         artifact = checkpoint / name
         if not artifact.is_file() or artifact.stat().st_size == 0:
             raise ValueError(f"Resume checkpoint requires a nonempty regular file: {name}")
+    from evaluate import _invalid_constant, _unique_object
+
     try:
-        state = json.loads((checkpoint / "trainer_state.json").read_text(encoding="utf-8"))
+        state = json.loads((checkpoint / "trainer_state.json").read_text(encoding="utf-8"),
+                           object_pairs_hook=_unique_object, parse_constant=_invalid_constant)
     except (ValueError, UnicodeError) as exc:
         raise ValueError("Resume checkpoint trainer_state.json is not valid JSON") from exc
     step = state.get("global_step") if isinstance(state, dict) else None
     if type(step) is not int or step <= 0 or step != int(match[1]):
         raise ValueError("Resume checkpoint global_step must be a positive integer matching checkpoint-N")
+    return step
 
 
 def sha256(path: Path) -> str:
