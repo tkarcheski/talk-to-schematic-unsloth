@@ -11,6 +11,7 @@ For the application, start with [Docker Compose](docs/self-hosting.md): mount yo
 | Task | Reference |
 |---|---|
 | Open the schematic viewer and chat with a local model | [Serve and chat](#load-the-adapter-and-chat), [viewer controls](#schematic-viewer) |
+| Compare two configured models on the same schematic | [Live answer comparison](docs/model-comparison.md) |
 | Try the UI without loading a model | [Scripted UI preview](#schematic-viewer) (fixed responses, not AI output) |
 | Set up CPU development | [Install and check](#install-and-check) |
 | Train or inspect a run | [Training](#train-on-the-4090), [current training findings](docs/validation/v3-regression.md) |

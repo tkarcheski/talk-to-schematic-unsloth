@@ -1109,3 +1109,136 @@ a {
   gap: 12px;
   flex-wrap: wrap;
 }
+
+.comparison-dialog {
+  width: min(1280px, calc(100vw - 32px));
+  max-height: 94vh;
+  padding: 24px;
+  color: var(--text);
+  background: var(--panel);
+  overflow: auto;
+}
+.comparison-header,
+.comparison-options,
+.comparison-choice,
+.comparison-progress {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.comparison-header {
+  justify-content: space-between;
+}
+.comparison-options label {
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
+}
+.comparison-options select {
+  max-width: 100%;
+}
+.comparison-source {
+  margin-block: 16px;
+}
+.comparison-source img {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: white;
+}
+.comparison-lanes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+.comparison-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  overflow-wrap: anywhere;
+}
+.comparison-card pre {
+  white-space: pre-wrap;
+  max-height: 360px;
+  overflow: auto;
+}
+.comparison-answer {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+.comparison-choice {
+  padding-block: 16px;
+}
+.comparison-progress {
+  padding-block: 12px;
+}
+.comparison-dialog [hidden] {
+  display: none;
+}
+.comparison-turn {
+  margin-block: 24px;
+}
+#compare-error,
+.comparison-warning {
+  color: var(--gold);
+}
+@media (max-width: 860px) {
+  .comparison-lanes {
+    grid-template-columns: 1fr;
+  }
+  .comparison-dialog {
+    padding: 16px;
+  }
+}
+.comparison-dialog {
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+}
+.comparison-dialog::backdrop {
+  background: rgb(0 0 0 / 65%);
+  backdrop-filter: blur(3px);
+}
+.comparison-dialog button,
+.comparison-dialog select {
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--panel-raised);
+  color: var(--text);
+}
+.comparison-dialog button:hover:not(:disabled) {
+  border-color: var(--cyan);
+}
+.comparison-dialog .mode-note {
+  padding-inline: 0;
+}
+.comparison-dialog .composer {
+  margin-inline: 0;
+}
+.comparison-header {
+  position: sticky;
+  top: -24px;
+  padding-block: 12px;
+  background: var(--panel);
+  z-index: 2;
+}
+.comparison-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+#compare-send {
+  background: var(--cyan);
+  border-color: var(--cyan);
+  color: var(--bg);
+  font-weight: 650;
+}
+@media (max-width: 860px) {
+  .comparison-header {
+    top: -16px;
+  }
+  .comparison-options label {
+    width: 100%;
+  }
+}
