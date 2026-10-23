@@ -356,7 +356,7 @@ class LocalModel:
                 "elapsed_seconds": round(time.monotonic() - started, 4), "model_fingerprint": self.fingerprint}
 
 
-def make_server(engine, port: int = 8891, *, examples=None, agent=None, bind="127.0.0.1") -> HTTPServer:
+def make_server(engine, port: int = 8891, *, examples=None, agent=None, comparison=None, bind="127.0.0.1") -> HTTPServer:
     """Bound concurrent connections while serializing GPU work; caller owns lifetime."""
     generation_lock = threading.Lock()
 
@@ -439,6 +439,8 @@ def make_server(engine, port: int = 8891, *, examples=None, agent=None, bind="12
                 self.send_json(200, agent.describe() if agent else {"enabled": False, "provider": "embedded", "network": "disabled", "tools": [], "max_steps": 0})
             elif self.path == "/api/view-tools":
                 self.send_json(200, {"tools": VIEW_TOOLS, "instructions": VIEWER_INSTRUCTIONS})
+            elif self.path == "/api/comparison/config":
+                self.send_json(200, comparison.describe() if comparison else {"enabled": False, "profiles": []})
             elif self.path == "/v1/models":
                 self.send_json(200, {"object": "list", "data": [{"id": engine.config.served_model_name, "object": "model", "owned_by": "local"}]})
             else:
@@ -468,7 +470,7 @@ def make_server(engine, port: int = 8891, *, examples=None, agent=None, bind="12
                     self.send_json(404, {"error": {"message": "Unknown endpoint"}})
 
         def do_POST(self):
-            if self.path not in {"/v1/chat/completions", "/api/agent/chat"}:
+            if self.path not in {"/v1/chat/completions", "/api/agent/chat", "/api/comparison/complete"}:
                 self.send_json(404, {"error": {"message": "Unknown endpoint"}})
                 return
             if not self.valid_host():
@@ -495,6 +497,23 @@ def make_server(engine, port: int = 8891, *, examples=None, agent=None, bind="12
                 if len(body) != length:
                     raise ValueError("incomplete request body")
                 payload = json.loads(body, object_pairs_hook=_unique_object)
+                if self.path == "/api/comparison/complete":
+                    if comparison is None:
+                        self.send_json(409, {"error": {"message": "Comparison profiles are not configured"}})
+                        return
+                    if not generation_lock.acquire(blocking=False):
+                        self.send_json(503, {"error": {"message": "Inference is busy; retry when idle"}})
+                        return
+                    from .comparison import ComparisonError
+                    try:
+                        result = comparison.complete(payload)
+                    except ComparisonError as exc:
+                        self.send_json(422, {"error": {"message": str(exc)}})
+                        return
+                    finally:
+                        generation_lock.release()
+                    self.send_json(200, result)
+                    return
                 if self.path == "/api/agent/chat":
                     if agent is None:
                         self.send_json(409, {"error": {"message": "Agent gateway is not configured"}})
@@ -581,6 +600,8 @@ def main(argv=None):
     gateway.add_argument("--bind", choices=("127.0.0.1", "0.0.0.0"), default="127.0.0.1",
                          help="0.0.0.0 is for a private container network; publish only to host loopback")
     gateway.add_argument("--examples", action="append")
+    for service in (serve, gateway):
+        service.add_argument("--comparison-config", help="operator-configured private answer-only comparison profiles")
     bundle = commands.add_parser("bundle", help="copy an adapter and bind it to a local base model")
     bundle.add_argument("--model", required=True)
     bundle.add_argument("--base-model", required=True)
@@ -597,6 +618,11 @@ def main(argv=None):
             if examples is not None:
                 from .web_ui import ExampleCatalog
                 examples = ExampleCatalog(examples)
+            comparison_config = args.pop("comparison_config")
+            comparison = None
+            if comparison_config:
+                from .comparison import ComparisonRuntime
+                comparison = ComparisonRuntime(_read_object(Path(comparison_config)))
             agent = None
             if command == "gateway":
                 from .agent import AgentConfig, AgentRuntime, GatewayEngine
@@ -605,7 +631,7 @@ def main(argv=None):
             else:
                 engine = LocalModel(DeploymentConfig(**args))
                 engine.load()
-            with make_server(engine, port, examples=examples, agent=agent, bind=bind) as server:
+            with make_server(engine, port, examples=examples, agent=agent, comparison=comparison, bind=bind) as server:
                 print(json.dumps({"url": f"http://127.0.0.1:{server.server_port}/v1", "provenance": engine.provenance}), flush=True)
                 try:
                     server.serve_forever()

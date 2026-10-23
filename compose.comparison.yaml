@@ -1,0 +1,11 @@
+# Add configured private inference profiles; this does not start extra models.
+services:
+  gateway:
+    command: [deploy, gateway, --config, /config/agent.json, --comparison-config, /config/comparison.json, --bind, 0.0.0.0, --port, '8893']
+    volumes:
+      - type: bind
+        source: ${SCHEMATIC_COMPARISON_CONFIG:?Set the private comparison config file}
+        target: /config/comparison.json
+        read_only: true
+        bind:
+          create_host_path: false
