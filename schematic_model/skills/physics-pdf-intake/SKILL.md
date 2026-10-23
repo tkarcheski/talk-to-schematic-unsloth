@@ -72,3 +72,17 @@ Under the operator's automated-data policy, the agent may verify the cited sourc
 Preserve proposed prose separately from accepted answers. A local model may draft explanations; model agreement alone is not verification. The current vision trainer requires an image in each conversation: render the cited page or generate a verified circuit image, check readability at the model input resolution, and cite which evidence supports the task. A text-only physics curriculum needs an explicitly supported training path; do not attach an unrelated image just to pass validation.
 
 Make a separate candidate dataset, keep frozen benchmarks unchanged, and evaluate on independent boards before changing defaults. The intake command performs the extraction and arithmetic stage; the agent then routes verified items into candidate construction and the existing fine-tuning/evaluation workflow. The command itself does not start training, publish data, or change GPU residency.
+
+## Optional offline human review
+
+Build a private review pack from an unchanged intake directory. Pin the exact `manifest.json` and `proposals.json` SHA-256 values after checking the intended source; pass those values explicitly:
+
+```sh
+python -m schematic_model.physics_review --intake data/external/physics-unit --manifest-sha256 MANIFEST_SHA256 --proposals-sha256 PROPOSALS_SHA256 --out outputs/physics-review
+```
+
+Open `outputs/physics-review/index.html` locally. The builder reruns bounded Poppler text extraction and verifies the PDF, plan, page text and proposal records before rendering at most twenty pages, each at most 1600 pixels on its longest side. It refuses changed evidence, unsupported metadata, symlinked files, existing output and paths outside `outputs/`. Different Poppler extraction results require a fresh intake and new pins, not a bypass. Pack directories use mode 0700 and files 0600. No network or model is used.
+
+Inspect each cited page, the proposed answer, exact rational arithmetic (where available), assumptions, source attribution and license evidence. Choose Accept, Reject or Needs correction and add notes. Initial decisions are Unreviewed; intake AI and human states remain separate, and supplemental review files are not imported. These are proposals, not certified answers.
+
+Decisions remain only in tab memory until **Export review** is clicked; reload discards them. Export downloads JSON binding each decision to the exact intake, source, proposal and rendered-page hashes. Keep that download private: browser download destinations and permissions are controlled by the browser, not the pack. A download is an explicit user-entered review record, not authenticated identity, a training authorization or automatic dataset conversion. Scripted browser checks must never be described as human review. This tool does not import exported decisions, assign splits, train or change model defaults.
