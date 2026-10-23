@@ -9,11 +9,13 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from contextlib import ExitStack
 import json
 import os
 from pathlib import Path
 import sys
 import time
+from typing import Any
 
 from evaluate import PROFILES, _write_report, gate_failures, load, load_gold, score, strip, validate_gold_rows
 from schematic_model.deployment import DeploymentConfig, LocalModel
@@ -90,11 +92,18 @@ def _model_paths(directory: Path, seen=None) -> list[Path]:
 
 
 def run_benchmark(config: DeploymentConfig, dataset: str, output: str, *, profile: str,
-                  history: str = "gold", resume: bool = False, engine=None) -> dict:
+                  history: str = "gold", resume: bool = False, engine=None,
+                  diagnostics: str | None = None, diagnostic_chars: int = 4096,
+                  diagnostic_records: int = 100) -> dict:
     output_path, dataset_path = Path(output).resolve(), Path(dataset).resolve()
     metadata = output_path.with_suffix(output_path.suffix + ".meta.json")
     report_path = output_path.with_suffix(output_path.suffix + ".report.json")
     destinations = [output_path, metadata, report_path]
+    if not 1 <= diagnostic_chars <= 16384 or not 1 <= diagnostic_records <= 1000:
+        raise ValueError("Diagnostic limits must be 1..16384 characters and 1..1000 records")
+    diagnostic_path = Path(diagnostics).resolve() if diagnostics is not None else None
+    if diagnostic_path is not None:
+        destinations.append(diagnostic_path)
     protected = [dataset_path, *_model_paths(Path(config.model))]
     # An earlier binding still identifies images if the current dataset became malformed.
     if metadata.is_file():
@@ -109,8 +118,36 @@ def run_benchmark(config: DeploymentConfig, dataset: str, output: str, *, profil
             pass
     _check_destinations(destinations, protected)
     try:
-        return _run_benchmark(config, dataset, output, profile=profile, history=history,
-                              resume=resume, engine=engine, protected=protected)
+        with ExitStack() as stack:
+            diagnostic_sink = None
+            if diagnostic_path is not None:
+                # Exclusive creation prevents overwriting earlier private evidence;
+                # restrictive mode applies from creation, independent of umask.
+                # cspell:ignore WRONLY CREAT
+                descriptor = os.open(diagnostic_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                diagnostic_stream = stack.enter_context(os.fdopen(descriptor, "w", encoding="utf-8"))
+                written = 0
+
+                def diagnostic_sink(key, detail):
+                    nonlocal written
+                    if written >= diagnostic_records:
+                        return
+                    text = detail.get("partial_output")
+                    text = text if isinstance(text, str) else ""
+                    record = {"key": key, "partial_output": text[:diagnostic_chars],
+                              "truncated": len(text) > diagnostic_chars,
+                              "purpose": "failure-diagnosis-only; never scored"}
+                    for field in ("completion_tokens", "ended_with_eos"):
+                        value = detail.get(field)
+                        if type(value) is (bool if field == "ended_with_eos" else int):
+                            record[field] = value
+                    diagnostic_stream.write(json.dumps(record, allow_nan=False) + "\n")
+                    diagnostic_stream.flush()
+                    os.fsync(diagnostic_stream.fileno())
+                    written += 1
+            return _run_benchmark(config, dataset, output, profile=profile, history=history,
+                                  resume=resume, engine=engine, protected=protected,
+                                  diagnostic_sink=diagnostic_sink, diagnostic_path=diagnostic_path)
     except Exception:
         # A stale passing report must not survive a failed rerun. Check aliases again
         # because files may have changed since preflight; never replace evidence.
@@ -120,7 +157,8 @@ def run_benchmark(config: DeploymentConfig, dataset: str, output: str, *, profil
 
 
 def _run_benchmark(config: DeploymentConfig, dataset: str, output: str, *, profile: str,
-                   history: str, resume: bool, engine, protected: list[Path]) -> dict:
+                   history: str, resume: bool, engine, protected: list[Path],
+                   diagnostic_sink=None, diagnostic_path: Path | None = None) -> dict:
     config.validate()
     if profile not in PROFILES or history not in {"gold", "generated"}:
         raise ValueError("Unknown benchmark profile or history policy")
@@ -148,7 +186,8 @@ def _run_benchmark(config: DeploymentConfig, dataset: str, output: str, *, profi
                "failure_policy": "empty-answer; generated history blocks dependent turns"}
     metadata = output_path.with_suffix(output_path.suffix + ".meta.json")
     report_path = output_path.with_suffix(output_path.suffix + ".report.json")
-    _check_destinations([output_path, metadata, report_path], protected)
+    _check_destinations([output_path, metadata, report_path] +
+                        ([diagnostic_path] if diagnostic_path is not None else []), protected)
     if output_path.exists() or metadata.exists():
         if not resume or not metadata.is_file() or json.loads(metadata.read_text()) != binding:
             raise ValueError("Resume provenance differs; use a fresh benchmark output")
@@ -188,9 +227,13 @@ def _run_benchmark(config: DeploymentConfig, dataset: str, output: str, *, profi
                 else:
                     turn_started = time.monotonic()
                     try:
-                        result = client.complete(config.served_model_name, conversation,
-                                                 max_tokens=config.max_tokens, temperature=0.0)
+                        options: dict[str, Any] = {"max_tokens": config.max_tokens, "temperature": 0.0}
+                        if diagnostic_sink is not None:
+                            options["failure_diagnostic"] = lambda detail: diagnostic_sink(key, detail)
+                        result = client.complete(config.served_model_name, conversation, **options)
                         if result.get("finish_reason") != "stop" or not isinstance(result.get("output"), str) or not strip(result["output"]):
+                            if diagnostic_sink is not None:
+                                diagnostic_sink(key, {"partial_output": result.get("output")})
                             raise InferenceError("Model returned no complete final answer")
                         record = {**result, "key": key, "status": "success", "attempted": True,
                                   "output": strip(result["output"])}
@@ -227,6 +270,9 @@ def main(argv=None):
     parser.add_argument("--profile", choices=PROFILES, required=True)
     parser.add_argument("--history", choices=("gold", "generated"), default="gold")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--diagnostics", help="Opt in to private failed text at a NEW local file (prefer ignored outputs/); never scored")
+    parser.add_argument("--diagnostic-chars", type=int, default=4096)
+    parser.add_argument("--diagnostic-records", type=int, default=100)
     parser.add_argument("--served-model-name", default="schematic")
     parser.add_argument("--max-seq", type=int, default=8192)
     parser.add_argument("--max-image-size", type=int, default=1024)
@@ -236,8 +282,9 @@ def main(argv=None):
     parser.add_argument("--min-free-vram-gb", type=float, default=10)
     args = vars(parser.parse_args(argv))
     dataset, output, profile, history, resume = (args.pop(key) for key in ("data", "out", "profile", "history", "resume"))
+    diagnostics = {key: args.pop(key) for key in ("diagnostics", "diagnostic_chars", "diagnostic_records")}
     try:
-        report = run_benchmark(DeploymentConfig(**args), dataset, output, profile=profile, history=history, resume=resume)
+        report = run_benchmark(DeploymentConfig(**args), dataset, output, profile=profile, history=history, resume=resume, **diagnostics)
     except (ValueError, OSError, RuntimeError, ImportError) as exc:
         print(f"benchmark infrastructure/data failure: {exc}", file=sys.stderr)
         return 2

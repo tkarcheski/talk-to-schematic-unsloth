@@ -210,3 +210,63 @@ def test_atomic_writer_cannot_overwrite_image_at_fixed_temporary_name(case):
     report = run_benchmark(config, str(dataset), str(output), profile="real-vision", engine=Engine())
     assert report["successful_turns"] == 3
     assert collision.read_bytes() == original
+
+
+def test_opt_in_diagnostics_are_bounded_private_and_never_scored(case):
+    config, dataset, output = case
+    diagnostic = output.parent / "private.jsonl"
+    engine = Engine()
+    engine.complete = lambda *args, **kwargs: {"output": "10k plus unfinished text", "finish_reason": "length"}
+    report = run_benchmark(config, str(dataset), str(output), profile="real-vision", engine=engine,
+                           diagnostics=str(diagnostic), diagnostic_chars=5, diagnostic_records=2)
+    records = [json.loads(line) for line in diagnostic.read_text().splitlines()]
+    assert len(records) == 2
+    assert records[0]["partial_output"] == "10k p"
+    assert records[0]["truncated"] is True
+    assert diagnostic.stat().st_mode & 0o777 == 0o600
+    assert report["failed_turns"] == 3 and report["metrics"]["value.acc"] == 0
+    assert "unfinished" not in output.read_text()
+    assert "partial_output" not in json.dumps(report)
+
+
+def test_failed_engine_callback_whitelists_fields_and_preserves_failure(case):
+    config, dataset, output = case
+    diagnostic = output.parent / "private.jsonl"
+    engine = Engine()
+
+    def complete(*args, failure_diagnostic, **kwargs):
+        failure_diagnostic({"partial_output": "unfinished", "completion_tokens": 42,
+                            "ended_with_eos": False, "messages": "private input", "auth": "secret"})
+        raise InferenceError("No end token")
+
+    engine.complete = complete
+    report = run_benchmark(config, str(dataset), str(output), profile="real-vision", engine=engine,
+                           diagnostics=str(diagnostic), history="generated")
+    records = [json.loads(line) for line in diagnostic.read_text().splitlines()]
+    assert len(records) == 1
+    assert records[0]["completion_tokens"] == 42 and records[0]["ended_with_eos"] is False
+    assert "secret" not in diagnostic.read_text() and "private input" not in diagnostic.read_text()
+    assert report["failed_turns"] == 3
+
+
+def test_diagnostics_refuse_existing_file_and_evidence_alias(case):
+    config, dataset, output = case
+    existing = output.parent / "private.jsonl"
+    existing.write_text("prior private evidence")
+    with pytest.raises(FileExistsError):
+        run_benchmark(config, str(dataset), str(output), profile="real-vision", engine=Engine(),
+                      diagnostics=str(existing))
+    assert existing.read_text() == "prior private evidence"
+    with pytest.raises(ValueError, match="aliases protected"):
+        run_benchmark(config, str(dataset), str(output), profile="real-vision", engine=Engine(),
+                      diagnostics=str(dataset))
+
+
+@pytest.mark.parametrize("limit", [0, 16385])
+def test_diagnostic_character_limit_is_validated_before_generation(case, limit):
+    config, dataset, output = case
+    engine = Engine()
+    with pytest.raises(ValueError, match="Diagnostic limits"):
+        run_benchmark(config, str(dataset), str(output), profile="real-vision", engine=engine,
+                      diagnostic_chars=limit)
+    assert not engine.calls
