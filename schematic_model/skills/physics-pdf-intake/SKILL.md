@@ -19,8 +19,10 @@ Useful starting points, subject to checking the downloaded bytes:
 |---|---|---|
 | [Kuphaldt, DC](https://www.ibiblio.org/kuphaldt/electricCircuits/DC/DC.pdf) | DC circuit analysis and electrical fundamentals | CC BY 4.0 appendix, PDF page 545 in the checked 557-page edition |
 | [Kuphaldt, Reference](https://www.ibiblio.org/kuphaldt/electricCircuits/Ref/REF.pdf) | Circuit laws, time constants, units, SPICE examples | CC BY 4.0 appendix, PDF page 167 in the checked 172-page edition |
+| [Kuphaldt, AC](https://www.ibiblio.org/kuphaldt/electricCircuits/AC/AC.pdf) | Fields, reactance, resonance, filters, transmission lines | CC BY 4.0 appendix, PDF page 562 in the checked 574-page edition |
+| [Kuphaldt, Semiconductors](https://www.ibiblio.org/kuphaldt/electricCircuits/Semi/SEMI.pdf) | Device physics, diodes, transistors, amplifiers | CC BY 4.0 appendix, PDF page 526 in the checked 535-page edition |
 
-Retain attribution and indicate generated/modified material. Do not assume OpenStax books share one blanket license; verify the exact file and intended use. Sources with terms outside the collector's supported licenses require a separate reviewed path, not relabeling.
+Retain attribution and indicate generated/modified material. Check publisher terms for AI ingestion and training as well as the PDF license. Do not assume OpenStax books share one blanket license; verify the exact file and intended use. Sources with terms outside the collector's supported licenses require a separate reviewed path, not relabeling.
 
 Use the existing bounded downloader from the repository root:
 
