@@ -32,7 +32,7 @@ def export_skills(destination):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, help="new directory to receive all three skills")
+    parser.add_argument("--out", type=Path, help="new directory to receive all bundled skills")
     args = parser.parse_args(argv)
     if args.out:
         try:
