@@ -1,6 +1,6 @@
 minimum_pre_commit_version: '4.0.0'
 default_install_hook_types: [pre-commit, commit-msg, pre-push]
-default_stages: [pre-commit, pre-push]
+default_stages: [pre-commit, manual]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # v6.0.0
@@ -16,29 +16,37 @@ repos:
     hooks:
       - id: ai-pilled-review
         name: ai-pilled automatic staged review
-        entry: uv run --locked ai-pilled hook commit-msg
+        entry: uv run --locked python -m ai_pilled hook commit-msg
         language: system
         stages: [commit-msg]
         always_run: true
       - id: ai-pilled-checks
         name: ai-pilled comprehensive staged checks
-        entry: uv run --locked ai-pilled hook pre-commit
+        entry: uv run --locked python -m ai_pilled hook pre-commit
         language: system
         pass_filenames: false
         always_run: true
         stages: [pre-commit]
-      - id: ai-pilled-scan
-        name: ai-pilled staged credential scan
+      - id: worktree-policy
+        name: bounded worktree lifecycle
         stages: [pre-push]
-        entry: uv run --locked ai-pilled scan
+        entry: uv run --locked python scripts/check_worktrees.py check
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: ai-pilled-full-audit
+        name: ai-pilled complete committed audit and three model reviews
+        stages: [pre-push]
+        entry: uv run --locked python scripts/audit_repository.py --model-reviews
         language: system
         pass_filenames: false
         always_run: true
       - id: ruff
         name: Ruff correctness checks
-        entry: uv run --locked ruff check
+        entry: uv run --locked python -m ruff check
         language: system
         types: [python]
+        stages: [pre-commit]
       - id: cspell
         name: CSpell source and documentation
         entry: npm exec --no -- cspell lint --no-progress --no-must-find-files --gitignore
@@ -50,13 +58,6 @@ repos:
         entry: npm exec --no -- prettier --check
         language: system
         files: ^(schematic_model/web/.*\.(html|css|js|svg)|scripts/.*\.mjs)$
-      - id: tests
-        name: CPU regression suite
-        entry: uv run --locked pytest -q
-        language: system
-        pass_filenames: false
-        always_run: true
-        stages: [pre-push]
       - id: browser-state-tests
         name: Browser state regression suite
         entry: npm run test:browser-state

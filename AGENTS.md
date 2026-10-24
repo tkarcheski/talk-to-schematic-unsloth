@@ -3,11 +3,22 @@
 ## Scope and disclosure
 
 - Prioritize measurable model improvements and a clear, polished Ask the Schematic UI. Work within the user's current request and preserve useful existing work.
+- Finish the current deliverable before starting another speculative feature. Inspect existing branches, PRs, and worktrees before creating replacements. Reuse accepted implementation; do not rebuild it in another checkout.
 - Publish only information needed to understand the project or review the change. Keep personal paths, machine and account details, credential metadata, authentication setup, and local operational history out of repository files, commits, PRs, comments, logs, and screenshots. Use generic examples and repository-relative paths.
 - Review the exact outgoing content for unnecessary disclosure as well as secrets. Passing an automated scan is not permission to publish additional details.
 - Keep these instructions focused on durable project behavior. Do not add session history, setup inventories, speculative requirements, or unsolicited audit reports.
 - Read and address user review feedback before declaring work complete. Preserve user deletions and archived material; do not restore rejected content elsewhere.
-- Do not force-push, discard unique work, delete model artifacts, merge or close PRs, or publish private material without explicit authorization. Keep necessary recovery copies private.
+- Do not force-push, delete model artifacts, merge or close PRs, or publish private material without explicit authorization. A cleanup request permits removing verified merged, duplicated, or remotely preserved development checkouts. Identify unique source and experimental evidence before removal; keep only necessary, compact private recovery records, not copies of entire environments.
+
+## Workspace lifecycle
+
+- The primary checkout stays on clean, current `main`. Keep private datasets, adapters, experiment evidence, and service state in its ignored artifact directories or explicit operator-selected storage; never make a disposable worktree their only copy.
+- Allow at most two linked development worktrees for the repository. Reuse them across PRs. Use the persistent sibling worktree directory, not `/tmp`, for ongoing development. Disposable audit clones must be removed in `finally`, including on failure or cancellation.
+- Before editing a linked checkout, claim it with `python scripts/check_worktrees.py claim --owner <agent> --reference '#<issue-or-pr>' --hours 24`. Claims expire within 72 hours and identify the exact branch. Renew only while work is active. Run `python scripts/check_worktrees.py check` at session start and before push; resolve failures rather than weakening the gate.
+- Coordinate privately with one Git owner per shared index. Use explicit file and GPU handoffs. Do not use inactivity as permission to overwrite an active owner's changes. A lease records responsibility; it does not grant runtime or publication permission.
+- Each change ends in one of three states: merged; a pushed, reviewable PR with a clear next decision; or deliberately rejected with unique work accounted for. A submitted PR does not justify retaining its working copy. Remove its checkout and reproducible caches once its remote commit and retained artifacts are verified; recreate it only for actual review changes.
+- Remove obsolete local branches after proving merge, patch equivalence, or a preserved remote/recovery reference. Recheck dirty state and active process references immediately before removal. Never run blanket `git clean`, delete model/data directories, or leave indefinite backup worktrees.
+- A handoff includes the PR and exact head, evidence, unresolved blockers, and the resulting local worktree inventory. Do not claim completion while abandoned checkouts, source not pushed, or stale claims remain.
 
 ## Product requirements
 
@@ -32,7 +43,10 @@
 
 ## Delivery
 
-- Delegate bounded work when useful, coordinate privately, and keep one Git owner. Do not publish the coordination record.
-- Prepare reviewable changes and relevant verification within the requested scope. The user owns PR merge and close decisions.
-- Use the existing pre-commit checks. The ai-pilled staged scan runs locally; its reports stay ignored. Model review, notifications, publication, and merge automation are not enabled by installing the tool.
-- Use `uv run --locked ai-pilled scan --scope worktree` for a local scan and `uv run --locked ai-pilled check test` or `check lint` for configured checks. A scan does not certify that text contains no unnecessary disclosures.
+- Delegate bounded work when useful; share an existing checkout with non-overlapping file ownership rather than allocating a worktree per agent. Do not publish coordination records.
+- Keep each PR focused on one usable outcome and its tests. Prefer independent PRs; declare unavoidable base dependencies and test the combined result. Do not split validation from the behavior it validates merely to reduce a diff count.
+- Before recommending merge, read user feedback, inspect the complete diff against its actual base, and verify the candidate with current `main`. Fix concrete audit findings. Separate implemented behavior, fixture tests, real execution, and unverified claims in the PR; test counts alone are not acceptance evidence.
+- Run the configured ai-pilled audits automatically through hooks and CI. The committed-head audit must fail on failed, missing, unavailable, or stale checks. Local pre-push audit includes independent correctness, security, and maintenance model reviews; CI runs deterministic checks without model credentials. Never disable a gate to ship, substitute an old report, or mark an unexecuted check successful.
+- Only publish the generic status and exact commit identity from an audit. Reports, prompts, source excerpts, machine details, and private artifacts stay ignored/local. Audit code runs only for trusted internal changes; external PRs must not execute on a credential-bearing workstation.
+- GitHub must require the configured CI audit, current-head model-audit status, an up-to-date base, and resolved conversations. The user retains merge/close decisions. Automated audits must never merge, approve their own work, enable auto-merge, or discard failed changes to manufacture a passing result.
+- Use `uv run --locked python scripts/audit_repository.py` for deterministic checks, `--model-reviews` for local committed-head review, and `--publish-status` to publish the bounded result after the commit exists remotely. Read `docs/quality-gates.md` for the exact audit contract and limitations. A passing scan or model review is evidence, not a guarantee of correctness.
