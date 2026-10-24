@@ -176,6 +176,7 @@ def test_preflight_rejects_jsonl_changed_between_hash_and_parse(dataset):
 @pytest.mark.parametrize("change", [
     {"max_steps": 0}, {"max_train_rows": 0}, {"max_seq": 0}, {"lr": float("nan")},
     {"epochs": float("inf")}, {"model": "Qwen/model-GGUF"}, {"resume": "/nonexistent/checkpoint"},
+    {"placement": "unknown"},
 ])
 def test_invalid_run_configuration_is_rejected(dataset, change):
     with pytest.raises(ValueError):
@@ -270,7 +271,23 @@ def test_complete_bound_resume_passes_cpu_preflight_without_writes(dataset, resu
     gpu.assert_not_called()
 
 
-@pytest.mark.parametrize("change", ["recipe", "dataset", "image", "model", "tokenizer", "chat_template", "missing_binding", "foreign_checkpoint"])
+@pytest.mark.parametrize("placement", ["auto", "single_gpu"])
+def test_resume_legacy_placement_preserves_default_policy(dataset, resume_checkpoint, placement):
+    config, manifest = recorded_resume(dataset, resume_checkpoint)
+    previous = json.loads(manifest.read_text())
+    del previous["config"]["placement"]
+    manifest.write_text(json.dumps(previous))
+    before = manifest.read_bytes()
+    config = replace(config, placement=placement)
+    if placement == "auto":
+        assert training.preflight(config)["config"]["placement"] == "auto"
+    else:
+        with pytest.raises(ValueError, match="Resume recipe differs"):
+            training.preflight(config)
+    assert manifest.read_bytes() == before
+
+
+@pytest.mark.parametrize("change", ["recipe", "placement", "dataset", "image", "model", "tokenizer", "chat_template", "missing_binding", "foreign_checkpoint"])
 def test_resume_changed_binding_preserves_manifest_before_gpu(dataset, resume_checkpoint, monkeypatch, change):
     model = Path(dataset.data).parent / "model"
     model.mkdir()
@@ -282,6 +299,8 @@ def test_resume_changed_binding_preserves_manifest_before_gpu(dataset, resume_ch
     config, manifest = recorded_resume(replace(dataset, model=str(model)), resume_checkpoint)
     if change == "recipe":
         config = replace(config, lr=config.lr / 2)
+    elif change == "placement":
+        config = replace(config, placement="single_gpu")
     elif change == "dataset":
         path = Path(config.data) / "train.jsonl"
         path.write_text(path.read_text() + "\n")
@@ -552,9 +571,10 @@ def test_loss_history_rejects_nonfinite_or_missing_best_checkpoint(dataset):
     assert training.evaluation_summary(config, state, require_best=False)["best_checkpoint"] is None
 
 
-def test_mocked_training_wires_loss_selection_callback_and_records_history(dataset, monkeypatch):
+@pytest.mark.parametrize("placement,expected_device_map", [("auto", None), ("single_gpu", {"": 0})])
+def test_mocked_training_wires_loss_selection_callback_and_records_history(dataset, monkeypatch, placement, expected_device_map):
     """Exercise the training integration without importing GPU/Transformers packages."""
-    config = replace(dataset, max_steps=100, eval_steps=50, load_best_model_at_end=True, early_stopping_patience=2)
+    config = replace(dataset, max_steps=100, eval_steps=50, load_best_model_at_end=True, early_stopping_patience=2, placement=placement)
     model = SimpleNamespace(config=SimpleNamespace(_commit_hash="test-revision"), save_pretrained=Mock())
     processor = SimpleNamespace(chat_template="fixture", save_pretrained=Mock())
     state = SimpleNamespace(
@@ -584,6 +604,7 @@ def test_mocked_training_wires_loss_selection_callback_and_records_history(datas
     monkeypatch.delenv("SCHEMATIC_DEADLINE", raising=False)  # cspell:ignore delenv
     monkeypatch.setattr(training, "gpu_inventory", lambda: [{"free_mib": 20480}])
     report = training.run_training(config)
+    assert modules["unsloth"].FastVisionModel.from_pretrained.call_args.kwargs.get("device_map") == expected_device_map
     kwargs = trainer_factory.call_args.kwargs
     assert kwargs["args"].eval_strategy == "steps"
     assert kwargs["args"].eval_steps == kwargs["args"].save_steps == 50
