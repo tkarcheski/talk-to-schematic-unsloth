@@ -1,3 +1,4 @@
+# cspell:words deadcode venv
 name: Package checks
 on:
   push:
@@ -23,8 +24,21 @@ jobs:
       - run: npm run test:browser-state
       - run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
       - run: uv sync --locked
-      - run: uv run --locked ruff check .
       - run: uv run --locked pre-commit run --all-files --show-diff-on-failure
-      - run: uv run --locked coverage run -m pytest -q
-      - run: uv run --locked coverage report
+        env:
+          SKIP: ai-pilled-checks
+      - run: uv run --locked ai-pilled scan --scope worktree
+      - run: uv run --locked ai-pilled check typecheck
+      - run: uv run --locked ai-pilled check deadcode
+      - run: uv run --locked ai-pilled check dependency
+      - run: uv run --locked ai-pilled check coverage
       - run: uv build
+
+  gateway-container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: docker compose up --build --no-deps -d gateway
+      - run: docker compose exec -T gateway /app/.venv/bin/python < docker/smoke_gateway.py
+      - if: always()
+        run: docker compose down --remove-orphans

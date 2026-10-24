@@ -34,6 +34,10 @@
       ".venv/bin/python",
       "-m",
       "mypy"
+    ],
+    "dependency": [
+      ".venv/bin/python",
+      "scripts/audit_dependencies.py"
     ]
   },
   "protected_branches": [

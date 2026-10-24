@@ -1,0 +1,23 @@
+{
+  "endpoint": "http://127.0.0.1:8888/api/inference",
+  "model": "unsloth/Qwen3.8-27B-GGUF",
+  "backend": "studio",
+  "api_key_env": "UNSLOTH_API_KEY",
+  "max_seq": 131072,
+  "max_tokens": 4096,
+  "max_image_size": 2048,
+  "max_images": 16,
+  "max_text_chars": 2000000,
+  "max_messages": 256,
+  "request_timeout": 900,
+  "reasoning_effort": "none",
+  "max_steps": 6,
+  "permission": {
+    "*": "deny",
+    "show_label": "ask",
+    "show_region": "ask",
+    "show_full_sheet": "ask",
+    "calculate": "allow",
+    "web_search": "deny"
+  }
+}

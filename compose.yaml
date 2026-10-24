@@ -45,18 +45,19 @@ services:
         restart: true
     volumes:
       - type: bind
-        source: ${SCHEMATIC_ADAPTER_DIR:-./models/adapter}
-        target: /models/adapter
-        read_only: true
-        bind:
-          create_host_path: false
-      - type: bind
         source: ${SCHEMATIC_BASE_DIR:-./models/base}
         target: /models/base
         read_only: true
         bind:
           create_host_path: false
     environment:
+      SCHEMATIC_MODEL_KIND: base
+      SCHEMATIC_MODEL_NAME: ${SCHEMATIC_MODEL_NAME:-schematic}
+      SCHEMATIC_CONTEXT_LIMIT: ${SCHEMATIC_CONTEXT_LIMIT:-8192}
+      SCHEMATIC_MAX_TOKENS: ${SCHEMATIC_MAX_TOKENS:-1024}
+      SCHEMATIC_MAX_IMAGE_SIZE: ${SCHEMATIC_MAX_IMAGE_SIZE:-2048}
+      SCHEMATIC_MIN_FREE_VRAM_GB: ${SCHEMATIC_MIN_FREE_VRAM_GB:-10}
+      SCHEMATIC_FOUR_BIT: ${SCHEMATIC_FOUR_BIT:-false}
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
     deploy:

@@ -7,6 +7,9 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import warnings
+
+from schematic_model.training import _validate_resume_checkpoint, image_paths, model_binding, read_rows, sha256
 
 from schematic_model.training import TrainingConfig
 
@@ -37,13 +40,14 @@ def training_argv(plan):
     evaluation.validate()
     data = Path(plan['data'])
     hashes = {name: hashlib.sha256((data / name).read_bytes()).hexdigest() for name in ('train.jsonl', 'val.jsonl')}
-    identity = hashlib.sha256(json.dumps({'plan': plan, 'data_hashes': hashes}, sort_keys=True).encode()).hexdigest()
+    rows = [row for name in ('train.jsonl', 'val.jsonl') for row in read_rows(data / name)]
+    images = {str(path): sha256(path) for path in sorted(image_paths(rows))}
+    binding = {'plan': plan, 'data_hashes': hashes, 'images': images, 'model': model_binding(plan['model'])}
+    identity = hashlib.sha256(json.dumps(binding, sort_keys=True).encode()).hexdigest()
     out = Path(plan['out'])
     marker = out.with_name(out.name + '.scheduler-plan.sha256')
     if out.exists() and any(out.iterdir()) and (not marker.is_file() or marker.read_text().strip() != identity):
         raise ValueError('output directory belongs to a different or untracked training plan')
-    out.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    marker.write_text(identity + '\n')
     argv = [sys.executable, '-m', 'schematic_model.training']
     for key in sorted(required):
         argv.extend(['--' + key.replace('_', '-'), str(plan[key])])
@@ -61,9 +65,25 @@ def training_argv(plan):
             argv.extend(['--' + key.replace('_', '-'), str(plan[key])])
     if evaluation.load_best_model_at_end:
         argv.append('--load-best-model-at-end')
-    checkpoints = [p for p in out.glob('checkpoint-*') if p.name.removeprefix('checkpoint-').isdigit() and (p / 'trainer_state.json').is_file()]
-    if checkpoints:
-        argv.extend(['--resume', str(max(checkpoints, key=lambda p: int(p.name.split('-')[-1])))])
+    checkpoints = sorted((p for p in out.glob('checkpoint-*') if p.name.removeprefix('checkpoint-').isdigit()),
+                         key=lambda p: int(p.name.split('-')[-1]), reverse=True)
+    recovered = None
+    for checkpoint in checkpoints:
+        try:
+            if checkpoint.is_symlink():
+                raise ValueError('checkpoint is a symlink')
+            _validate_resume_checkpoint(checkpoint)
+        except ValueError:
+            warnings.warn(f'Skipping incomplete {checkpoint.name}; preserved for inspection', stacklevel=2)
+            continue
+        recovered = checkpoint
+        break
+    if recovered:
+        argv.extend(['--resume', str(recovered)])
+    elif out.exists() and any(out.iterdir()):
+        raise ValueError('No complete checkpoint available; preserve output and inspect recovery')
+    out.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    marker.write_text(identity + '\n')
     if plan.get('continue_adapter'):
         argv.append('--continue-adapter')
     return argv

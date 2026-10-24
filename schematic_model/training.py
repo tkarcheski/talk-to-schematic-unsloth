@@ -240,7 +240,7 @@ def _validate_resume_checkpoint(checkpoint: Path) -> int:
                 "optimizer.pt", "scheduler.pt", "rng_state.pth", "training_args.bin")
     for name in required:
         artifact = checkpoint / name
-        if not artifact.is_file() or artifact.stat().st_size == 0:
+        if artifact.is_symlink() or not artifact.is_file() or artifact.stat().st_size == 0:
             raise ValueError(f"Resume checkpoint requires a nonempty regular file: {name}")
     from evaluate import _invalid_constant, _unique_object
 
@@ -357,6 +357,66 @@ def _read_data(config: TrainingConfig, *, expected_hashes: dict[str, str] | None
     return train, validation
 
 
+def model_binding(model: str, revision: str | None = None, *, seen: frozenset[Path] = frozenset()) -> dict:
+    """Bind local model bytes (including adapter bases), or an immutable remote revision."""
+    path = Path(model)
+    if not path.is_dir():
+        if path.is_absolute() or not re.fullmatch(r"[0-9a-f]{40}", revision or ""):
+            raise ValueError("Training model requires local artifacts or an immutable revision")
+        return {"model": model, "revision": revision}
+    path = path.resolve()
+    if path in seen:
+        raise ValueError("Cyclic training adapter base reference")
+    files = [item for item in sorted(path.iterdir()) if item.is_file()
+             and item.suffix in {".safetensors", ".json", ".jinja", ".txt", ".model", ".tiktoken", ".vocab", ".merges", ".bpe"}
+             and item.name not in {"training_manifest.json", "trainer_state.json", "deployment_manifest.json"}]
+    files.extend(sorted(item for item in (path / "chat_templates").glob("*.jinja") if item.is_file()))
+    weights = [item for item in files if item.suffix == ".safetensors"]
+    if not weights or any(not item.stat().st_size for item in weights):
+        raise ValueError("Training model requires nonempty safetensors weights")
+    for index in (item for item in files if item.name.endswith(".safetensors.index.json")):
+        mapping = json.loads(index.read_text()).get("weight_map")
+        if not isinstance(mapping, dict) or not mapping:
+            raise ValueError("Training model index requires a nonempty weight map")
+        for shard in mapping.values():
+            if (not isinstance(shard, str) or Path(shard).name != shard
+                    or not shard.endswith(".safetensors") or not (path / shard).is_file()):
+                raise ValueError("Training model index references a missing or invalid shard")
+    result: dict[str, Any] = {"path": str(path), "files": {str(item.relative_to(path)): sha256(item) for item in files}}
+    adapter = path / "adapter_config.json"
+    if adapter.is_file():
+        settings = json.loads(adapter.read_text())
+        base = settings.get("base_model_name_or_path")
+        if not isinstance(base, str) or not base:
+            raise ValueError("Training adapter requires a bound base model")
+        base_revision = settings.get("revision") or (DEFAULT_REVISION if base == DEFAULT_MODEL else None)
+        result["base_model"] = model_binding(base, base_revision, seen=seen | {path})
+    return result
+
+
+def validate_resume_binding(config: TrainingConfig, manifest: dict) -> None:
+    """Reject changed inputs before a prior manifest or checkpoint can be replaced."""
+    if not config.resume:
+        return
+    output = Path(config.out).resolve()
+    checkpoint = Path(config.resume)
+    if checkpoint.is_symlink() or checkpoint.resolve().parent != output:
+        raise ValueError("Resume checkpoint must belong to the same recorded output")
+    try:
+        previous = json.loads((output / "training_manifest.json").read_text())
+    except (OSError, ValueError) as exc:
+        raise ValueError("Resume requires the existing training manifest") from exc
+    # Resource admission and the selected checkpoint can change; the recipe cannot.
+    ignored = {"resume", "min_free_vram_gb"}
+    recipe = {key: value for key, value in manifest["config"].items() if key not in ignored}
+    old_recipe = {key: value for key, value in previous.get("config", {}).items() if key not in ignored}
+    if recipe != old_recipe:
+        raise ValueError("Resume recipe differs from recorded run")
+    for key in ("datasets", "images", "model_binding", "continued_adapter"):
+        if key not in previous or previous[key] != manifest[key]:
+            raise ValueError(f"Resume {key} differ from recorded run")
+
+
 def installed_versions() -> dict[str, str | None]:
     versions: dict[str, str | None] = {}
     for name in ("unsloth", "unsloth_zoo", "transformers", "trl", "torch", "peft", "Pillow"):
@@ -417,7 +477,7 @@ def preflight(config: TrainingConfig) -> dict[str, Any]:
         records.append({"path": str(path), "sha256": hashes[path], "width": width, "height": height})
     if {hashes[p] for p in image_paths(train)} & {hashes[p] for p in image_paths(validation)}:
         raise ValueError("train/validation leakage: identical image bytes occur in both splits")
-    return {
+    manifest = {
         "schema_version": 1, "status": "preflight",
         "created_at": datetime.now(timezone.utc).isoformat(), "config": asdict(config),
         "model_revision": config.effective_revision, "python": platform.python_version(),
@@ -429,9 +489,12 @@ def preflight(config: TrainingConfig) -> dict[str, Any]:
             for split, filename, rows in (("train", "train.jsonl", train), ("validation", "val.jsonl", validation))
         },
         "images": records,
+        "model_binding": model_binding(config.model, config.effective_revision),
         "continued_adapter": continuation_source(config) if config.continue_adapter else None,
         "scope": "Dataset checks only. Model loading, token lengths, GPU fit and training quality are not yet verified.",
     }
+    validate_resume_binding(config, manifest)
+    return manifest
 
 
 def gpu_inventory() -> list[dict[str, Any]]:
@@ -551,6 +614,8 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
             train = train[:config.max_train_rows]
         train_data = [{"messages": row["messages"]} for row in train]
         val_data = [{"messages": row["messages"]} for row in validation]
+        if model_binding(config.model, config.effective_revision) != manifest["model_binding"]:
+            raise ValueError("Training model changed after preflight")
         model, processor = FastVisionModel.from_pretrained(
             model_name=config.model, revision=config.effective_revision,
             max_seq_length=config.max_seq, load_in_4bit=config.four_bit,
