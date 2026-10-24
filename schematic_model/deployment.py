@@ -26,6 +26,8 @@ from typing import Any
 import uuid
 
 from schematic_model.inference import InferenceError
+from schematic_model.generation_jobs import GenerationCancelled, GenerationJobs, check_cancelled
+from schematic_model.request_limits import RequestLimits, limits_from
 from schematic_model.metrics import InferenceMetrics, native_model_details
 from schematic_model.training import gpu_inventory, installed_versions, sha256, write_manifest
 from schematic_model.view_tools import (VIEW_TOOLS, VIEWER_INSTRUCTIONS, ToolFormatError, openai_tool_calls,
@@ -51,16 +53,16 @@ class DeploymentConfig:
     four_bit: bool = False
     min_free_vram_gb: float = 10.0
     agent_tools: bool = False
+    max_images: int = 4
+    max_text_chars: int = 200_000
+    max_messages: int = 64
 
     def validate(self) -> None:
         if not Path(self.model).is_dir():
             raise ValueError("model must be a local safetensors model or adapter directory")
         if not self.served_model_name or len(self.served_model_name) > 128:
             raise ValueError("served model name must contain 1–128 characters")
-        if not 1 <= self.max_image_size <= 4096:
-            raise ValueError("max image size must be between 1 and 4096")
-        if not 1 <= self.max_tokens < self.max_seq <= 32768:
-            raise ValueError("require 1 <= max_tokens < max_seq <= 32768")
+        limits_from(self)
         if not math.isfinite(self.min_free_vram_gb) or self.min_free_vram_gb < 0:
             raise ValueError("minimum free VRAM must be finite and nonnegative")
 
@@ -180,10 +182,11 @@ def decode_image(value: str, max_side: int):
         raise ValueError("invalid raster image") from exc
 
 
-def normalize_messages(messages: Any, max_side: int) -> list[dict[str, Any]]:
+def normalize_messages(messages: Any, max_side: int, *, limits: RequestLimits | None = None) -> list[dict[str, Any]]:
     """Validate OpenAI input without silently dropping messages or content fields."""
-    if not isinstance(messages, list) or not 1 <= len(messages) <= MAX_MESSAGES:
-        raise ValueError(f"messages must contain 1–{MAX_MESSAGES} entries")
+    limits = limits or RequestLimits(max_messages=MAX_MESSAGES, max_images=MAX_IMAGES, max_text_chars=MAX_TEXT_CHARS)
+    if not isinstance(messages, list) or not 1 <= len(messages) <= limits.max_messages:
+        raise ValueError(f"messages must contain 1–{limits.max_messages} entries")
     normalized, image_count, text_length, expected = [], 0, 0, "user"
     for index, message in enumerate(messages):
         if not isinstance(message, dict) or set(message) != {"role", "content"}:
@@ -208,7 +211,7 @@ def normalize_messages(messages: Any, max_side: int) -> list[dict[str, Any]]:
                 if not isinstance(block["text"], str) or not block["text"].strip():
                     raise ValueError("text blocks cannot be empty")
                 text_length += len(block["text"])
-                if text_length > MAX_TEXT_CHARS:
+                if text_length > limits.max_text_chars:
                     raise ValueError("conversation exceeds the text size limit")
                 blocks.append(dict(block))
             elif block.get("type") == "image_url" and role == "user" and set(block) == {"type", "image_url"}:
@@ -216,7 +219,7 @@ def normalize_messages(messages: Any, max_side: int) -> list[dict[str, Any]]:
                 if not isinstance(info, dict) or set(info) != {"url"}:
                     raise ValueError("image_url must contain only url")
                 image_count += 1
-                if image_count > MAX_IMAGES:
+                if image_count > limits.max_images:
                     raise ValueError("conversation exceeds the image count limit")
                 blocks.append({"type": "image", "image": decode_image(info["url"], max_side)})
             else:
@@ -248,7 +251,7 @@ def validate_request(payload: Any, config: DeploymentConfig) -> dict[str, Any]:
         from .agent import AGENT_TOOLS
         registry = AGENT_TOOLS
     messages = plain_messages(payload.get("messages"), tools, registry=registry)
-    return {"messages": normalize_messages(messages, config.max_image_size),
+    return {"messages": normalize_messages(messages, config.max_image_size, limits=limits_from(config)),
             "max_tokens": max_tokens, "temperature": float(temperature), "tools": tools}
 
 
@@ -313,14 +316,16 @@ class LocalModel:
         FastVisionModel.for_inference(model)
         self.model, self.processor, self.torch = model, processor, torch
 
-    def complete(self, model, messages, *, max_tokens=None, temperature=0.0, tools=None, failure_diagnostic=None):
+    def complete(self, model, messages, *, max_tokens=None, temperature=0.0, tools=None, failure_diagnostic=None, cancel_event=None):
         payload = {"model": model, "messages": messages,
                    "max_tokens": self.config.max_tokens if max_tokens is None else max_tokens,
                    "temperature": temperature}
         if tools is not None:
             payload["tools"] = tools
         request = validate_request(payload, self.config)
+        check_cancelled(cancel_event)
         self.load()
+        check_cancelled(cancel_event)
         started = time.monotonic()
         inputs = self.processor.apply_chat_template(
             request["messages"], tokenize=True, add_generation_prompt=True,
@@ -334,8 +339,18 @@ class LocalModel:
         options = {"max_new_tokens": request["max_tokens"], "do_sample": request["temperature"] > 0, "use_cache": True}
         if request["temperature"] > 0:
             options["temperature"] = request["temperature"]
+        if cancel_event is not None:
+            from transformers import StoppingCriteria, StoppingCriteriaList
+
+            class CancelRequest(StoppingCriteria):
+                def __call__(self, input_ids, scores, **kwargs):
+                    del input_ids, scores, kwargs
+                    return cancel_event.is_set()
+
+            options["stopping_criteria"] = StoppingCriteriaList([CancelRequest()])
         with self.torch.inference_mode():
             output = self.model.generate(**inputs, **options)
+        check_cancelled(cancel_event)
         token_ids = output[0][input_length:].tolist()
         text = self.processor.decode(token_ids, skip_special_tokens=True)
         eos = self.model.generation_config.eos_token_id
@@ -359,6 +374,7 @@ class LocalModel:
 def make_server(engine, port: int = 8891, *, examples=None, agent=None, bind="127.0.0.1") -> HTTPServer:
     """Bound concurrent connections while serializing GPU work; caller owns lifetime."""
     generation_lock = threading.Lock()
+    jobs = GenerationJobs()
 
     class BoundedServer(ThreadingMixIn, HTTPServer):
         daemon_threads = True
@@ -428,13 +444,20 @@ def make_server(engine, port: int = 8891, *, examples=None, agent=None, bind="12
                 self.send_json(400, {"error": {"message": "Host must name this loopback server"}})
                 return
             if self.path == "/health":
+                # A native probe sent to a gateway must not recursively proxy itself.
+                if agent is not None and self.headers.get("X-Schematic-Native-Health") == "1":
+                    self.send_json(409, {"error": {"message": "Expected native inference server"}})
+                    return
+                upstream = agent.native_health() if agent and agent.config.backend == "native" else None
                 self.send_json(200, {"status": "ok", "model": engine.config.served_model_name,
                                      "model_fingerprint": engine.fingerprint,
                                      "model_details": agent.model_details if agent else native_model_details(engine),
-                                     "loaded": getattr(engine, "model", None) is not None,
+                                     "loaded": upstream["loaded"] if upstream else getattr(engine, "model", None) is not None,
                                      "provider": "self_hosted" if agent else "embedded",
-                                     "readiness": "endpoint_configured" if agent else "model_loaded",
-                                     "busy": generation_lock.locked()})
+                                     "readiness": upstream["readiness"] if upstream else "endpoint_configured" if agent else "model_loaded",
+                                     "busy": generation_lock.locked() or bool(upstream and upstream["busy"]),
+                                     "limits": limits_from(engine.config).describe(),
+                                     "cancellation": "studio" if agent and agent.config.backend == "studio" else "cooperative" if agent is None or agent.config.backend == "native" else "between_steps"})
             elif self.path == "/api/agent/config":
                 self.send_json(200, agent.describe() if agent else {"enabled": False, "provider": "embedded", "network": "disabled", "tools": [], "max_steps": 0})
             elif self.path == "/api/view-tools":
@@ -468,7 +491,7 @@ def make_server(engine, port: int = 8891, *, examples=None, agent=None, bind="12
                     self.send_json(404, {"error": {"message": "Unknown endpoint"}})
 
         def do_POST(self):
-            if self.path not in {"/v1/chat/completions", "/api/agent/chat"}:
+            if self.path not in {"/v1/chat/completions", "/api/agent/chat", "/api/jobs/cancel"}:
                 self.send_json(404, {"error": {"message": "Unknown endpoint"}})
                 return
             if not self.valid_host():
@@ -495,6 +518,15 @@ def make_server(engine, port: int = 8891, *, examples=None, agent=None, bind="12
                 if len(body) != length:
                     raise ValueError("incomplete request body")
                 payload = json.loads(body, object_pairs_hook=_unique_object)
+                if self.path == "/api/jobs/cancel":
+                    if not isinstance(payload, dict) or set(payload) != {"request_id"}:
+                        raise ValueError("Cancellation requires exactly request_id")
+                    requested = jobs.cancel(payload["request_id"])
+                    self.send_json(200, {"cancel_requested": requested, "busy": generation_lock.locked()})
+                    return
+                if not isinstance(payload, dict):
+                    raise ValueError("Expected an object")
+                identifier = payload.pop("request_id", None)
                 if self.path == "/api/agent/chat":
                     if agent is None:
                         self.send_json(409, {"error": {"message": "Agent gateway is not configured"}})
@@ -505,7 +537,12 @@ def make_server(engine, port: int = 8891, *, examples=None, agent=None, bind="12
                         self.send_json(503, {"error": {"message": "Agent is busy; retry when idle"}})
                         return
                     try:
-                        result = agent.chat(payload)
+                        event = jobs.start(identifier) if identifier is not None else None
+                        try:
+                            result = agent.chat(payload, cancel_event=event)
+                        finally:
+                            if identifier is not None:
+                                jobs.finish(identifier)
                     finally:
                         generation_lock.release()
                     self.send_json(200, result)
@@ -518,7 +555,14 @@ def make_server(engine, port: int = 8891, *, examples=None, agent=None, bind="12
                     options = {"max_tokens": request["max_tokens"], "temperature": request["temperature"]}
                     if request["tools"] is not None:
                         options["tools"] = request["tools"]
-                    result = engine.complete(payload["model"], payload["messages"], **options)
+                    event = jobs.start(identifier) if identifier is not None else None
+                    try:
+                        if event is not None:
+                            options["cancel_event"] = event
+                        result = engine.complete(payload["model"], payload["messages"], **options)
+                    finally:
+                        if identifier is not None:
+                            jobs.finish(identifier)
                 finally:
                     generation_lock.release()
                 identifier = "chatcmpl-" + uuid.uuid4().hex
@@ -538,6 +582,8 @@ def make_server(engine, port: int = 8891, *, examples=None, agent=None, bind="12
                 self.send_json(400, {"error": {"message": "Invalid completion request"}})
             except InferenceError:
                 self.send_json(422, {"error": {"message": "No complete answer within the configured context and generation limits"}})
+            except GenerationCancelled:
+                self.send_json(409, {"error": {"message": "Generation cancelled", "code": "cancelled"}})
             except (RuntimeError, OSError, TimeoutError):
                 self.send_json(503, {"error": {"message": "Local generation is unavailable"}})
             except Exception:
@@ -569,6 +615,9 @@ def main(argv=None):
     serve.add_argument("--max-seq", type=int, default=8192)
     serve.add_argument("--max-image-size", type=int, default=1024)
     serve.add_argument("--max-tokens", type=int, default=1024)
+    serve.add_argument("--max-images", type=int, default=4)
+    serve.add_argument("--max-text-chars", type=int, default=200000)
+    serve.add_argument("--max-messages", type=int, default=64)
     serve.add_argument("--seed", type=int, default=3407)
     serve.add_argument("--4bit", dest="four_bit", action="store_true")
     serve.add_argument("--min-free-vram-gb", type=float, default=10)

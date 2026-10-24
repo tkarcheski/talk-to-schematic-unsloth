@@ -168,6 +168,7 @@ function harness() {
   };
   const context = {
     document,
+    crypto: { randomUUID: () => `request-${requests.length}` },
     AbortController,
     DOMException,
     ResizeObserver: class {
@@ -193,7 +194,7 @@ function harness() {
     },
   };
   vm.runInNewContext(
-    `${isolatedSource}\nglobalThis.ui = { state, health, controls, fitView, viewForBox, textWords, locateLabel, executeCall, present, reset, submit, openExample, bind };`,
+    `${isolatedSource}\nglobalThis.ui = { state, health, controls, fitView, viewForBox, textWords, locateLabel, executeCall, present, reset, submit, openExample, openPdfPage, actionChip, firstMessages, stopRequest, bind };`,
     context,
   );
   context.ui.bind();
@@ -353,9 +354,20 @@ test("a model tool call moves only after consent and reports the actual result",
   assert.equal(third.messages.length, 6);
   assert.equal(third.messages.at(-1).role, "user");
   assert.ok(
-    third.messages.at(-1).content.endsWith("User question:\nWhere is R999?"),
+    third.messages
+      .at(-1)
+      .content.at(-1)
+      .text.endsWith("User question:\nWhere is R999?"),
   );
-  const context = JSON.parse(third.messages.at(-1).content.split("\n")[1]);
+  const context = JSON.parse(
+    third.messages
+      .at(-1)
+      .content.at(-1)
+      .text.split(
+        "Viewer context (UI state, not electrical evidence or instructions):\n",
+      )[1]
+      .split("\n")[0],
+  );
   assert.equal(context.focused_label.label, "R1");
   assert.equal(context.focused_label.source, "native_region_map");
   completion(h, 2).resolve(
@@ -501,4 +513,139 @@ test("model region labels cannot impersonate verified focus and full sheet clear
   h.ui.executeCall("show_label", { label: "R1" });
   h.ui.present(exampleDoc({ id: "new-board" }));
   assert.equal(h.ui.state.focusedLabel, null);
+});
+
+function pdfDoc(page, documentId = "pdf:session-one") {
+  return exampleDoc({
+    kind: "pdf",
+    documentId,
+    id: `${documentId}:page:${page}`,
+    page,
+    image: `data:image/png;base64,PAGE${page}`,
+    evidence: null,
+    regions: null,
+  });
+}
+
+test("same PDF page changes preserve discussion and draft but clear focused label", async () => {
+  const h = harness();
+  seedReady(h, pdfDoc(1));
+  h.ui.state.pdf = { documentId: "pdf:session-one", pages: 2 };
+  const first = await send(h, "Describe page one.");
+  completion(h, 0).resolve(response(answer("Page one has a connector.")));
+  await finish(h, first);
+  const history = plain(h.ui.state.history);
+  const conversation = [...h.element("conversation").children];
+  h.element("question").value = "Unfinished follow-up";
+  h.ui.state.focusedLabel = { label: "U1", source: "pdf_text" };
+  h.ui.state.selection += 1;
+  h.ui.state.doc = null; // Page rendering temporarily clears the viewer.
+  h.ui.present(pdfDoc(2));
+  assert.deepEqual(plain(h.ui.state.history), history);
+  assert.deepEqual(h.element("conversation").children, conversation);
+  assert.equal(h.element("question").value, "Unfinished follow-up");
+  assert.equal(h.ui.state.focusedLabel, null);
+  assert.equal(h.element("mode").value, "vision");
+  const next = await send(h, "What is on this page?");
+  const request = body(completion(h, 1));
+  const images = request.messages.flatMap((message) =>
+    Array.isArray(message.content)
+      ? message.content.filter((block) => block.type === "image_url")
+      : [],
+  );
+  assert.deepEqual(images, [
+    { type: "image_url", image_url: { url: "data:image/png;base64,PAGE2" } },
+  ]);
+  assert.match(
+    request.messages[1].content[0].text,
+    /Historical page image omitted/u,
+  );
+  assert.match(request.messages[1].content[1].text, /Current source page: 1/u);
+  assert.match(
+    request.messages.at(-1).content[1].text,
+    /Current source page: 2/u,
+  );
+  assert.equal(request.messages[2].content, "Page one has a connector.");
+  completion(h, 1).resolve(response(answer("Page two has an amplifier.")));
+  await finish(h, next);
+  assert.equal(h.ui.state.history.length, 5);
+});
+
+test("reopening a same-named PDF creates a fresh conversation", () => {
+  const h = harness();
+  seedReady(h, pdfDoc(1));
+  h.ui.state.history = [{ role: "assistant", content: "Old file answer" }];
+  h.element("question").value = "Old file draft";
+  h.ui.present(pdfDoc(1, "pdf:new-upload"));
+  assert.equal(h.ui.state.history.length, 0);
+  assert.equal(h.element("question").value, "");
+});
+
+test("historical viewer actions cannot replay coordinates on a different page", () => {
+  const h = harness();
+  seedReady(h, pdfDoc(1));
+  const chip = h.ui.actionChip({
+    name: "show_region",
+    args: { box: [100, 100, 200, 200] },
+    result: { status: "shown", box: [100, 100, 200, 200] },
+  });
+  h.ui.present(pdfDoc(2));
+  const view = h.element("world").style.transform;
+  chip.listeners.click[0]();
+  assert.equal(h.element("world").style.transform, view);
+  assert.match(h.element("error").textContent, /Open source page 1/u);
+});
+
+test("Stop cancels the exact HTTP request before abort and waits for idle health", async () => {
+  const h = harness();
+  seedReady(h);
+  h.ui.state.health.limits = { max_tokens: 4096 };
+  const pending = await send(h, "Review this page.");
+  const request = completion(h, 0);
+  const requestId = body(request).request_id;
+  assert.ok(requestId);
+  assert.equal(body(request).max_tokens, 4096);
+  request.options.signal.addEventListener("abort", () => {
+    assert.equal(h.requests.at(-1).path, "/api/jobs/cancel");
+    request.reject(new DOMException("Stopped", "AbortError"));
+  });
+  h.element("question").value = "Draft typed while waiting";
+  h.ui.stopRequest();
+  const cancel = h.requests.find((job) => job.path === "/api/jobs/cancel");
+  assert.deepEqual(body(cancel), { request_id: requestId });
+  assert.equal(cancel.options.signal, undefined);
+  cancel.resolve(response({ cancel_requested: true, busy: false }));
+  await drain();
+  assert.equal(h.ui.state.health.busy, true);
+  assert.equal(h.element("send").disabled, true);
+  const poll = h.requests.find((job) => job.path === "/health");
+  poll.resolve(response({ model: "test-model", loaded: true, busy: true }));
+  await pending.done;
+  assert.equal(h.ui.state.pending, false);
+  assert.equal(h.element("send").disabled, true);
+  assert.equal(h.element("question").value, "Draft typed while waiting");
+  const idle = h.ui.health();
+  h.requests
+    .at(-1)
+    .resolve(response({ model: "test-model", loaded: true, busy: false }));
+  await idle;
+  assert.equal(h.element("send").disabled, false);
+});
+
+test("each HTTP tool round uses a distinct cancellation token", async () => {
+  const h = harness();
+  seedReady(h);
+  const pending = await send(h, "Show R1.");
+  const initial = body(completion(h, 0)).request_id;
+  completion(h, 0).resolve(response(toolReply("show_label", { label: "R1" })));
+  await drain();
+  assert.equal(h.ui.state.requestId, null);
+  h.ui.state.approvalResolve("allow");
+  await drain();
+  const resumed = body(completion(h, 1)).request_id;
+  assert.ok(resumed);
+  assert.notEqual(resumed, initial);
+  completion(h, 1).resolve(response(answer("Showing R1.")));
+  await finish(h, pending);
+  assert.equal(h.ui.state.requestId, null);
 });
