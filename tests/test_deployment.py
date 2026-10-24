@@ -176,6 +176,26 @@ def test_generation_disables_reasoning_preserves_messages_and_decodes_only_new_t
     assert captured["messages"][0]["content"][1]["text"] == "Read R1 exactly."
 
 
+def test_native_cancel_stops_decoding_and_never_returns_partial_answer(config, monkeypatch):
+    from schematic_model.generation_jobs import GenerationCancelled
+
+    engine, _ = fake_loaded_engine(config)
+    stop = threading.Event()
+    monkeypatch.setitem(sys.modules, "transformers", SimpleNamespace(
+        StoppingCriteria=object, StoppingCriteriaList=list))
+
+    def generate(**options):
+        criteria = options["stopping_criteria"][0]
+        assert criteria(None, None) is False
+        stop.set()
+        assert criteria(None, None) is True
+        return [Ids([0, 0, 0, 10])]
+
+    engine.model.generate = generate
+    with pytest.raises(GenerationCancelled):
+        engine.complete("schematic", messages(), max_tokens=16, cancel_event=stop)
+
+
 def test_context_overflow_does_not_generate(config):
     engine, captured = fake_loaded_engine(config, input_length=63)
     with pytest.raises(InferenceError, match="context limit"):

@@ -9,7 +9,7 @@ description = "Grounded schematic datasets, evaluation, and Unsloth fine-tuning"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-  "pillow>=11,<13",
+  "pillow>=13,<14",
 ]
 
 [project.scripts]
@@ -25,6 +25,7 @@ dev = [
     "ai-pilled",
     "mypy>=2.4,<3",
     "vulture>=2.14,<3",
+    "pip-audit>=2.9,<3",
 ]
 
 [tool.setuptools]
@@ -70,3 +71,7 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = ["unsloth", "unsloth.*", "torch", "torch.*", "transformers", "transformers.*", "trl", "trl.*", "huggingface_hub", "huggingface_hub.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["ai_pilled", "ai_pilled.*"]
+follow_untyped_imports = true
