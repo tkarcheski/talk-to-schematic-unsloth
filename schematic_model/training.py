@@ -64,6 +64,7 @@ class TrainingConfig:
     model: str = DEFAULT_MODEL
     revision: str | None = None
     four_bit: bool = False
+    placement: str = "auto"
     max_seq: int = 4096
     max_image_size: int = 1024
     epochs: float = 2.0
@@ -86,6 +87,8 @@ class TrainingConfig:
     cache_dir: str = "models/huggingface"
 
     def validate(self) -> None:
+        if self.placement not in {"auto", "single_gpu"}:
+            raise ValueError("placement must be auto or single_gpu")
         for name in ("max_seq", "max_image_size", "rank", "gradient_accumulation", "save_steps"):
             if getattr(self, name) < 1:
                 raise ValueError(f"{name} must be positive")
@@ -404,6 +407,8 @@ def validate_resume_binding(config: TrainingConfig, manifest: dict) -> None:
     ignored = {"resume", "min_free_vram_gb"}
     recipe = {key: value for key, value in manifest["config"].items() if key not in ignored}
     old_recipe = {key: value for key, value in previous.get("config", {}).items() if key not in ignored}
+    # Older runs used the loader's default placement and did not record this option.
+    old_recipe.setdefault("placement", "auto")
     if recipe != old_recipe:
         raise ValueError("Resume recipe differs from recorded run")
     for key in ("datasets", "images", "model_binding", "continued_adapter"):
@@ -613,6 +618,7 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
             use_gradient_checkpointing="unsloth", full_finetuning=False,
             local_files_only=config.local_files_only, cache_dir=str(Path(config.cache_dir).resolve()),
             trust_remote_code=False,
+            **({"device_map": {"": 0}} if config.placement == "single_gpu" else {}),
         )
         if config.continue_adapter:
             if continuation_source(config) != manifest["continued_adapter"]:
@@ -717,6 +723,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model", default=DEFAULT_MODEL, help="safetensors model ID or local snapshot directory")
     parser.add_argument("--revision", help="Hub commit; default model is pinned automatically")
     parser.add_argument("--4bit", dest="four_bit", action="store_true", help="optional QLoRA; bf16 is recommended for Qwen3.5")
+    parser.add_argument("--placement", choices=("auto", "single_gpu"), default="auto",
+                        help="loader default or initial placement on the first visible GPU; neither guarantees fit")
     parser.add_argument("--max-seq", type=int, default=4096)
     parser.add_argument("--max-image-size", type=int, default=1024, help="maximum image side in pixels")
     parser.add_argument("--epochs", type=float, default=2)

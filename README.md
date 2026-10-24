@@ -144,6 +144,13 @@ python -m schematic_model.training \
 
 For an execution smoke, use `--max-steps 2 --max-train-rows 4 --gradient-accumulation 1`. That is not a useful trained-model qualification. Training validates split identity and image hashes, checks token length and supervised assistant masks, and writes a manifest with settings, losses, memory use, and artifact hashes. It fails on truncation or invalid data rather than silently dropping examples.
 
+Training defaults to `--placement auto`, preserving the model loader's placement policy.
+For a bounded fit probe, `--placement single_gpu` requests initial loading onto the first
+visible GPU. Unsloth may still offload embeddings during training preparation. The
+free-memory admission check remains active, and loading or training may still fail.
+The manifest records this choice; measure actual memory and checkpoint recovery before
+starting a longer run.
+
 Adapters are saved by default. `--resume CHECKPOINT` resumes trainer state; `--export-merged` additionally writes a separate merged model. Existing nonempty outputs are protected.
 
 The read-only training dashboard shows local progress at **http://127.0.0.1:8890/**:
