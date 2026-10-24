@@ -252,7 +252,7 @@ def test_resume_directory_must_identify_its_positive_checkpoint_step(
 def test_complete_resume_checkpoint_passes_cpu_preflight_without_output(dataset, resume_checkpoint, monkeypatch):
     gpu = Mock(side_effect=AssertionError("preflight must stay on CPU"))
     monkeypatch.setattr(training, "gpu_inventory", gpu)
-    report = training.preflight(replace(dataset, resume=str(resume_checkpoint)))
+    report = training.preflight(replace(dataset, max_steps=301, resume=str(resume_checkpoint)))
     assert report["config"]["resume"] == str(resume_checkpoint)
     gpu.assert_not_called()
     assert not Path(dataset.out).exists()
@@ -631,7 +631,43 @@ def test_resume_remaining_explicit_budget_and_epoch_mode_preflight(
         dataset, resume_checkpoint, monkeypatch, max_steps):
     gpu = Mock(side_effect=AssertionError("preflight must stay on CPU"))
     monkeypatch.setattr(training, "gpu_inventory", gpu)
-    report = training.preflight(replace(dataset, max_steps=max_steps, resume=str(resume_checkpoint)))
+    report = training.preflight(replace(dataset, max_steps=max_steps, epochs=301, resume=str(resume_checkpoint)))
     assert report["config"]["max_steps"] == max_steps
+    gpu.assert_not_called()
+    assert not Path(dataset.out).exists()
+
+
+@pytest.mark.parametrize("row_count,epochs,limit", [
+    (1, 299, None),
+    (1, 300, None),
+    (5, 149.6, None),
+    (5, 300, 4),
+])
+def test_resume_exhausted_epoch_budget_rejected_before_gpu(
+        dataset, resume_checkpoint, monkeypatch, row_count, epochs, limit):
+    source = Path(dataset.data, "train.jsonl")
+    original = json.loads(source.read_text())
+    source.write_text("".join(json.dumps(dict(original, id=f"training-{index}")) + "\n"
+                              for index in range(row_count)))
+    assert_resume_rejected_without_side_effects(
+        replace(dataset, epochs=epochs, max_train_rows=limit), resume_checkpoint, monkeypatch,
+        "effective epoch step budget; requested budget is exhausted")
+
+
+@pytest.mark.parametrize("row_count,epochs,limit", [
+    (5, 150.01, None),
+    (5, 300.01, 4),
+])
+def test_resume_fractional_epoch_budget_with_one_remaining_step(
+        dataset, resume_checkpoint, monkeypatch, row_count, epochs, limit):
+    source = Path(dataset.data, "train.jsonl")
+    original = json.loads(source.read_text())
+    source.write_text("".join(json.dumps(dict(original, id=f"training-{index}")) + "\n"
+                              for index in range(row_count)))
+    gpu = Mock(side_effect=AssertionError("preflight must stay on CPU"))
+    monkeypatch.setattr(training, "gpu_inventory", gpu)
+    report = training.preflight(replace(dataset, epochs=epochs, max_train_rows=limit,
+                                        resume=str(resume_checkpoint)))
+    assert report["training_step_budget"]["max_optimizer_steps"] == 301
     gpu.assert_not_called()
     assert not Path(dataset.out).exists()

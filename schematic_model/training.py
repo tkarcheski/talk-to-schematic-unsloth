@@ -393,6 +393,10 @@ def preflight(config: TrainingConfig) -> dict[str, Any]:
                       for split, filename in (("train", "train.jsonl"), ("validation", "val.jsonl"))}
     train, validation = _read_data(config, expected_hashes=dataset_hashes)
     step_budget = training_step_budget(config, len(train))
+    if config.resume and config.max_steps == -1:
+        step = _validate_resume_checkpoint(Path(config.resume))
+        if step >= step_budget["max_optimizer_steps"]:
+            raise ValueError("Resume checkpoint global_step must be below the effective epoch step budget; requested budget is exhausted")
     if config.continue_adapter and config.resume:
         previous = json.loads((Path(config.out) / "training_manifest.json").read_text())
         if {key: value["sha256"] for key, value in previous["datasets"].items()} != dataset_hashes:
