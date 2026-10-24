@@ -24,9 +24,12 @@ class PolicyError(Exception):
 
 
 def git(cwd, *args):
+    # Hooks export repository/index overrides that defeat -C when inspecting a
+    # different checkout. These local reads need no inherited Git transport state.
+    environment = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
     result = subprocess.run(
         ["git", "-c", "core.fsmonitor=false", "-C", str(cwd), *args],
-        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=15, check=False,
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=15, check=False, env=environment,
     )
     if result.returncode or len(result.stdout) > 2_000_000:
         raise PolicyError("Cannot inspect Git metadata; repair the checkout and retry.")
@@ -177,6 +180,9 @@ def run(args, cwd):
                     or "locked" in row or "prunable" in row):
                 raise PolicyError("Claim requires an available named-branch checkout with a bounded plain path.")
             os.close(directory(current))
+            if any(lease["path"] == current and lease["expires"] > now and lease["owner"] != args.owner
+                   for lease in leases):
+                raise PolicyError(f"{label(current)}: another owner's claim is unexpired; arrange an explicit handoff first.")
             active = {row["worktree"] for row in rows[1:]}
             leases = [lease for lease in leases if lease["path"] in active and lease["path"] != current]
             leases.append(dict(owner=args.owner, reference=args.reference, branch=row["branch"], path=current,

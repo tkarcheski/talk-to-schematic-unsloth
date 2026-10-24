@@ -35,9 +35,9 @@ repos:
         pass_filenames: false
         always_run: true
       - id: ai-pilled-full-audit
-        name: ai-pilled complete committed audit and three model reviews
+        name: ai-pilled complete committed deterministic audit
         stages: [pre-push]
-        entry: uv run --locked python scripts/audit_repository.py --model-reviews
+        entry: uv run --locked python scripts/audit_repository.py
         language: system
         pass_filenames: false
         always_run: true

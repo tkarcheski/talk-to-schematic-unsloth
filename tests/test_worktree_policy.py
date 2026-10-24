@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import shlex
 import subprocess
 import sys
 import time
@@ -207,3 +208,75 @@ def test_lease_allows_active_secondary_edits_but_no_primary_lease_is_created(rep
     assert claim(linked, "72").returncode == 0
     (linked / "source.txt").write_text("in progress")
     assert command(linked, "check").returncode == 0
+
+
+@pytest.mark.parametrize("overrides", ["directory", "index", "combined"])
+def test_hook_git_environment_does_not_change_per_checkout_inspection(repo, overrides):
+    linked = secondary(repo)
+    (linked / "candidate.txt").write_text("committed candidate\n")
+    git(linked, "add", ".")
+    git(linked, "commit", "-m", "Candidate")
+    assert claim(linked).returncode == 0
+    git_dir = git(linked, "rev-parse", "--absolute-git-dir").strip()
+    values = {"GIT_DIR": git_dir} if overrides == "directory" else {"GIT_INDEX_FILE": str(Path(git_dir) / "index")}
+    if overrides == "combined":
+        values.update(GIT_DIR=git_dir, GIT_WORK_TREE=str(linked), GIT_PREFIX="", GIT_COMMON_DIR=str(repo / ".git"))
+    environment = dict(os.environ, **values)
+    def inspect():
+        return subprocess.run([sys.executable, str(SCRIPT), "check"], cwd=linked,
+                              env=environment, capture_output=True, text=True)
+    assert not git(repo, "status", "--porcelain")
+    result = inspect()
+    assert result.returncode == 0, result.stderr
+    (repo / "source.txt").write_text("actual primary edit\n")
+    result = inspect()
+    assert result.returncode == 1
+    assert "primary source is dirty" in result.stderr
+
+
+def test_real_pre_push_hook_checks_primary_from_linked_checkout(repo):
+    linked = secondary(repo)
+    (linked / "candidate.txt").write_text("committed candidate\n")
+    git(linked, "add", ".")
+    git(linked, "commit", "-m", "Candidate")
+    assert claim(linked).returncode == 0
+    hook = repo / ".git/hooks/pre-push"
+    hook.write_text(f"#!/bin/sh\nexec {shlex.quote(sys.executable)} {shlex.quote(str(SCRIPT))} check\n")
+    hook.chmod(0o700)
+    remote = repo.parent / "remote.git"
+    git(repo, "init", "--bare", str(remote))
+    result = subprocess.run(["git", "-C", str(linked), "push", str(remote), "HEAD:refs/heads/candidate"],
+                            capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, result.stderr
+    assert "Worktree policy passed" in result.stdout
+    assert git(remote, "rev-parse", "refs/heads/candidate") == git(linked, "rev-parse", "HEAD")
+
+
+def test_other_owner_cannot_replace_unexpired_claim_but_can_claim_after_expiry(repo):
+    linked = secondary(repo)
+    assert claim(linked).returncode == 0
+    before = state(repo).read_bytes()
+    takeover = ["claim", "--owner", "different-owner", "--reference", "#13"]
+    result = command(linked, *takeover)
+    assert result.returncode == 1
+    assert "explicit handoff" in result.stderr
+    assert state(repo).read_bytes() == before
+    data = json.loads(before)
+    data["leases"][0].update(issued=int(time.time()) - 7200, expires=int(time.time()) - 3600)
+    state(repo).write_text(json.dumps(data))
+    assert command(linked, *takeover).returncode == 0
+    assert json.loads(state(repo).read_text())["leases"][0]["owner"] == "different-owner"
+
+
+def test_concurrent_owners_cannot_overwrite_each_others_active_claim(repo):
+    linked = secondary(repo)
+    processes = [subprocess.Popen([sys.executable, str(SCRIPT), "claim", "--owner", owner,
+                                  "--reference", "#12"], cwd=linked,
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE) for owner in ("one", "two")]
+    errors = []
+    for process in processes:
+        _, stderr = process.communicate(timeout=20)
+        errors.append(stderr.decode())
+    assert sorted(process.returncode for process in processes) == [0, 1]
+    assert sum("explicit handoff" in error for error in errors) == 1
+    assert len(json.loads(state(repo).read_text())["leases"]) == 1

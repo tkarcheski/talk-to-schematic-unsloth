@@ -22,13 +22,14 @@ uv run --locked python -m pre_commit install
 ```
 
 Commits retain staged checks and model review. Before a push, the hook requires a
-clean committed checkout and runs the full audit plus three isolated model
-perspectives: correctness, security, and maintenance. Each review must finish and
-pass against the same source snapshot. Push one proposal branch at a time. A local
-passing hook does not create the remote model-review status for a new commit.
+clean committed checkout and runs the full deterministic audit. Push one proposal
+branch at a time. A passing hook allows publishing a reviewable PR; it does not
+create the required remote model-review status or establish merge eligibility.
 
 The independent required status `ai-pilled/model-audit` is published by the trusted
-local audit worker after the commit exists on GitHub:
+local audit worker after the commit exists on GitHub. The worker checks changed
+PR heads hourly and runs three isolated model perspectives: correctness, security,
+and maintenance. Each review must finish and pass against the same source snapshot:
 
 ```sh
 uv run --locked python scripts/audit_repository.py --publish-status
@@ -45,8 +46,10 @@ stay under ignored `.ai-pilled/`; do not upload them as CI artifacts or comments
 
 GitHub-hosted CI receives no model credentials and does not claim a model review.
 Without the trusted worker's passing status for the current head, merging remains
-blocked. Neither an audit pass nor a model review grants merge permission or
-establishes measured schematic-model quality. Human review remains required.
+blocked. PRs with failing model audits remain available for review and fixes; they
+are never merge eligible. Neither an audit pass nor a model review grants merge
+permission or establishes measured schematic-model quality. Human review remains
+required.
 
 For a local deterministic audit use `uv run --locked python
 scripts/audit_repository.py`; add `--model-reviews` to require the model
