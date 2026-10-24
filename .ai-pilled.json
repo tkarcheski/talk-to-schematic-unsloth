@@ -4,6 +4,10 @@
     "test": [
       ".venv/bin/python",
       "-m",
+      "coverage",
+      "run",
+      "--data-file=.ai-pilled/coverage",
+      "-m",
       "pytest",
       "-q"
     ],
@@ -16,7 +20,10 @@
     ],
     "coverage": [
       ".venv/bin/python",
-      "scripts/check_coverage.py"
+      "-m",
+      "coverage",
+      "report",
+      "--data-file=.ai-pilled/coverage"
     ],
     "deadcode": [
       ".venv/bin/python",
@@ -34,6 +41,10 @@
       ".venv/bin/python",
       "-m",
       "mypy"
+    ],
+    "dependency": [
+      ".venv/bin/python",
+      "scripts/audit_dependencies.py"
     ]
   },
   "protected_branches": [
@@ -41,9 +52,9 @@
     "master"
   ],
   "require_tests": true,
-  "timeout": 300,
+  "timeout": 900,
   "aggressiveness": "normal",
   "review_on_commit": true,
   "review_checks_on_commit": true,
-  "audit_dependencies_on_change": false
+  "audit_dependencies_on_change": true
 }

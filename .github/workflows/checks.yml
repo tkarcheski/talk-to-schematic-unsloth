@@ -1,4 +1,4 @@
-name: Package checks
+name: Repository audit
 on:
   push:
   pull_request:
@@ -6,9 +6,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  cpu:
+  audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -20,11 +25,11 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npm run test:browser-state
       - run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
       - run: uv sync --locked
-      - run: uv run --locked ruff check .
-      - run: uv run --locked pre-commit run --all-files --show-diff-on-failure
-      - run: uv run --locked coverage run -m pytest -q
-      - run: uv run --locked coverage report
+      - name: Full deterministic ai-pilled audit
+        run: uv run --locked python scripts/audit_repository.py
+      - name: Source format, spelling, and configuration checks
+        run: uv run --locked python -m pre_commit run --all-files --hook-stage manual --show-diff-on-failure
+      - run: npm run test:browser-state
       - run: uv build

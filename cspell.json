@@ -109,6 +109,7 @@
     "Vout",
     "VRAM",
     "whatif",
+    "worktrees",
     "Zener"
   ],
   "overrides": [
