@@ -208,8 +208,9 @@ def plain_messages(messages: Any, tools: Any = None, *, registry=None) -> list[d
             content = _block_text(content).strip() if content else ""
             text = content + ("\n\n" if content else "") + "\n".join(_render_call(c, registry) for c in calls)
             output.append({"role": "assistant", "content": text})
-            ids = [c.get("id") if isinstance(c, dict) else None for c in calls]
-            if any(not isinstance(i, str) or not i for i in ids) or len(set(ids)) != len(ids):
+            raw_ids = [c.get("id") if isinstance(c, dict) else None for c in calls]
+            ids = [i for i in raw_ids if isinstance(i, str) and i]
+            if len(ids) != len(raw_ids) or len(set(ids)) != len(ids):
                 raise ToolFormatError("tool calls need unique non-empty ids")
             pending_ids = set(ids)
             continue
