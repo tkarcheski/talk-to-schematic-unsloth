@@ -292,7 +292,10 @@ class AgentRuntime:
 
     def _finish(self, state, result, metrics):
         result["metrics"] = metrics.result()
-        result["model_details"] = self.model_details
+        # A zero-inference approval belongs to its original response, even if
+        # another request has since observed a different model artifact.
+        result["model_details"] = dict(state.get("model_details", {
+            "served_model_name": self.config.model, "backend": "self_hosted"}))
         result["trace"] = state.pop("trace", [])
         return result
 
@@ -333,6 +336,32 @@ class AgentRuntime:
                 raise ValueError("Malformed upstream completion")
             if response.get("context_truncated"):
                 raise ValueError("Upstream truncated the requested evidence")
+            choice = response["choices"][0]
+            message = choice.get("message")
+            if not isinstance(message, dict) or message.get("role") != "assistant" or message.get("content") is not None and (not isinstance(message["content"], str) or len(message["content"]) > 100_000):
+                raise ValueError("Malformed upstream assistant message")
+            calls = message.get("tool_calls", [])
+            if not isinstance(calls, list):
+                raise ValueError("Malformed upstream tool calls")
+            expected_finish = "tool_calls" if calls else "stop"
+            if choice.get("finish_reason") != expected_finish:
+                raise ValueError("Upstream finish reason does not confirm a completed answer or tool call")
+            if calls:
+                if len(calls) != 1:
+                    raise ValueError("Agent requires one tool call per turn")
+                call = calls[0]
+                if not isinstance(call, dict) or call.get("type") != "function" or not isinstance(call.get("function"), dict) or not isinstance(call.get("id"), str) or not call["id"].strip() or len(call["id"]) > 128:
+                    raise ValueError("Invalid tool call id")
+                if any(previous.get("id") == call["id"] for message in state["messages"]
+                       if message.get("role") == "assistant" for previous in (message.get("tool_calls") or [])):
+                    raise ValueError("Upstream reused a tool call ID from the conversation")
+                name = call["function"].get("name")
+                if not isinstance(name, str) or not isinstance(call["function"].get("arguments"), str) or len(call["function"]["arguments"]) > 4096:
+                    raise ValueError("Malformed upstream tool arguments")
+                args = validate_agent_arguments(name, json.loads(call["function"]["arguments"]))
+                call = {"id": call["id"], "type": "function", "function": {"name": name, "arguments": json.dumps(args, allow_nan=False)}}
+            elif not isinstance(message.get("content"), str) or not message["content"].strip():
+                raise ValueError("Upstream returned no answer")
             upstream_metrics = response.get("metrics")
             seconds, scope = wall_seconds, "upstream_wall_time"
             if isinstance(upstream_metrics, dict):
@@ -340,36 +369,18 @@ class AgentRuntime:
                 if isinstance(reported, (int, float)) and type(reported) in (int, float) and math.isfinite(reported) and reported > 0 and upstream_metrics.get("timing_scope") == "model_inference_including_prefill":
                     seconds, scope = reported, "model_inference_including_prefill"
             metrics.add(response.get("usage"), seconds, scope)
-            details = safe_model_details(response.get("model_details"))
-            if details:
-                self.model_details = {"served_model_name": self.config.model, **details}
-            choice = response["choices"][0]
-            if choice.get("finish_reason") in {"length", "content_filter"}:
-                raise ValueError("Upstream did not complete the answer")
-            message = choice.get("message")
-            if not isinstance(message, dict) or message.get("role") != "assistant" or message.get("content") is not None and (not isinstance(message["content"], str) or len(message["content"]) > 100_000):
-                raise ValueError("Malformed upstream assistant message")
+            # Missing metadata is unknown for this response, not evidence that
+            # the preceding response's weights are still serving this request.
+            details = {"served_model_name": self.config.model, "backend": "self_hosted",
+                       **safe_model_details(response.get("model_details"))}
+            state["model_details"] = details
+            self.model_details = dict(details)
             reasoning = message.get("reasoning_content")
             reasoning = reasoning if isinstance(reasoning, str) and len(reasoning) <= 100_000 else None
             trace_event(state, "model_response", {"content": message.get("content"), "reasoning_content": reasoning,
-                        "finish_reason": choice.get("finish_reason"), "usage": metrics.result(), "model_details": self.model_details})
-            calls = message.get("tool_calls", [])
-            if not isinstance(calls, list):
-                raise ValueError("Malformed upstream tool calls")
+                        "finish_reason": choice["finish_reason"], "usage": metrics.result(), "model_details": dict(details)})
             if not calls:
-                if not isinstance(message.get("content"), str) or not message["content"].strip():
-                    raise ValueError("Upstream returned no answer")
                 return {"choices": [{"message": {"role": "assistant", "content": message["content"]}}], "events": state["events"], "messages": state["messages"]}
-            if len(calls) != 1:
-                raise ValueError("Agent requires one tool call per turn")
-            call = calls[0]
-            if not isinstance(call, dict) or call.get("type") != "function" or not isinstance(call.get("function"), dict) or not isinstance(call.get("id"), str) or not 1 <= len(call["id"]) <= 128:
-                raise ValueError("Invalid tool call id")
-            name = call["function"].get("name")
-            if not isinstance(name, str) or not isinstance(call["function"].get("arguments"), str) or len(call["function"]["arguments"]) > 4096:
-                raise ValueError("Malformed upstream tool arguments")
-            args = validate_agent_arguments(name, json.loads(call["function"]["arguments"]))
-            call = {"id": call["id"], "type": "function", "function": {"name": name, "arguments": json.dumps(args, allow_nan=False)}}
             calls = [call]
             action = self.config.action(name)
             trace_event(state, "tool_call", {"tool": name, "arguments": args, "permission": action})

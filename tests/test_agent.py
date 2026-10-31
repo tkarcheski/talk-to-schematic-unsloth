@@ -11,12 +11,12 @@ from schematic_model.deployment import make_server
 from schematic_model.view_tools import VIEW_TOOLS
 
 
-def call(name, arguments):
-    return {"choices": [{"message": {"role": "assistant", "content": None, "tool_calls": [{"id": "call-1", "type": "function", "function": {"name": name, "arguments": json.dumps(arguments)}}]}}]}
+def call(name, arguments, call_id="call-1"):
+    return {"choices": [{"finish_reason": "tool_calls", "message": {"role": "assistant", "content": None, "tool_calls": [{"id": call_id, "type": "function", "function": {"name": name, "arguments": json.dumps(arguments)}}]}}]}
 
 
 def answer(text="Ready"):
-    return {"choices": [{"message": {"role": "assistant", "content": text}}]}
+    return {"choices": [{"finish_reason": "stop", "message": {"role": "assistant", "content": text}}]}
 
 
 def payload():
@@ -133,6 +133,70 @@ def test_truncated_and_malformed_completions_rejected():
             agent.chat(payload())
 
 
+@pytest.mark.parametrize("reason", [None, "", "unknown", "length", "content_filter", "function_call", [], {}])
+@pytest.mark.parametrize("tool", [None, "calculate", "show_label", "web_search"])
+def test_unconfirmed_completions_never_execute_or_offer_tools(reason, tool, monkeypatch):
+    arguments = {"calculate": {"operation": "add", "a": 1, "b": 2},
+                 "show_label": {"label": "U1"}, "web_search": {"query": "public chip"}}
+    reply = call(tool, arguments[tool]) if tool else answer()
+    reply["choices"][0]["finish_reason"] = reason
+    reply["model_details"] = {"adapter_sha256": "a" * 64}
+    agent, seen = runtime([reply], search_endpoint="http://127.0.0.1:8888")
+    executions = []
+    monkeypatch.setattr(agent, "_execute", lambda *args: executions.append(args))
+    with pytest.raises(ValueError, match="finish reason"):
+        agent.chat(payload())
+    assert len(seen) == 1
+    assert executions == []
+    assert agent.pending == {}
+    assert "adapter_sha256" not in agent.model_details
+
+
+@pytest.mark.parametrize("reply", [answer(), call("show_label", {"label": "U1"})])
+def test_missing_finish_reason_is_rejected(reply):
+    del reply["choices"][0]["finish_reason"]
+    agent, _ = runtime([reply])
+    with pytest.raises(ValueError, match="finish reason"):
+        agent.chat(payload())
+    assert agent.pending == {}
+
+
+@pytest.mark.parametrize("reply,reason", [
+    (answer(), "tool_calls"),
+    (call("calculate", {"operation": "add", "a": 1, "b": 2}), "stop"),
+    (call("show_label", {"label": "U1"}), "stop"),
+])
+def test_finish_reason_must_match_response_kind(reply, reason, monkeypatch):
+    reply["choices"][0]["finish_reason"] = reason
+    agent, _ = runtime([reply])
+    executions = []
+    monkeypatch.setattr(agent, "_execute", lambda *args: executions.append(args))
+    with pytest.raises(ValueError, match="finish reason"):
+        agent.chat(payload())
+    assert executions == []
+    assert agent.pending == {}
+
+
+@pytest.mark.parametrize("name,arguments", [
+    ("show_label", {"label": "U1"}), ("calculate", {"operation": "multiply", "a": 2, "b": 3}),
+])
+def test_reused_provider_call_id_fails_before_approval_or_execution(name, arguments, monkeypatch):
+    agent, seen = runtime([call("calculate", {"operation": "add", "a": 1, "b": 2}),
+                           call(name, arguments)])
+    executed = []
+    execute = agent._execute
+    def record_execution(tool, args):
+        executed.append(tool)
+        return execute(tool, args)
+    monkeypatch.setattr(agent, "_execute", record_execution)
+    with pytest.raises(ValueError, match="reused a tool call ID"):
+        agent.chat(payload())
+    assert len(seen) == 2
+    assert json.loads(seen[-1][1]["messages"][-1]["content"]) == {"value": 3}
+    assert executed == ["calculate"]
+    assert agent.pending == {}
+
+
 def test_text_block_system_and_retained_tool_context():
     agent, seen = runtime([call("calculate", {"operation": "multiply", "a": 2, "b": 3}), answer("6"), answer("Yes")])
     request = payload()
@@ -242,7 +306,7 @@ def test_navigation_denial_returns_actual_denial_and_keeps_answering():
 
 
 def test_earlier_navigation_and_result_cannot_authorize_next_navigation():
-    agent, seen = runtime([call('show_label', {'label': 'U1'}), answer('U1 is selected.'), call('show_region', {'box': [0, 0, 200, 200]})])
+    agent, seen = runtime([call('show_label', {'label': 'U1'}), answer('U1 is selected.'), call('show_region', {'box': [0, 0, 200, 200]}, 'call-2')])
     request = payload()
     request['messages'][0]['content'] = 'Show me U1.'
     proposed = agent.chat(request)
@@ -264,7 +328,7 @@ def test_earlier_navigation_and_result_cannot_authorize_next_navigation():
 
 def test_search_approval_never_authorizes_viewer_side_effect():
     agent, seen = runtime([call('web_search', {'query': 'AP2112 datasheet'}), {'results': []},
-                           call('show_full_sheet', {}), answer('No results were returned.')],
+                           call('show_full_sheet', {}, 'call-2'), answer('No results were returned.')],
                           search_endpoint='http://127.0.0.1:8888')
     search = agent.chat(payload())['pending_approval']
     proposed_view = agent.chat({'approval_id': search['id'], 'decision': 'allow'})
