@@ -35,7 +35,10 @@ def tool_call(name, arguments, identifier="route-1"):
             "function": {"name": name, "arguments": json.dumps(arguments)}}]}
 
 
-def lesson(record, sheet, part, box, image, split, kind):
+def lesson(record, sheet, part, box, image, split, kind, *, image_sha256=None):
+    observed_hash = sha256(Path(image))
+    if image_sha256 is not None and observed_hash != image_sha256:
+        raise ValueError("Image hash changed before creating routing case")
     title = record["repository"].split("/")[-1]
     ref, value = part["refdes"], part["value"]
     heldout = split == "val"
@@ -63,7 +66,8 @@ def lesson(record, sheet, part, box, image, split, kind):
     else:
         target = {"role": "assistant", "content": "Which part should I search for? Select a component or give its reference or part number."}
     identifier = f"{record['id']}-p{sheet['page']}-{ref}-{kind}"
-    wire = {"id": identifier, "family_id": record["repository"], "image": str(image), "messages": copy.deepcopy(messages), "expected": expected}
+    wire = {"id": identifier, "family_id": record["repository"], "image": str(image),
+            "image_sha256": observed_hash, "messages": copy.deepcopy(messages), "expected": expected}
     rows = []
     for message in plain_messages([*messages, target], AGENT_TOOLS, registry=AGENT_TOOLS):
         content = message["content"]
@@ -125,7 +129,9 @@ def build(corpus: Path, replay: Path, output: Path, max_parts=24):
     for split, values in candidates.items():
         for candidate in values:
             for kind in ("search", "followup", "show", "clarify"):
-                row, case = lesson(*candidate[:4], candidate[4], split, kind)
+                image_hash = next(image["sha256"] for image in candidate[0]["images"]
+                                  if image["page"] == candidate[1]["page"])
+                row, case = lesson(*candidate[:4], candidate[4], split, kind, image_sha256=image_hash)
                 rows[split].append(row)
                 if split == "val":
                     cases.append(case)
