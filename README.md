@@ -152,6 +152,15 @@ free-memory admission check remains active, and loading or training may still fa
 The manifest records this choice; measure actual memory and checkpoint recovery before
 starting a longer run.
 
+For runtimes with Unsloth block-offload support, `--offload-layers 24 --offload-prefetch 1`
+streams that many frozen decoder layers from host RAM while retaining trainable adapters
+on the GPU. Offload is disabled by default and its settings are bound to checkpoint
+resumes. It requires sufficient host RAM and a separate measured fit probe; the base
+model must still fit during loading. Use an isolated training environment for dependency
+changes. Starting from an existing adapter with `--continue-adapter` is not supported
+with this option; use `--resume` for checkpoints from the same offload run and verify
+recovery before extending the run.
+
 Adapters are saved by default. `--resume CHECKPOINT` resumes trainer state; `--export-merged` additionally writes a separate merged model. Existing nonempty outputs are protected.
 
 The read-only training dashboard shows local progress at **http://127.0.0.1:8890/**:

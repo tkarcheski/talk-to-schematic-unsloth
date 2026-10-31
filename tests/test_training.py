@@ -177,6 +177,9 @@ def test_preflight_rejects_jsonl_changed_between_hash_and_parse(dataset):
     {"max_steps": 0}, {"max_train_rows": 0}, {"max_seq": 0}, {"lr": float("nan")},
     {"epochs": float("inf")}, {"model": "Qwen/model-GGUF"}, {"resume": "/nonexistent/checkpoint"},
     {"placement": "unknown"},
+    {"offload_layers": -1}, {"offload_layers": True}, {"offload_layers": 1.5},
+    {"offload_prefetch": 0}, {"offload_prefetch": True},
+    {"offload_layers": 24, "continue_adapter": True},
 ])
 def test_invalid_run_configuration_is_rejected(dataset, change):
     with pytest.raises(ValueError):
@@ -287,7 +290,24 @@ def test_resume_legacy_placement_preserves_default_policy(dataset, resume_checkp
     assert manifest.read_bytes() == before
 
 
-@pytest.mark.parametrize("change", ["recipe", "placement", "dataset", "image", "model", "tokenizer", "chat_template", "missing_binding", "foreign_checkpoint"])
+@pytest.mark.parametrize("offload_layers", [0, 24])
+def test_resume_legacy_offload_preserves_disabled_policy(dataset, resume_checkpoint, offload_layers):
+    config, manifest = recorded_resume(replace(dataset, max_steps=301), resume_checkpoint)
+    previous = json.loads(manifest.read_text())
+    del previous["config"]["offload_layers"]
+    del previous["config"]["offload_prefetch"]
+    manifest.write_text(json.dumps(previous))
+    before = manifest.read_bytes()
+    config = replace(config, offload_layers=offload_layers)
+    if offload_layers == 0:
+        assert training.preflight(config)["config"]["offload_layers"] == 0
+    else:
+        with pytest.raises(ValueError, match="Resume recipe differs"):
+            training.preflight(config)
+    assert manifest.read_bytes() == before
+
+
+@pytest.mark.parametrize("change", ["recipe", "placement", "offload_layers", "offload_prefetch", "dataset", "image", "model", "tokenizer", "chat_template", "missing_binding", "foreign_checkpoint"])
 def test_resume_changed_binding_preserves_manifest_before_gpu(dataset, resume_checkpoint, monkeypatch, change):
     model = Path(dataset.data).parent / "model"
     model.mkdir()
@@ -301,6 +321,10 @@ def test_resume_changed_binding_preserves_manifest_before_gpu(dataset, resume_ch
         config = replace(config, lr=config.lr / 2)
     elif change == "placement":
         config = replace(config, placement="single_gpu")
+    elif change == "offload_layers":
+        config = replace(config, offload_layers=24)
+    elif change == "offload_prefetch":
+        config = replace(config, offload_prefetch=2)
     elif change == "dataset":
         path = Path(config.data) / "train.jsonl"
         path.write_text(path.read_text() + "\n")
@@ -572,9 +596,10 @@ def test_loss_history_rejects_nonfinite_or_missing_best_checkpoint(dataset):
 
 
 @pytest.mark.parametrize("placement,expected_device_map", [("auto", None), ("single_gpu", {"": 0})])
-def test_mocked_training_wires_loss_selection_callback_and_records_history(dataset, monkeypatch, placement, expected_device_map):
+@pytest.mark.parametrize("offload_layers", [0, 24])
+def test_mocked_training_wires_loss_selection_callback_and_records_history(dataset, monkeypatch, placement, expected_device_map, offload_layers):
     """Exercise the training integration without importing GPU/Transformers packages."""
-    config = replace(dataset, max_steps=100, eval_steps=50, load_best_model_at_end=True, early_stopping_patience=2, placement=placement)
+    config = replace(dataset, max_steps=100, eval_steps=50, load_best_model_at_end=True, early_stopping_patience=2, placement=placement, offload_layers=offload_layers)
     model = SimpleNamespace(config=SimpleNamespace(_commit_hash="test-revision"), save_pretrained=Mock())
     processor = SimpleNamespace(chat_template="fixture", save_pretrained=Mock())
     state = SimpleNamespace(
@@ -585,6 +610,10 @@ def test_mocked_training_wires_loss_selection_callback_and_records_history(datas
                               save_state=Mock())
     trainer_factory = Mock(return_value=trainer)
     early_stop = Mock()
+    adapter_calls = []
+    def adapter_factory(model, offload_layers=None, **kwargs):
+        adapter_calls.append({"offload_layers": offload_layers, **kwargs})
+        return model
     cuda = SimpleNamespace(
         is_available=lambda: True, mem_get_info=lambda: (20 * 1024**3, 24 * 1024**3),
         reset_peak_memory_stats=lambda: None, get_device_name=lambda: "test GPU",
@@ -592,7 +621,7 @@ def test_mocked_training_wires_loss_selection_callback_and_records_history(datas
     )
     modules = {
         "unsloth": SimpleNamespace(FastVisionModel=SimpleNamespace(
-            from_pretrained=Mock(return_value=(model, processor)), get_peft_model=lambda model, **kw: model,
+            from_pretrained=Mock(return_value=(model, processor)), get_peft_model=adapter_factory,
             for_training=lambda model: None), is_bf16_supported=lambda: True),
         "unsloth.trainer": SimpleNamespace(UnslothVisionDataCollator=lambda *a, **kw: NativeCollator(10)),
         "torch": SimpleNamespace(cuda=cuda, bfloat16="bf16", float16="fp16"),
@@ -605,6 +634,10 @@ def test_mocked_training_wires_loss_selection_callback_and_records_history(datas
     monkeypatch.setattr(training, "gpu_inventory", lambda: [{"free_mib": 20480}])
     report = training.run_training(config)
     assert modules["unsloth"].FastVisionModel.from_pretrained.call_args.kwargs.get("device_map") == expected_device_map
+    assert adapter_calls[0]["offload_layers"] == (offload_layers or None)
+    assert adapter_calls[0].get("prefetch_depth") == (1 if offload_layers else None)
+    assert adapter_calls[0].get("checkpoint_skip_layers") == (0 if offload_layers else None)
+    assert report["config"]["offload_layers"] == offload_layers
     kwargs = trainer_factory.call_args.kwargs
     assert kwargs["args"].eval_strategy == "steps"
     assert kwargs["args"].eval_steps == kwargs["args"].save_steps == 50
@@ -622,6 +655,14 @@ def test_mocked_training_wires_loss_selection_callback_and_records_history(datas
     assert report["validation"]["observations"] == state.log_history
     assert "quality is not measured" in report["validation"]["scope"]
     model.save_pretrained.assert_called_once()
+
+
+def test_legacy_adapter_factory_cannot_silently_ignore_requested_offload(dataset):
+    legacy = Mock(side_effect=AssertionError("unsupported factory must never run"))
+    assert training.offload_arguments(dataset, legacy) == {}
+    with pytest.raises(RuntimeError, match="explicit offload_layers support"):
+        training.offload_arguments(replace(dataset, offload_layers=24), legacy)
+    legacy.assert_not_called()
 
 
 @pytest.mark.parametrize("recorded", [
