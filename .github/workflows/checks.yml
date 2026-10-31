@@ -1,4 +1,4 @@
-# cspell:words deadcode venv
+# cspell:words deadcode pipefail venv
 name: Package checks
 on:
   push:
@@ -8,31 +8,45 @@ permissions:
   contents: read
 
 jobs:
+  # Branch protection requires this exact check name; retain it when changing its implementation.
   cpu:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          version: '0.12.19'
-          python-version: '3.13'
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
-        with:
-          node-version: '24'
-          cache: npm
-      - run: npm ci --ignore-scripts
-      - run: npm run test:browser-state
-      - run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
-      - run: uv sync --locked
-      - run: uv run --locked pre-commit run --all-files --show-diff-on-failure
-        env:
-          SKIP: ai-pilled-checks
-      - run: uv run --locked ai-pilled scan --scope worktree
-      - run: uv run --locked ai-pilled check typecheck
-      - run: uv run --locked ai-pilled check deadcode
-      - run: uv run --locked ai-pilled check dependency
-      - run: uv run --locked ai-pilled check coverage
-      - run: uv build
+          persist-credentials: false
+      # System and browser dependencies belong to a disposable image, not the hosted runner.
+      - name: Build isolated CPU and browser toolchain
+        run: docker build --file docker/Dockerfile.tests --tag schematic-tests .
+      - name: Run complete CPU and browser checks without elevated privileges
+        shell: bash
+        run: |
+          # Mount only this credential-free checkout. Do not expose the Docker socket or host homes.
+          docker run --rm --init --interactive --user "$(id -u):$(id -g)" \
+            --cap-drop ALL --security-opt no-new-privileges --shm-size 1g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace" \
+            --workdir /workspace --env CI=true schematic-tests bash -euo pipefail -s <<'CHECKS'
+          npm ci --ignore-scripts
+          node -e 'const assert = require("node:assert/strict"); assert.equal(require("@playwright/test/package.json").version, process.env.PLAYWRIGHT_VERSION, "Update the test image browser when Playwright changes");'
+          uv sync --locked
+          # Run every deterministic source hook; staged model-review hooks need private credentials.
+          for hook in check-merge-conflict check-yaml check-toml check-json check-added-large-files ruff cspell prettier; do
+            uv run --locked python -m pre_commit run "$hook" --all-files --show-diff-on-failure
+          done
+          uv run --locked ai-pilled scan --scope worktree
+          uv run --locked ai-pilled check lint
+          uv run --locked ai-pilled check typecheck
+          uv run --locked ai-pilled check deadcode
+          uv run --locked ai-pilled check dependency
+          # This coverage check executes the complete CPU suite before enforcing its coverage floor.
+          uv run --locked ai-pilled check coverage
+          npm run test:browser-state
+          npm run test:browser-agent
+          npm run test:browser-navigation
+          npm run test:browser-comparison
+          uv build
+          CHECKS
 
   gateway-container:
     runs-on: ubuntu-latest
