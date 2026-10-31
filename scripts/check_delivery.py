@@ -20,7 +20,8 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     try:
         remote = os.environ.get('PRE_COMMIT_REMOTE_NAME', 'origin') if args.push else 'origin'
-        base = _git('rev-parse', '--verify', f'refs/remotes/{remote}/main^{{commit}}').stdout.strip()
+        tracking_remote = remote if remote in _git('remote').stdout.splitlines() else 'origin'
+        base = _git('rev-parse', '--verify', f'refs/remotes/{tracking_remote}/main^{{commit}}').stdout.strip()
         # CI and pre-push supply the actual source tip, not a synthetic merge or another checkout's HEAD.
         explicit_tip = os.environ.get('PRE_COMMIT_TO_REF')
         tip = _git('rev-parse', '--verify', '--end-of-options',

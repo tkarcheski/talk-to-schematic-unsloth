@@ -130,6 +130,27 @@ def test_push_of_current_substantive_branch_passes(repo):
     assert check_delivery.main(['--push']) == 0
 
 
+def test_direct_push_url_uses_the_configured_tracking_base(repo, monkeypatch):
+    tip = commit(repo)
+    monkeypatch.setenv('PRE_COMMIT_REMOTE_NAME', str(repo.parent / 'remote.git'))
+    monkeypatch.setenv('PRE_COMMIT_TO_REF', tip)
+    assert check_delivery.main(['--push']) == 0
+
+
+@pytest.mark.parametrize('remove_origin', [False, True])
+def test_named_push_remote_uses_its_own_tracking_base(repo, monkeypatch, remove_origin):
+    commit(repo)
+    advance_main(repo)
+    git(repo, 'remote', 'add', 'upstream', str(repo.parent / 'remote.git'))
+    git(repo, 'fetch', 'upstream', 'main')
+    git(repo, 'merge', '--no-edit', 'upstream/main')
+    if remove_origin:
+        git(repo, 'remote', 'remove', 'origin')
+    monkeypatch.setenv('PRE_COMMIT_REMOTE_NAME', 'upstream')
+    monkeypatch.setenv('PRE_COMMIT_TO_REF', git(repo, 'rev-parse', 'HEAD'))
+    assert check_delivery.main(['--push']) == 0
+
+
 def test_pending_main_merge_can_fix_a_stale_branch(repo):
     commit(repo)
     advance_main(repo)
