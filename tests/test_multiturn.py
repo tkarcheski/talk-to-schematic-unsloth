@@ -8,7 +8,7 @@ import pytest
 
 from schematic_model.multiturn_data import scenario, training_rows, tool_call
 from schematic_model.training import sha256
-from scripts.evaluate_multiturn import rollout
+from scripts.evaluate_multiturn import empty_search_answer, rollout
 
 
 @pytest.fixture
@@ -80,6 +80,49 @@ def test_search_runs_simulator_and_keeps_view(candidate):
     assert all(r['passed'] for r in records)
     result = json.loads(seen[3][-1]['content'])
     assert result['status'] == 'empty' and result['simulation'].startswith('offline')
+
+
+@pytest.mark.parametrize('text', [
+    'The maximum input voltage is 6 V.',
+    'No search results were returned. The maximum input voltage is 6 V.',
+    'No results, but the datasheet guarantees operation up to six volts.',
+    'No results. It supports reverse polarity protection.',
+    'TPS63060',
+])
+def test_empty_search_cannot_pass_invented_or_unacknowledged_evidence(candidate, text):
+    case = scenario(candidate, 'search')
+    case['turns'] = case['turns'][:2]
+    records = rollout(case, responder([
+        call('show_label', {'label': 'U1'}), answer('Showing U1.'),
+        call('web_search', {'query': 'TPS63060 datasheet'}), answer(text),
+    ], []))
+    assert records[0]['passed']
+    assert not records[1]['passed']
+    assert records[1]['terminated'] and records[1]['viewport_invariant']
+    assert not records[1]['search_evidence']['passed']
+
+
+@pytest.mark.parametrize('text', [
+    'No results.',
+    'No search results were returned. Please provide the datasheet to verify specifications.',
+    'Search returned no results. U1 is marked TPS63060.',
+    "I cannot verify the datasheet specifications from these results.",
+    'The search returned no results. I cannot infer datasheet specifications from an empty result.',
+])
+def test_empty_search_accepts_bounded_abstention_and_source_identity(candidate, text):
+    assert empty_search_answer(text, candidate['part'])['passed']
+
+
+def test_search_preface_claim_is_not_erased_by_final_abstention(candidate):
+    case = scenario(candidate, 'search')
+    case['turns'] = case['turns'][:2]
+    search = call('web_search', {'query': 'TPS63060 datasheet'})
+    search['choices'][0]['message']['content'] = 'The maximum input voltage is 60 V.'
+    records = rollout(case, responder([
+        call('show_label', {'label': 'U1'}), answer('Showing U1.'), search, answer('No results.'),
+    ], []))
+    assert not records[1]['passed']
+    assert records[1]['search_evidence']['intermediate_unrecognized_or_unsupported_clauses'] > 0
 
 
 def test_cleared_focus_preserves_unambiguous_conversational_referent(candidate):
