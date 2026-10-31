@@ -13,6 +13,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 import hashlib
 from importlib import metadata
+import inspect
 import io
 import json
 import math
@@ -65,6 +66,8 @@ class TrainingConfig:
     revision: str | None = None
     four_bit: bool = False
     placement: str = "auto"
+    offload_layers: int = 0
+    offload_prefetch: int = 1
     max_seq: int = 4096
     max_image_size: int = 1024
     epochs: float = 2.0
@@ -89,6 +92,12 @@ class TrainingConfig:
     def validate(self) -> None:
         if self.placement not in {"auto", "single_gpu"}:
             raise ValueError("placement must be auto or single_gpu")
+        if type(self.offload_layers) is not int or self.offload_layers < 0:
+            raise ValueError("offload_layers must be a nonnegative integer")
+        if type(self.offload_prefetch) is not int or self.offload_prefetch < 1:
+            raise ValueError("offload_prefetch must be a positive integer")
+        if self.offload_layers and self.continue_adapter:
+            raise ValueError("Block offload requires a base-model run; use --resume for its checkpoints")
         for name in ("max_seq", "max_image_size", "rank", "gradient_accumulation", "save_steps"):
             if getattr(self, name) < 1:
                 raise ValueError(f"{name} must be positive")
@@ -415,6 +424,8 @@ def validate_resume_binding(config: TrainingConfig, manifest: dict) -> None:
     old_recipe = {key: value for key, value in previous.get("config", {}).items() if key not in ignored}
     # Older runs used the loader's default placement and did not record this option.
     old_recipe.setdefault("placement", "auto")
+    old_recipe.setdefault("offload_layers", 0)
+    old_recipe.setdefault("offload_prefetch", 1)
     if recipe != old_recipe:
         raise ValueError("Resume recipe differs from recorded run")
     for key in ("datasets", "images", "model_binding", "continued_adapter"):
@@ -582,6 +593,16 @@ class DeadlineControl:
         return control
 
 
+def offload_arguments(config: TrainingConfig, adapter_factory) -> dict[str, int]:
+    """Require the explicit upstream API; older **kwargs loaders can ignore options."""
+    if not config.offload_layers:
+        return {}
+    if "offload_layers" not in inspect.signature(adapter_factory).parameters:
+        raise RuntimeError("Block offload requires an Unsloth runtime with explicit offload_layers support")
+    return {"offload_layers": config.offload_layers, "prefetch_depth": config.offload_prefetch,
+            "checkpoint_skip_layers": 0}
+
+
 @_interrupt_on_sigterm()
 def run_training(config: TrainingConfig) -> dict[str, Any]:
     if os.environ.get("SCHEMATIC_DEADLINE") and not math.isfinite(float(os.environ["SCHEMATIC_DEADLINE"])):
@@ -601,6 +622,7 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
         write_manifest(manifest_path, manifest)
         # Unsloth must patch Transformers before TRL imports it.
         from unsloth import FastVisionModel, is_bf16_supported
+        offload = offload_arguments(config, FastVisionModel.get_peft_model)
         from unsloth.trainer import UnslothVisionDataCollator
         import torch
         from trl import SFTConfig, SFTTrainer
@@ -641,6 +663,7 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
                 finetune_language_layers=True, finetune_attention_modules=True,
                 finetune_mlp_modules=True, r=config.rank, lora_alpha=config.rank,
                 lora_dropout=0, bias="none", use_gradient_checkpointing="unsloth", random_state=config.seed,
+                **offload,
             )
         FastVisionModel.for_training(model)
         collator = CheckedVisionCollator(UnslothVisionDataCollator(
@@ -735,6 +758,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--4bit", dest="four_bit", action="store_true", help="optional QLoRA; bf16 is recommended for Qwen3.5")
     parser.add_argument("--placement", choices=("auto", "single_gpu"), default="auto",
                         help="loader default or initial placement on the first visible GPU; neither guarantees fit")
+    parser.add_argument("--offload-layers", type=int, default=0,
+                        help="frozen decoder layers to stream from host RAM; 0 disables block offload")
+    parser.add_argument("--offload-prefetch", type=int, default=1,
+                        help="number of offloaded layers to prefetch; greater depth uses more GPU memory")
     parser.add_argument("--max-seq", type=int, default=4096)
     parser.add_argument("--max-image-size", type=int, default=1024, help="maximum image side in pixels")
     parser.add_argument("--epochs", type=float, default=2)

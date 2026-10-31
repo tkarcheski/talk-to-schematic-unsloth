@@ -132,6 +132,10 @@ def build(corpus: Path, output: Path, *, overwrite: bool = False) -> dict:
             raise ValueError(f"{record['id']}: native source differs from the manifest")
         for image in record["images"]:
             page = image["page"]
+            expected = image.get("sha256")
+            if (not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected)
+                    or hashlib.sha256((corpus / image["path"]).read_bytes()).hexdigest() != expected):
+                raise ValueError(f"{record['id']}: rendered image differs from the manifest")
             svg, regions = source_layout(source, page, attribution=publisher(record["repository"])["footer"])
             if hashlib.sha256(svg.encode()).hexdigest() != image.get("svg_sha256"):
                 skipped.append({"id": record["id"], "page": page, "reason": "render differs from current renderer"})
@@ -141,6 +145,7 @@ def build(corpus: Path, output: Path, *, overwrite: bool = False) -> dict:
             if row is None:
                 skipped.append({"id": record["id"], "page": page, "reason": "too few clear viewer targets"})
             else:
+                row["provenance"]["images"] = [dict(image)]
                 rows.append(row)
     for split in ("train", "val", "test"):
         _atomic_text(output / f"{split}.jsonl", "".join(json.dumps(r) + "\n" for r in rows if r["split"] == split))

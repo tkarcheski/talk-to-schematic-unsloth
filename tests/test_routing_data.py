@@ -1,5 +1,7 @@
 """Routing gold and continuation guards; no GPU or network required."""
 import json
+import hashlib
+import base64
 from dataclasses import replace
 from types import SimpleNamespace
 
@@ -10,10 +12,15 @@ from schematic_model.training import TrainingConfig, continuation_source, prepar
 from scripts.evaluate_routing import score
 
 
-def test_followup_search_gold_preserves_selection_and_prior_show():
+def test_followup_search_gold_preserves_selection_and_prior_show(tmp_path):
     record = {'id': 'public', 'repository': 'adafruit/public', 'commit': 'a' * 40, 'source_path': 'board.sch', 'sha256': 'b' * 64, 'license': 'CC-BY-SA-3.0'}
     part = {'refdes': 'U1', 'value': 'TPS63060'}
-    row, case = lesson(record, {'page': 1, 'bom': [part], 'nets': {}}, part, [100, 100, 200, 200], '/tmp/public.png', 'val', 'followup')
+    image = tmp_path / 'public.png'
+    image.write_bytes(b'fixture image')
+    row, case = lesson(record, {'page': 1, 'bom': [part], 'nets': {}}, part, [100, 100, 200, 200], image, 'val', 'followup')
+    assert case['image_sha256'] == hashlib.sha256(image.read_bytes()).hexdigest()
+    with pytest.raises(ValueError, match='Image hash changed'):
+        lesson(record, {'page': 1}, part, [], image, 'val', 'followup', image_sha256='0' * 64)
     assert case['messages'][-1]['content'].endswith('do a web search for that part')
     assert 'focused_label' in case['messages'][-1]['content']
     assert case['messages'][2]['tool_calls'][0]['function']['name'] == 'show_label'
@@ -90,3 +97,88 @@ def test_loaded_target_module_set_matches_json_list(adapter):
     source['target_modules'] = 'q_proj|v_proj'
     with pytest.raises(ValueError):
         prepare_continued_adapter(model, adapter, source)
+
+
+@pytest.fixture
+def routing_evaluation(tmp_path, monkeypatch):
+    from scripts import evaluate_routing
+
+    image = tmp_path / 'source.png'
+    image.write_bytes(b'first image bytes')
+    case = {'id': 'fixture', 'image': str(image), 'image_sha256': hashlib.sha256(image.read_bytes()).hexdigest(),
+            'messages': [{'role': 'user', 'content': [{'type': 'image_url', 'image_url': {'url': str(image)}},
+                                                     {'type': 'text', 'text': 'Which part?'}]}],
+            'expected': {'kind': 'clarify', 'tool': None}}
+    cases = tmp_path / 'cases.jsonl'
+    requests = []
+    def response(endpoint, payload):
+        requests.append(payload)
+        return {'choices': [{'finish_reason': 'stop', 'message': {'content': 'Which component?'}}]}
+    monkeypatch.setattr(evaluate_routing, 'request_json', response)
+    return evaluate_routing, case, cases, image, requests, tmp_path
+
+
+@pytest.mark.parametrize('change', ['tampered', 'invalid-hash', 'null-hash', 'different-path', 'no-image'])
+def test_pinned_routing_images_fail_before_inference_or_output(routing_evaluation, change):
+    evaluator, case, cases, image, requests, root = routing_evaluation
+    if change == 'tampered':
+        image.write_bytes(b'changed image bytes')
+    elif change == 'invalid-hash':
+        case['image_sha256'] = 'not-a-hash'
+    elif change == 'null-hash':
+        case['image_sha256'] = None
+    elif change == 'no-image':
+        case['messages'][0]['content'] = []
+    else:
+        case['image'] = str(root / 'different.png')
+    cases.write_text(json.dumps(case) + '\n')
+    before = cases.read_bytes()
+    with pytest.raises(ValueError):
+        evaluator.run(cases, root / 'run', 'http://127.0.0.1:8893/v1', 'fixture')
+    assert requests == []
+    assert not (root / 'run').exists()
+    assert cases.read_bytes() == before
+
+
+def test_legacy_cases_keep_bytes_and_labels_but_changed_images_change_identity(routing_evaluation):
+    evaluator, case, cases, image, requests, root = routing_evaluation
+    del case['image_sha256']
+    cases.write_text(json.dumps(case) + '\n')
+    original = cases.read_bytes()
+    first = evaluator.run(cases, root / 'one', 'http://127.0.0.1:8893/v1', 'fixture')
+    image.write_bytes(b'new observed bytes')
+    second = evaluator.run(cases, root / 'two', 'http://127.0.0.1:8893/v1', 'fixture')
+    assert cases.read_bytes() == original
+    assert first['cases_sha256'] == second['cases_sha256'] == hashlib.sha256(original).hexdigest()
+    assert first['evaluation_input_sha256'] != second['evaluation_input_sha256']
+    assert all(report['image_evidence'][0]['verification'] == 'legacy-unpinned-observed' for report in [first, second])
+    assert first['image_evidence'][0]['images'][0]['sha256'] != second['image_evidence'][0]['images'][0]['sha256']
+    assert len(requests) == 2
+
+
+def test_later_case_hash_failure_rejects_the_whole_run_before_first_request(routing_evaluation):
+    evaluator, case, cases, _, requests, root = routing_evaluation
+    cases.write_text(json.dumps(case) + '\n' + json.dumps({**case, 'id': 'later', 'image_sha256': '0' * 64}) + '\n')
+    with pytest.raises(ValueError, match='image hash differs'):
+        evaluator.run(cases, root / 'run', 'http://127.0.0.1:8893/v1', 'fixture')
+    assert requests == []
+    assert not (root / 'run').exists()
+
+
+def test_evaluation_hashes_exact_image_and_case_snapshots_sent_to_endpoint(routing_evaluation, monkeypatch):
+    evaluator, case, cases, image, requests, root = routing_evaluation
+    cases.write_text('\n'.join(json.dumps({**case, 'id': identifier}) for identifier in ['one', 'two']) + '\n')
+    case_bytes, image_bytes = cases.read_bytes(), image.read_bytes()
+    original_request = evaluator.request_json
+    def mutate_after_first_request(endpoint, payload):
+        image.write_bytes(b'changed during run')
+        cases.write_text('changed during run')
+        return original_request(endpoint, payload)
+    monkeypatch.setattr(evaluator, 'request_json', mutate_after_first_request)
+    report = evaluator.run(cases, root / 'run', 'http://127.0.0.1:8893/v1', 'fixture')
+    assert report['cases_sha256'] == hashlib.sha256(case_bytes).hexdigest()
+    for payload, evidence in zip(requests, report['image_evidence']):
+        uri = payload['messages'][0]['content'][0]['image_url']['url']
+        assert base64.b64decode(uri.split(',', 1)[1]) == image_bytes
+        assert evidence['verification'] == 'declared-hash-verified'
+        assert evidence['images'][0]['sha256'] == hashlib.sha256(image_bytes).hexdigest()
