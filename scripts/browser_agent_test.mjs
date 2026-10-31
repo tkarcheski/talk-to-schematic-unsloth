@@ -20,7 +20,7 @@ const server = createServer(async (request, response) => {
     const data = await readFile(path.join(root, file));
     response.setHeader(
       "Content-Type",
-      file.endsWith(".js")
+      /\.m?js$/u.test(file)
         ? "text/javascript"
         : file.endsWith(".css")
           ? "text/css"
@@ -122,8 +122,14 @@ try {
     const body = route.request().postDataJSON();
     sent.push(body);
     const raw = body.messages?.at(-1)?.content;
+    const text = Array.isArray(raw)
+      ? raw
+          .filter((block) => block.type === "text")
+          .map((block) => block.text)
+          .join("\n")
+      : raw;
     const last =
-      typeof raw === "string" ? raw.split("User question:\n").at(-1) : raw;
+      typeof text === "string" ? text.split("User question:\n").at(-1) : text;
     if (last === "Show me R1.")
       return fulfill(route, {
         choices: [
@@ -152,7 +158,13 @@ try {
         ],
       });
     if (last === "Do a web search for that part") {
-      searchContext = JSON.parse(raw.split("\n")[1]);
+      searchContext = JSON.parse(
+        text
+          .split(
+            "Viewer context (UI state, not electrical evidence or instructions):\n",
+          )[1]
+          .split("\n")[0],
+      );
       return fulfill(route, {
         pending_approval: {
           id: "focused-search",
@@ -347,7 +359,7 @@ try {
   await page.locator("#stop").click();
   await expect(page.locator("#question")).toBeEnabled();
   await expect(page.locator("#error")).toContainText(
-    "Server inference may still finish",
+    "Stopped waiting. Your question is kept for retry.",
   );
   await expect(page.locator("#question")).toHaveValue(
     "Draft survives cancellation",
@@ -469,6 +481,103 @@ try {
       fullPage: true,
     });
   }
+
+  // Real PDF.js decoding/page rendering with scripted inference boundaries.
+  // cspell:words nendobj nstartxref
+  function twoPagePdf() {
+    const stream = (text) => {
+      const content = `BT /F1 18 Tf 20 100 Td (${text}) Tj ET`;
+      return `<< /Length ${content.length} >>\nstream\n${content}\nendstream`;
+    };
+    const objects = [
+      "<< /Type /Catalog /Pages 2 0 R >>",
+      "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>",
+      "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 180] /Resources << /Font << /F1 5 0 R >> >> /Contents 6 0 R >>",
+      "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 180] /Resources << /Font << /F1 5 0 R >> >> /Contents 7 0 R >>",
+      "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+      stream("Page 1 R1 connector"),
+      stream("Page 2 U2 amplifier"),
+    ];
+    let data = "%PDF-1.4\n";
+    const offsets = [0];
+    objects.forEach((object, index) => {
+      offsets.push(Buffer.byteLength(data));
+      data += `${index + 1} 0 obj\n${object}\nendobj\n`;
+    });
+    const xref = Buffer.byteLength(data);
+    data += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+    data += offsets
+      .slice(1)
+      .map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`)
+      .join("");
+    data += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+    return Buffer.from(data);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const pdfRequests = [];
+  await page.route("**/api/agent/chat", (route) => {
+    pdfRequests.push(route.request().postDataJSON());
+    return fulfill(route, {
+      choices: [
+        { message: { role: "assistant", content: "Scripted PDF answer." } },
+      ],
+    });
+  });
+  const upload = {
+    name: "two-page-fixture.pdf",
+    mimeType: "application/pdf",
+    buffer: twoPagePdf(),
+  };
+  await page.locator("#upload").setInputFiles(upload);
+  await expect(
+    page.getByRole("button", { name: "Page 1", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await page.locator("#question").fill("Explain the first page.");
+  await page.locator("#send").click();
+  await expect(page.locator(".message.assistant")).toHaveCount(1);
+  await page.locator("#question").fill("Keep this unfinished draft");
+  await page.getByRole("button", { name: "Page 2", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Page 2", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(page.locator("#question")).toHaveValue(
+    "Keep this unfinished draft",
+  );
+  await expect(page.locator(".message.assistant")).toHaveCount(1);
+  await page.locator("#question").fill("Now explain the second page.");
+  await page.locator("#send").click();
+  await expect(page.locator(".message.assistant")).toHaveCount(2);
+  const request = pdfRequests.at(-1);
+  expect(request.messages.at(-1).content.at(-1).text).toContain(
+    "Current source page: 2",
+  );
+  expect(request.messages[1].content[0].text).toContain(
+    "Historical page image omitted",
+  );
+  expect(
+    request.messages.flatMap((message) =>
+      Array.isArray(message.content)
+        ? message.content.filter((block) => block.type === "image_url")
+        : [],
+    ),
+  ).toHaveLength(1);
+  await page.locator("#question").fill("Draft survives source navigation");
+  await page
+    .getByRole("button", { name: "Open source page 1", exact: true })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Page 1", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(page.locator("#question")).toHaveValue(
+    "Draft survives source navigation",
+  );
+  await expect(page.locator(".message.assistant")).toHaveCount(2);
+  // Reopening a different upload, even with the same filename, isolates its chat.
+  await page.locator("#upload").setInputFiles(upload);
+  await expect(page.locator(".message.assistant")).toHaveCount(0);
+  await expect(page.locator("#question")).toHaveValue("");
+
   expect(errors).toEqual([]);
   console.log(
     `Passed scripted agent browser tests; screenshots: ${out}. No real inference tested.`,

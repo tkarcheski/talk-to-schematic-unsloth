@@ -13,6 +13,7 @@ const PDF_LONG_SIDE = 2400;
 const PDF_MAX_PIXELS = 12_000_000;
 const state = {
   doc: null,
+  conversationDocumentId: null,
   focusedLabel: null,
   history: [],
   health: null,
@@ -30,6 +31,8 @@ const state = {
   agent: null,
   eventIds: new Set(),
   controller: null,
+  requestId: null,
+  cancellationRequested: false,
   approvalResolve: null,
   progressStarted: null,
   progressStage: "",
@@ -359,7 +362,7 @@ function updateProgress(stage) {
   $("busy-detail").textContent = waiting
     ? "Review the exact query and destination below. Nothing is sent until you approve."
     : !state.pending
-      ? "Another request is still running on the server. You can send when it finishes."
+      ? "Server inference is still running. You can send when the server reports idle."
       : seconds >= 30
         ? "Still waiting for the local model. Large schematics can take longer; you can stop waiting below."
         : "Reading the schematic and preparing a response.";
@@ -524,13 +527,20 @@ async function agentCompletion(payload) {
   let body = payload;
   let approvedNavigation = null;
   for (let attempt = 0; attempt < 16; attempt += 1) {
+    const requestId = crypto.randomUUID();
+    state.requestId = requestId;
     addTrace("browser request", { path, body });
-    const response = await api(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal: state.controller?.signal,
-      body: JSON.stringify(body),
-    });
+    let response;
+    try {
+      response = await api(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: state.controller?.signal,
+        body: JSON.stringify({ ...body, request_id: requestId }),
+      });
+    } finally {
+      if (state.requestId === requestId) state.requestId = null;
+    }
     for (const entry of Array.isArray(response.trace)
       ? response.trace.slice(0, 100)
       : []) {
@@ -841,6 +851,12 @@ function reset() {
     "Read a value, trace a net, or ask the model to show you a part. It can pan and zoom the drawing.";
   empty.append(heading, body);
   $("conversation").replaceChildren(empty);
+  updateInputScope();
+  mark(null);
+  showError("");
+  controls();
+}
+function updateInputScope() {
   const vision = mode() === "vision";
   $("gate-notice").hidden = !state.doc || !vision;
   $("mode-note").textContent = !state.doc
@@ -850,9 +866,6 @@ function reset() {
       : vision
         ? "The model sees only the page image."
         : "The model sees the image plus values and connections extracted from the EAGLE source.";
-  mark(null);
-  showError("");
-  controls();
 }
 function message(role, text, actions = []) {
   $("conversation").querySelector(".empty-state")?.remove();
@@ -863,6 +876,20 @@ function message(role, text, actions = []) {
   speaker.textContent =
     role === "user" ? "You" : state.health?.model || "Model";
   article.append(speaker);
+  if (state.doc?.kind === "pdf") {
+    const { documentId, page } = state.doc;
+    const sourcePage = document.createElement("button");
+    sourcePage.type = "button";
+    sourcePage.className = "text-button source-page";
+    sourcePage.textContent = `Source page ${page}`;
+    sourcePage.setAttribute("aria-label", `Open source page ${page}`);
+    sourcePage.addEventListener("click", () => {
+      if (state.pending || state.pdf?.documentId !== documentId) return;
+      if (state.doc?.page !== page)
+        openPdfPage(page).catch((error) => showError(error.message));
+    });
+    article.append(sourcePage);
+  }
   if (actions.length) {
     const row = document.createElement("div");
     row.className = "actions";
@@ -880,6 +907,8 @@ function message(role, text, actions = []) {
   return article;
 }
 function actionChip(action) {
+  const sourceId = state.doc?.id;
+  const sourcePage = state.doc?.page;
   const chip = document.createElement("button");
   chip.type = "button";
   chip.className = `action${action.result.status === "shown" ? "" : " missing"}`;
@@ -895,7 +924,13 @@ function actionChip(action) {
         : `✕ ${target} not found`;
   chip.title = `${action.name} ${JSON.stringify(action.args)}`;
   chip.addEventListener("click", () => {
-    if (action.result.status !== "shown") return;
+    if (state.pending || action.result.status !== "shown") return;
+    if (state.doc?.id !== sourceId) {
+      showError(
+        `Open source page ${sourcePage} before replaying this viewer action.`,
+      );
+      return;
+    }
     if (action.name === "show_full_sheet") {
       mark(null);
       showFull(true);
@@ -933,7 +968,11 @@ function questionWithViewerContext(question) {
     ((height - y) / scale / doc.height) * 1000,
   ]);
   const context = {
-    document: { title: doc.title, page: doc.page },
+    document: {
+      title: doc.title,
+      page: doc.page,
+      pages: state.pdf?.pages || 1,
+    },
     focused_label: state.focusedLabel,
     viewport: { box, full_sheet: state.fit },
   };
@@ -945,9 +984,9 @@ function firstMessages(question) {
   const base = vision
     ? "Ground schematic claims in the attached image. If a part, label or measurement is not shown, say so. Do not invent facts."
     : "Ground schematic claims in the attached image and supplied native source evidence. Identify connections as REFDES.PAD using physical package pads. Do not invent specifications, measurements, or safety findings.";
-  let text = question;
+  let text = `Current source page: ${doc.page}. The attached image and any native evidence below describe this page only. Earlier messages describe their own source pages; do not treat earlier answers as verified evidence for this page.\n\n${question}`;
   if (!vision && doc.evidence)
-    text = `Extracted native schematic evidence (not an electrical review):\n${JSON.stringify(doc.evidence)}\n\n${question}`;
+    text = `Extracted native schematic evidence (not an electrical review):\n${JSON.stringify(doc.evidence)}\n\n${text}`;
   return [
     {
       role: "system",
@@ -966,9 +1005,23 @@ function firstMessages(question) {
 async function ask(question) {
   const selection = state.selection;
   const contextualQuestion = questionWithViewerContext(question);
-  const pending = state.history.length
-    ? [...state.history, { role: "user", content: contextualQuestion }]
-    : firstMessages(contextualQuestion);
+  const current = firstMessages(contextualQuestion);
+  // Keep the discussion across pages, but attach only the current page image.
+  // Historical source-page text remains explicit; omitted images are not evidence.
+  const history = state.history.map((message) => ({
+    ...message,
+    content: Array.isArray(message.content)
+      ? message.content.map((block) =>
+          block.type === "image_url"
+            ? {
+                type: "text",
+                text: "[Historical page image omitted. Reopen its source page to inspect it again.]",
+              }
+            : block,
+        )
+      : message.content,
+  }));
+  const pending = history.length ? [...history, current[1]] : current;
   if (!state.history.length) state.systemBase = pending[0].content;
   const workspacePrompt = state.customSystemPrompt.trim();
   pending[0] = {
@@ -988,6 +1041,10 @@ async function ask(question) {
       model: state.health.model,
       messages: pending,
       tools: state.tools.tools,
+      ...(Number.isInteger(state.health.limits?.max_tokens) &&
+      state.health.limits.max_tokens > 0
+        ? { max_tokens: state.health.limits.max_tokens }
+        : {}),
     });
     if (selection !== state.selection) return null;
     if (Array.isArray(result.messages))
@@ -1079,6 +1136,7 @@ async function submit(event) {
   state.historyCursor = null;
   state.historyDraft = "";
   state.pending = true;
+  state.cancellationRequested = false;
   $("question").value = "";
   state.metrics = null;
   $("request-metrics").hidden = true;
@@ -1120,7 +1178,9 @@ async function submit(event) {
     renderMetrics("Incomplete request");
     showError(
       error.name === "AbortError"
-        ? "Stopped waiting. Server inference may still finish. Your question is kept for retry."
+        ? state.cancellationRequested
+          ? "Cancellation requested; waiting for the server to report idle. Your question is kept for retry."
+          : "Stopped waiting. Your question is kept for retry."
         : error.message,
     );
     state.notice = "Question kept · retry when ready";
@@ -1128,8 +1188,13 @@ async function submit(event) {
     state.pending = false;
     state.controller = null;
     state.approvalResolve = null;
-    $("activity-status").textContent = "Finished";
+    $("activity-status").textContent = "Checking server status…";
     await health();
+    $("activity-status").textContent = state.health?.busy
+      ? "Server inference is still running…"
+      : state.health
+        ? "Server is idle"
+        : "Server status unavailable";
     $("question").focus();
   }
 }
@@ -1156,7 +1221,12 @@ async function decode(data) {
   return [image.naturalWidth, image.naturalHeight];
 }
 function present(doc) {
+  const continuingDocument =
+    doc.kind === "pdf" &&
+    doc.documentId &&
+    doc.documentId === state.conversationDocumentId;
   state.doc = doc;
+  state.conversationDocumentId = doc.kind === "pdf" ? doc.documentId : null;
   // Uploads have no native evidence; examples restore the user's last choice.
   $("mode").value = doc.kind === "example" ? state.preferredMode : "vision";
   $("sheet").hidden = false;
@@ -1181,7 +1251,12 @@ function present(doc) {
   }
   for (const button of $("library-list").querySelectorAll(".board"))
     button.setAttribute("aria-current", String(button.dataset.id === doc.id));
-  reset();
+  if (continuingDocument) {
+    updateInputScope();
+    mark(null);
+    showError("");
+    controls();
+  } else reset();
   showFull(false);
 }
 function loading(text) {
@@ -1286,6 +1361,7 @@ async function openFile(file) {
       );
     }
     state.pdf = {
+      documentId: `pdf:${selection}`,
       document: pdfDocument,
       name: file.name,
       pages: pdfDocument.numPages,
@@ -1304,7 +1380,10 @@ function uploadDoc(name, page, image, width, height, words) {
   const pages = state.pdf ? ` · page ${page} of ${state.pdf.pages}` : "";
   return {
     kind: state.pdf ? "pdf" : "image",
-    id: `upload:${name}:${page}`,
+    id: state.pdf
+      ? `${state.pdf.documentId}:page:${page}`
+      : `upload:${name}:${page}`,
+    documentId: state.pdf?.documentId || null,
     title: name,
     page,
     meta: `Your upload · rendered in your browser${pages}`,
@@ -1477,6 +1556,35 @@ function setChatWidth(value, persist = true) {
     }
   }
 }
+function stopRequest() {
+  const requestId = state.requestId;
+  if (requestId) {
+    state.cancellationRequested = true;
+    // Invalidate older health responses. Only a subsequent health poll can
+    // establish that the worker exited; cancellation acknowledgment cannot.
+    state.healthRequest += 1;
+    if (state.health) state.health = { ...state.health, busy: true };
+    state.requestId = null;
+    // Dispatch cancellation before aborting the browser's inference request.
+    // This separate request intentionally has no inference AbortSignal.
+    api("/api/jobs/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request_id: requestId }),
+    })
+      .then((result) => {
+        addTrace("cancellation requested", {
+          cancel_requested: result.cancel_requested,
+        });
+      })
+      .catch((error) => {
+        addTrace("cancellation unavailable", { message: error.message });
+      });
+  }
+  state.controller?.abort();
+  state.approvalResolve?.("cancel");
+  controls();
+}
 function bind() {
   $("chat-width").addEventListener("input", (event) =>
     setChatWidth(event.target.value),
@@ -1538,10 +1646,7 @@ function bind() {
   $("question").addEventListener("input", () => {
     state.historyCursor = null;
   });
-  $("stop").addEventListener("click", () => {
-    state.controller?.abort();
-    state.approvalResolve?.("cancel");
-  });
+  $("stop").addEventListener("click", stopRequest);
   $("open-settings").addEventListener("click", () =>
     $("settings").showModal?.(),
   );

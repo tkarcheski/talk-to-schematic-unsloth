@@ -169,22 +169,27 @@ def test_research_resumes_without_refetch(tmp_path, monkeypatch):
     assert research_step.collect(plan, tmp_path) == 0
 
 
-def test_training_slice_binds_dataset_and_resumes(tmp_path):
-    from scripts.training_slice import training_argv
+def test_training_slice_binds_dataset_and_resumes(tmp_path, monkeypatch):
+    from scripts import training_slice
     data = tmp_path / 'data'
     data.mkdir()
     for name in ('train.jsonl', 'val.jsonl'):
         (data / name).write_text('{}\n')
+    # This test checks the plan CLI contract; full input binding has dedicated tests.
+    monkeypatch.setattr(training_slice, 'read_rows', lambda path: [])
+    monkeypatch.setattr(training_slice, 'model_binding', lambda path: {'fixture': True})
     out = tmp_path / 'out'
     plan = {'data': str(data), 'out': str(out), 'model': str(tmp_path / 'model'), 'max_steps': 10, 'save_steps': 2, 'max_seq': 4096, 'rank': 16, 'gradient_accumulation': 4}
-    assert '--resume' not in training_argv(plan)
+    assert '--resume' not in training_slice.training_argv(plan)
     checkpoint = out / 'checkpoint-2'
     checkpoint.mkdir(parents=True)
-    (checkpoint / 'trainer_state.json').write_text('{}')
-    assert training_argv(plan)[-2:] == ['--resume', str(checkpoint)]
+    for name in ('adapter_model.safetensors', 'adapter_config.json', 'optimizer.pt', 'scheduler.pt', 'rng_state.pth', 'training_args.bin'):
+        (checkpoint / name).write_bytes(b'fixture')
+    (checkpoint / 'trainer_state.json').write_text('{"global_step":2}')
+    assert training_slice.training_argv(plan)[-2:] == ['--resume', str(checkpoint)]
     (data / 'train.jsonl').write_text('changed')
     with pytest.raises(ValueError, match='different'):
-        training_argv(plan)
+        training_slice.training_argv(plan)
 
 
 def test_co_resident_requires_identity_and_memory_cap():
@@ -197,8 +202,11 @@ def test_co_resident_requires_identity_and_memory_cap():
     assert unexpected_residents([{**resident, 'pid': 999}], approved)
 
 
-def test_training_continuation_cli_contract(tmp_path):
-    from scripts.training_slice import training_argv
+def test_training_continuation_cli_contract(tmp_path, monkeypatch):
+    from scripts import training_slice
+    monkeypatch.setattr(training_slice, 'read_rows', lambda path: [])
+    monkeypatch.setattr(training_slice, 'model_binding', lambda path: {'fixture': True})
+    training_argv = training_slice.training_argv
     data = tmp_path / 'data'
     data.mkdir()
     for name in ('train.jsonl', 'val.jsonl'):

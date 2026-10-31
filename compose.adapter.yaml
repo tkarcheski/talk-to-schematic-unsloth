@@ -1,0 +1,12 @@
+# Optional adapter serving; the original adapter and base remain read-only.
+services:
+  inference:
+    environment:
+      SCHEMATIC_MODEL_KIND: adapter
+    volumes:
+      - type: bind
+        source: ${SCHEMATIC_ADAPTER_DIR:?Set SCHEMATIC_ADAPTER_DIR to the reviewed adapter directory}
+        target: /models/adapter
+        read_only: true
+        bind:
+          create_host_path: false

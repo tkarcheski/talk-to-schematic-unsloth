@@ -74,4 +74,4 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["ai_pilled", "ai_pilled.*"]
-ignore_missing_imports = true
+follow_untyped_imports = true

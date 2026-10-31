@@ -1,0 +1,5 @@
+# Explicit opt-in: supply only the environment variable named by api_key_env.
+services:
+  gateway:
+    env_file:
+      - ${SCHEMATIC_AGENT_ENV_FILE:?Set SCHEMATIC_AGENT_ENV_FILE to a private environment file}

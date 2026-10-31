@@ -12,6 +12,44 @@ from ai_pilled.pipeline import PipelineReport, combine
 from ai_pilled.python_dependencies import audit_python
 from ai_pilled.runtime import CommandError
 from ai_pilled.state import record
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
+
+
+def registry_pins(export: str) -> dict[str, str]:
+    pins: dict[str, str] = {}
+    for line in export.splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        requirement = Requirement(line)
+        if requirement.url or requirement.extras:
+            raise ValueError('Audit export contains unsupported non-registry dependencies')
+        if requirement.marker and not requirement.marker.evaluate():
+            continue
+        specifiers = list(requirement.specifier)
+        if len(specifiers) != 1 or specifiers[0].operator != '==' or '*' in specifiers[0].version:
+            raise ValueError('Audit dependencies must have exact versions')
+        name, version = canonicalize_name(requirement.name), specifiers[0].version
+        if name in pins and pins[name] != version:
+            raise ValueError('Audit export contains conflicting package versions')
+        pins[name] = version
+    if not pins:
+        raise ValueError('Audit export is empty')
+    return pins
+
+
+def verify_vcs_tool(root: Path) -> None:
+    project = tomllib.loads((root / 'pyproject.toml').read_text())
+    configured = project['tool']['uv']['sources']['ai-pilled']
+    lock = tomllib.loads((root / 'uv.lock').read_text())
+    vcs = [p for p in lock['package'] if 'git' in p['source']]
+    if len(vcs) != 1 or vcs[0]['name'] != 'ai-pilled':
+        raise ValueError('Review new VCS dependencies before excluding them from registry audits')
+    revision = configured['rev']
+    if len(revision) != 40 or any(c not in '0123456789abcdef' for c in revision):
+        raise ValueError('The VCS audit tool must use an immutable revision')
+    if vcs[0]['source']['git'].split('#')[-1] != revision:
+        raise ValueError('VCS audit tool revision differs from the reviewed configuration')
 
 
 def python_pins(lock: bytes) -> str:

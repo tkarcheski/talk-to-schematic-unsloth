@@ -113,8 +113,11 @@ def _evidence(dataset, predictions, model, rows, image_hashes):
     settings = deployment.get("settings")
     required = {"model", "served_model_name", "max_seq", "max_image_size", "max_tokens", "seed",
                 "four_bit", "min_free_vram_gb", "agent_tools"}
-    if not isinstance(settings, dict) or set(settings) not in (required, required - {"agent_tools"}):
+    request_bounds = {"max_images", "max_text_chars", "max_messages"}
+    if not isinstance(settings, dict) or set(settings) - request_bounds not in (required, required - {"agent_tools"}):
         raise ValueError("Missing or unknown inference settings")
+    if any(type(settings.get(key, 1)) is not int or settings.get(key, 1) < 1 for key in request_bounds):
+        raise ValueError("Invalid inference settings for image-only qualification")
     # The schema-v1 benchmark predates the optional agent-tools mode. Preserve
     # its raw metadata hash, normalizing only this known historical omission.
     legacy_settings = "agent_tools" not in settings
@@ -135,7 +138,7 @@ def _evidence(dataset, predictions, model, rows, image_hashes):
     comparison = {key: metadata[key] for key in ("dataset_sha256", "images_sha256", "profile", "history",
                                                 "max_tokens", "temperature", "failure_policy")}
     comparison["settings"] = {key: value for key, value in settings.items()
-                              if key not in {"model", "served_model_name", "min_free_vram_gb"}}
+                              if key not in {"model", "served_model_name", "min_free_vram_gb"} | request_bounds}
     comparison["packages"] = deployment["packages"]
     return {"predictions_sha256": _digest(raw), "metadata_sha256": _digest(metadata_raw),
             "benchmark_report_sha256": _digest(report_raw), "model": fingerprint,

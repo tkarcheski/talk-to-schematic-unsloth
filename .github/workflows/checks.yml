@@ -1,3 +1,4 @@
+# cspell:words deadcode venv
 name: Repository audit
 on:
   push:
@@ -33,3 +34,12 @@ jobs:
         run: uv run --locked python -m pre_commit run --all-files --hook-stage manual --show-diff-on-failure
       - run: npm run test:browser-state
       - run: uv build
+
+  gateway-container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: docker compose up --build --no-deps -d gateway
+      - run: docker compose exec -T gateway /app/.venv/bin/python < docker/smoke_gateway.py
+      - if: always()
+        run: docker compose down --remove-orphans
