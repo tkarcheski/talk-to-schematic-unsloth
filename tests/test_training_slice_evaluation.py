@@ -42,7 +42,28 @@ def test_evaluation_reaches_training_cli_and_survives_resume(plan, tmp_path):
         training_argv({**plan, 'early_stopping_patience': 4})
 
 
+def test_offload_plan_reaches_training_and_cannot_change_on_resume(plan, tmp_path):
+    plan = {**plan, 'four_bit': True, 'placement': 'single_gpu',
+            'offload_layers': 24, 'offload_prefetch': 1}
+    argv = training_argv(plan)
+    assert '--4bit' in argv
+    for flag, value in [('--placement', 'single_gpu'), ('--offload-layers', '24'), ('--offload-prefetch', '1')]:
+        assert argv[argv.index(flag) + 1] == value
+    checkpoint = tmp_path / 'run/checkpoint-2'
+    checkpoint.mkdir(parents=True)
+    (checkpoint / 'trainer_state.json').write_text('{"global_step": 2}')
+    for name in ('adapter_model.safetensors', 'adapter_config.json', 'optimizer.pt', 'scheduler.pt', 'rng_state.pth', 'training_args.bin'):
+        (checkpoint / name).write_bytes(b'fixture')
+    assert training_argv(plan) == [*argv, '--resume', str(checkpoint)]
+    for change in [{'four_bit': False}, {'placement': 'auto'}, {'offload_layers': 16}, {'offload_prefetch': 2}]:
+        with pytest.raises(ValueError, match='different'):
+            training_argv({**plan, **change})
+
+
 @pytest.mark.parametrize('changed', [
+    {'four_bit': 'true'}, {'placement': 'invalid'}, {'offload_layers': True},
+    {'offload_layers': -1}, {'offload_prefetch': 0},
+    {'offload_layers': 24, 'continue_adapter': True},
     {'eval_steps': True}, {'eval_steps': 0}, {'eval_steps': 2.5},
     {'early_stopping_patience': False}, {'early_stopping_patience': 0},
     {'load_best_model_at_end': 'true'}, {'eval_steps': 3},
