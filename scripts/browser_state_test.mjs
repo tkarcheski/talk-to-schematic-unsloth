@@ -811,3 +811,92 @@ test("each HTTP tool round uses a distinct cancellation token", async () => {
   await finish(h, pending);
   assert.equal(h.ui.state.requestId, null);
 });
+
+test("gateway viewer continuation sends the exact result with its single-use token", async () => {
+  const h = harness();
+  seedReady(h);
+  h.ui.state.agent = { enabled: true };
+  const gateway = (index) =>
+    h.requests.filter((request) => request.path === "/api/agent/chat")[index];
+  const pending = await send(h, "Show me R1.");
+  const before = h.element("world").style.transform;
+  gateway(0).resolve(
+    response({
+      pending_approval: {
+        id: "approval-one",
+        tool: "show_label",
+        arguments: { label: "R1" },
+        destination: "schematic viewer",
+      },
+    }),
+  );
+  await drain();
+  assert.equal(h.element("world").style.transform, before);
+  h.ui.state.approvalResolve("allow");
+  await drain();
+  assert.equal(body(gateway(1)).approval_id, "approval-one");
+  gateway(1).resolve(
+    response({
+      ...toolReply("show_label", { label: "R1" }),
+      continuation_id: "viewer-result-one",
+      viewer_authorization: {
+        tool_call_id: "call-1",
+        tool: "show_label",
+        arguments: { label: "R1" },
+      },
+    }),
+  );
+  await drain();
+  const resumed = body(gateway(2));
+  const { request_id, ...continuation } = resumed;
+  assert.deepEqual(continuation, {
+    continuation_id: "viewer-result-one",
+    tool_call_id: "call-1",
+    tool: "show_label",
+    arguments: { label: "R1" },
+    result: {
+      status: "shown",
+      label: "R1",
+      kind: "part",
+      box: [100, 100, 200, 200],
+    },
+  });
+  assert.equal(
+    new Set([
+      body(gateway(0)).request_id,
+      body(gateway(1)).request_id,
+      request_id,
+    ]).size,
+    3,
+  );
+  assert.notEqual(h.element("world").style.transform, before);
+  gateway(2).resolve(
+    response(answer("Stopped at the configured agent step limit.")),
+  );
+  await finish(h, pending);
+  assert.equal(h.ui.state.history.at(-2).role, "tool");
+  assert.equal(
+    h.ui.state.history.at(-1).content,
+    "Stopped at the configured agent step limit.",
+  );
+});
+
+test("gateway viewer calls without a continuation fail before moving the view", async () => {
+  const h = harness();
+  seedReady(h);
+  h.ui.state.agent = { enabled: true };
+  const before = h.element("world").style.transform;
+  const pending = await send(h, "Show me R1.");
+  h.requests
+    .find((request) => request.path === "/api/agent/chat")
+    .resolve(response(toolReply("show_label", { label: "R1" })));
+  await finish(h, pending);
+  assert.equal(h.element("world").style.transform, before);
+  assert.equal(h.ui.state.history.length, 0);
+  assert.equal(h.element("question").value, "Show me R1.");
+  assert.equal(h.ui.state.approvalResolve, null);
+  assert.equal(
+    h.requests.filter((request) => request.path === "/api/agent/chat").length,
+    1,
+  );
+});

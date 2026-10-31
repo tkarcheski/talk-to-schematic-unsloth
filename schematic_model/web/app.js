@@ -428,7 +428,7 @@ async function loadAgentConfig() {
     }
     if (!permissions.length) list.textContent = "Viewer tools only";
     $("settings-config-note").textContent = config.enabled
-      ? `Agent limited to ${config.max_steps} steps per request. Model endpoints and permissions are configured by your server operator.`
+      ? `Agent limited to ${config.max_steps} model steps per question, including approved viewer actions. Model endpoints and permissions are configured by your server operator.`
       : "Viewer tools are available. Server agent tools require a configured self-hosted inference provider.";
   } catch {
     state.agent = null;
@@ -1033,19 +1033,23 @@ async function ask(question) {
         : ""),
   };
   const actions = [];
+  let continuation = null;
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
     updateProgress(
       round ? `Thinking after viewer action ${round}…` : "Thinking…",
     );
-    const result = await agentCompletion({
-      model: state.health.model,
-      messages: pending,
-      tools: state.tools.tools,
-      ...(Number.isInteger(state.health.limits?.max_tokens) &&
-      state.health.limits.max_tokens > 0
-        ? { max_tokens: state.health.limits.max_tokens }
-        : {}),
-    });
+    const result = await agentCompletion(
+      continuation || {
+        model: state.health.model,
+        messages: pending,
+        tools: state.tools.tools,
+        ...(Number.isInteger(state.health.limits?.max_tokens) &&
+        state.health.limits.max_tokens > 0
+          ? { max_tokens: state.health.limits.max_tokens }
+          : {}),
+      },
+    );
+    continuation = null;
     if (selection !== state.selection) return null;
     if (Array.isArray(result.messages))
       pending.splice(0, pending.length, ...result.messages);
@@ -1060,6 +1064,16 @@ async function ask(question) {
       return { history: pending, answer: reply.content, actions };
     }
     if (round === MAX_TOOL_ROUNDS) break;
+    if (
+      state.agent?.enabled &&
+      (calls.length !== 1 ||
+        typeof result.continuation_id !== "string" ||
+        !result.continuation_id ||
+        result.continuation_id.length > 128)
+    )
+      throw new Error(
+        "The gateway did not provide a valid viewer continuation. Your question has been kept for retry.",
+      );
     pending.push({
       role: "assistant",
       content: reply.content || null,
@@ -1117,6 +1131,14 @@ async function ask(question) {
         tool_call_id: call.id,
         content: JSON.stringify(outcome),
       });
+      if (state.agent?.enabled)
+        continuation = {
+          continuation_id: result.continuation_id,
+          tool_call_id: call.id,
+          tool: call.function.name,
+          arguments: args,
+          result: outcome,
+        };
     }
   }
   throw new Error(

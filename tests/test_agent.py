@@ -314,7 +314,7 @@ def test_earlier_navigation_and_result_cannot_authorize_next_navigation():
     assistant_call = approved['choices'][0]['message']
     actual_browser_result = {'role': 'tool', 'tool_call_id': assistant_call['tool_calls'][0]['id'],
                              'content': json.dumps({'status': 'shown', 'label': 'U1', 'kind': 'part', 'box': [10, 10, 100, 100]})}
-    continuation = {'model': 'test', 'messages': [*approved['messages'], assistant_call, actual_browser_result]}
+    continuation = viewer_result(approved, json.loads(actual_browser_result['content']))
     answered = agent.chat(continuation)
     followup = {'model': 'test', 'messages': [*answered['messages'], answered['choices'][0]['message'],
                                              {'role': 'user', 'content': 'Discuss the regulator. Keep this view.'}]}
@@ -359,3 +359,149 @@ def test_viewer_approval_expires_and_stays_with_own_runtime(monkeypatch):
     monkeypatch.setattr('schematic_model.agent.time.time', lambda: pending['expires_at'] + 1)
     with pytest.raises(ValueError):
         agent.chat({'approval_id': pending['id'], 'decision': 'allow'})
+
+
+def viewer_result(released, result=None):
+    grant = released["viewer_authorization"]
+    return {"continuation_id": released["continuation_id"], **grant,
+            "result": result if result is not None else {"status": "shown", "label": "U1"}}
+
+
+def approve_viewer(agent, request=None):
+    proposed = agent.chat(request or payload())
+    return agent.chat({"approval_id": proposed["pending_approval"]["id"], "decision": "allow"})
+
+
+def test_viewer_continuation_preserves_step_budget_and_new_questions_start_fresh():
+    agent, seen = runtime([call("show_label", {"label": "U1"}), answer("New question answered")], max_steps=1)
+    released = approve_viewer(agent)
+    command = released["choices"][0]["message"]
+    legacy = {"model": "test", "messages": [*released["messages"], command,
+              {"role": "tool", "tool_call_id": "call-1", "content": '{"status":"shown"}'}]}
+    with pytest.raises(ValueError, match="continuation token"):
+        agent.chat(legacy)
+    continuation = viewer_result(released, {"status": "not_found", "label": "U1"})
+    stopped = agent.chat(continuation)
+    assert len(seen) == 1
+    assert stopped["metrics"]["model_steps"] == 0
+    assert "step limit" in stopped["choices"][0]["message"]["content"]
+    assert json.loads(stopped["messages"][-1]["content"]) == continuation["result"]
+    with pytest.raises(ValueError, match="consumed"):
+        agent.chat(continuation)
+    followup = {"model": "test", "messages": [*stopped["messages"], stopped["choices"][0]["message"],
+                                                {"role": "user", "content": "What is U2?"}]}
+    assert agent.chat(followup)["choices"][0]["message"]["content"] == "New question answered"
+    assert len(seen) == 2
+
+
+def test_multiple_viewer_continuations_share_one_model_step_budget():
+    agent, seen = runtime([call("show_label", {"label": "U1"}),
+                           call("show_full_sheet", {}, "call-2"), answer("Finished")], max_steps=3)
+    first = approve_viewer(agent)
+    next_action = agent.chat(viewer_result(first))
+    second = agent.chat({"approval_id": next_action["pending_approval"]["id"], "decision": "allow"})
+    assert second["continuation_id"] != first["continuation_id"]
+    result = agent.chat(viewer_result(second, {"status": "shown", "view": "full_sheet"}))
+    assert result["choices"][0]["message"]["content"] == "Finished"
+    assert len(seen) == 3
+    assert [m["tool_call_id"] for m in seen[-1][1]["messages"] if m["role"] == "tool"] == ["call-1", "call-2"]
+
+
+def test_viewer_continuation_rejects_reused_provider_id_before_second_approval():
+    agent, seen = runtime([call("show_label", {"label": "U1"}, "reused-id"),
+                           call("show_full_sheet", {}, "reused-id")])
+    released = approve_viewer(agent)
+    with pytest.raises(ValueError, match="reused a tool call ID"):
+        agent.chat(viewer_result(released))
+    assert len(seen) == 2
+    assert json.loads(seen[-1][1]["messages"][-1]["content"])["status"] == "shown"
+    assert agent.pending == {}
+
+
+@pytest.mark.parametrize("changes", [
+    {"tool_call_id": "another-call"}, {"tool": "show_full_sheet"}, {"arguments": {"label": "U2"}},
+    {"arguments": {"label": " U1 "}}, {"steps": 0}, {"messages": []}, {"max_tokens": 9999},
+    {"result": {"status": "shown", "reason": "x" * 16_384}}, {"result": {"status": "invented"}},
+])
+def test_viewer_continuation_rejects_substitution_and_client_budgets(changes):
+    agent, seen = runtime([call("show_label", {"label": "U1"})])
+    released = approve_viewer(agent)
+    with pytest.raises(ValueError):
+        agent.chat({**viewer_result(released), **changes})
+    assert len(seen) == 1
+
+
+def test_continuation_tokens_are_isolated_expiring_and_distinct_from_approvals(monkeypatch):
+    agent, seen = runtime([call("show_label", {"label": "U1"})])
+    approval = agent.chat(payload())["pending_approval"]
+    with pytest.raises(ValueError):
+        agent.chat({"continuation_id": approval["id"], "tool_call_id": "call-1", "tool": "show_label",
+                    "arguments": {"label": "U1"}, "result": {"status": "shown"}})
+    released = agent.chat({"approval_id": approval["id"], "decision": "allow"})
+    assert released["continuation_id"] != approval["id"]
+    other, _ = runtime([])
+    with pytest.raises(ValueError):
+        other.chat(viewer_result(released))
+    with pytest.raises(ValueError):
+        agent.chat({"approval_id": released["continuation_id"], "decision": "allow"})
+    monkeypatch.setattr("schematic_model.agent.time.time", lambda: released["continuation_expires_at"] + 1)
+    with pytest.raises(ValueError):
+        agent.chat(viewer_result(released))
+    assert len(seen) == 1
+    assert not agent.pending
+
+
+def test_pending_viewer_results_share_the_approval_memory_cap():
+    agent, _ = runtime([call("show_label", {"label": "U1"}) for _ in range(9)])
+    try:
+        for _ in range(8):
+            approve_viewer(agent)
+        with pytest.raises(ValueError, match="memory limit"):
+            agent.chat(payload())
+        assert len(agent.pending) == 8
+    finally:
+        for token in list(agent.pending):
+            agent._expire(token)
+
+
+def test_cancelling_a_viewer_continuation_stops_its_model_call_and_consumes_token():
+    from schematic_model.generation_jobs import GenerationCancelled
+    stop = threading.Event()
+    agent, seen = runtime([call("show_label", {"label": "U1"})])
+    released = approve_viewer(agent)
+    def cancelled_transport(url, request, key):
+        seen.append((url, request))
+        stop.set()
+        return answer()
+    agent.transport = cancelled_transport
+    with pytest.raises(GenerationCancelled):
+        agent.chat(viewer_result(released), cancel_event=stop)
+    assert len(seen) == 2
+    with pytest.raises(ValueError, match="consumed"):
+        agent.chat(viewer_result(released))
+
+
+def test_gateway_http_continuation_keeps_budget_across_distinct_request_ids():
+    agent, seen = runtime([call("show_label", {"label": "U1"})], max_steps=1)
+    server = make_server(GatewayEngine(agent), 0, agent=agent)
+    worker = threading.Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+    base = f"http://127.0.0.1:{server.server_port}"
+    def post(body, request_id):
+        request = Request(base + "/api/agent/chat", data=json.dumps({**body, "request_id": request_id}).encode(),
+                          headers={"Content-Type": "application/json", "Origin": base})
+        with urlopen(request, timeout=3) as reply:
+            return json.load(reply)
+    try:
+        proposed = post(payload(), "a" * 32)
+        released = post({"approval_id": proposed["pending_approval"]["id"], "decision": "allow"}, "b" * 32)
+        result = post(viewer_result(released), "c" * 32)
+        assert "step limit" in result["choices"][0]["message"]["content"]
+        assert len(seen) == 1
+        with pytest.raises(HTTPError) as error:
+            post(viewer_result(released), "d" * 32)
+        assert error.value.code == 400
+    finally:
+        server.shutdown()
+        server.server_close()
+        worker.join(timeout=3)
