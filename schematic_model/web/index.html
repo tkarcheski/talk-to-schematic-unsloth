@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="/assets/style.css" />
     <script src="/assets/app.js" defer></script>
     <script src="/assets/comparison.js" defer></script>
+    <script src="/assets/saved_benchmark.js" defer></script>
+    <script src="/assets/saved_comparison.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#question">Skip to chat</a>
@@ -371,6 +373,7 @@
     >
       <div class="comparison-header">
         <h2 id="compare-title">Compare model answers</h2>
+        <button id="compare-saved" type="button">Saved benchmarks</button>
         <button id="compare-close" type="button">Close</button>
       </div>
       <p class="mode-note">
@@ -442,6 +445,117 @@
           </button>
         </div>
       </form>
+    </dialog>
+    <dialog
+      id="saved-comparison"
+      class="comparison-dialog"
+      aria-labelledby="saved-title"
+    >
+      <div class="comparison-header">
+        <h2 id="saved-title">Review saved model answers</h2>
+        <button id="saved-close" type="button">Close</button>
+      </div>
+      <p class="mode-note">
+        Open two completed benchmark runs and their exact dataset. Files stay in
+        this browser session. No upload, inference or training-data export
+        occurs.
+      </p>
+      <details id="saved-files" open>
+        <summary>Choose local benchmark files</summary>
+        <form id="saved-import" class="saved-import">
+          <label for="saved-dataset">Exact benchmark dataset (.jsonl)</label
+          ><input id="saved-dataset" type="file" accept=".jsonl" required />
+          <div class="comparison-lanes">
+            <label
+              >A operator label (optional)<input
+                id="saved-label-a"
+                type="text"
+                maxlength="40"
+                placeholder="Baseline, e.g. v1"
+            /></label>
+            <label
+              >B operator label (optional)<input
+                id="saved-label-b"
+                type="text"
+                maxlength="40"
+                placeholder="Candidate, e.g. v3"
+            /></label>
+          </div>
+          <div class="comparison-lanes">
+            <label
+              >Run A: predictions + metadata + report<input
+                id="saved-run-a"
+                type="file"
+                accept=".jsonl,.json"
+                multiple
+                required
+            /></label>
+            <label
+              >Run B: predictions + metadata + report<input
+                id="saved-run-b"
+                type="file"
+                accept=".jsonl,.json"
+                multiple
+                required
+            /></label>
+          </div>
+          <p class="mode-note">
+            For each run select all three files together: run.jsonl,
+            run.jsonl.meta.json and run.jsonl.report.json. Up to 16 MiB per
+            file, 64 MiB total and 5000 turns. Both runs must use matching
+            images, history and generation settings.
+          </p>
+          <button type="submit" id="saved-load">Review pair</button>
+        </form>
+      </details>
+      <p id="saved-import-status" role="status"></p>
+      <p id="saved-error" role="alert"></p>
+      <section id="saved-review" hidden>
+        <p id="saved-binding" class="mode-note"></p>
+        <p id="saved-warning" class="comparison-warning"></p>
+        <div id="saved-summary" class="comparison-lanes"></div>
+        <p class="mode-note">
+          Scores are recorded aggregate benchmark metrics, not recomputed here
+          or independently reviewed. Text differences do not establish
+          correctness. A recorded stop does not prove clean termination. Hash
+          checks establish file consistency, not authenticity or equal endpoint
+          preprocessing.
+        </p>
+        <div class="comparison-options saved-browse">
+          <label
+            >Show<select id="saved-filter">
+              <option value="all">All turns</option>
+              <option value="failure">Any failed or blocked turn</option>
+              <option value="b-failure">Only B failed or blocked</option>
+              <option value="a-failure">Only A failed or blocked</option>
+              <option value="different">Different recorded answers</option>
+            </select></label
+          >
+          <label class="saved-case-picker"
+            >Question<select id="saved-case-select"></select
+          ></label>
+          <button id="saved-prev" type="button">Previous</button
+          ><button id="saved-next" type="button">Next</button>
+        </div>
+        <p id="saved-count" role="status"></p>
+        <div id="saved-case" aria-live="polite"></div>
+        <details id="saved-image-tools" class="comparison-source">
+          <summary>Inspect source image</summary>
+          <p id="saved-image-note" class="mode-note"></p>
+          <label for="saved-image-file"
+            >Choose original PNG files (up to 32; 64 MiB total)</label
+          ><input
+            id="saved-image-file"
+            type="file"
+            accept="image/png,.png"
+            multiple
+          />
+          <button id="saved-clear-images" type="button">Clear previews</button>
+          <p id="saved-image-status" role="status"></p>
+          <p id="saved-image-error" role="alert"></p>
+          <div id="saved-images"></div>
+        </details>
+      </section>
     </dialog>
   </body>
 </html>
