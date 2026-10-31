@@ -9,7 +9,8 @@
     "test:browser-state": "node scripts/browser_state_test.mjs",
     "test:browser-agent": "node scripts/browser_agent_test.mjs",
     "test:browser-navigation": "node scripts/browser_navigation_test.mjs",
-    "test:browser-comparison": "node scripts/browser_comparison_test.mjs"
+    "test:browser-comparison": "node scripts/browser_comparison_test.mjs",
+    "test:saved-benchmark": "node scripts/saved_benchmark_test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

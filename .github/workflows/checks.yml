@@ -21,6 +21,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run test:browser-state
+      - run: npm run test:saved-benchmark
       - run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
       - run: uv sync --locked
       - run: uv run --locked ruff check .
