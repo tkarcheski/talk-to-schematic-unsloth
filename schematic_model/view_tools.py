@@ -172,7 +172,8 @@ def plain_messages(messages: Any, tools: Any = None, *, registry=None) -> list[d
         output.append({"role": "system", "content": preamble + ("\n\n" + system if system else "")})
     else:
         output.append({"role": "system", "content": preamble})
-    pending_calls = 0
+    pending_calls: list[tuple[str, str]] = []
+    seen_call_ids: set[str] = set()
     for message in rest:
         if not isinstance(message, dict):
             raise ToolFormatError("messages must be objects")
@@ -180,9 +181,16 @@ def plain_messages(messages: Any, tools: Any = None, *, registry=None) -> list[d
         if role == "tool":
             if set(message) - {"role", "content", "tool_call_id", "name"}:
                 raise ToolFormatError("tool results allow only role, content, tool_call_id and name")
-            if pending_calls < 1:
+            if not pending_calls:
                 raise ToolFormatError("each tool result must answer an earlier tool call")
-            pending_calls -= 1
+            call_id, name = pending_calls[0]
+            # The rendered template omits IDs, so result order must retain the
+            # association established by the assistant's calls.
+            if message.get("tool_call_id") != call_id:
+                raise ToolFormatError("tool results must match pending call IDs in order")
+            if "name" in message and message["name"] != name:
+                raise ToolFormatError("tool result name must match its call")
+            pending_calls.pop(0)
             block = "<tool_response>\n" + _block_text(message.get("content")) + "\n</tool_response>"
             previous = output[-1]
             if previous["role"] == "user" and isinstance(previous["content"], str) \
@@ -199,13 +207,24 @@ def plain_messages(messages: Any, tools: Any = None, *, registry=None) -> list[d
             calls = message["tool_calls"]
             if not isinstance(calls, list) or not 1 <= len(calls) <= MAX_CALLS:
                 raise ToolFormatError(f"assistant messages may make 1-{MAX_CALLS} tool calls")
+            for call in calls:
+                candidate_id = call.get("id") if isinstance(call, dict) else None
+                if not isinstance(candidate_id, str) or not candidate_id.strip() or len(candidate_id) > 128:
+                    raise ToolFormatError("tool calls need a nonempty ID of at most 128 characters")
+                if candidate_id in seen_call_ids:
+                    raise ToolFormatError("tool call IDs must be unique within the conversation")
+                seen_call_ids.add(candidate_id)
             content = message.get("content") or ""
             content = _block_text(content).strip() if content else ""
             text = content + ("\n\n" if content else "") + "\n".join(_render_call(c, registry) for c in calls)
             output.append({"role": "assistant", "content": text})
-            pending_calls = len(calls)
+            pending_calls = [(call["id"], call["function"]["name"]) for call in calls]
             continue
         output.append({key: value for key, value in message.items() if key != "tool_calls"})
+    # A final assistant call is a valid training target. Once results begin,
+    # however, every call must be answered before this history can be used.
+    if pending_calls and rest[-1].get("role") == "tool":
+        raise ToolFormatError("every tool call needs a tool result")
     return output
 
 
