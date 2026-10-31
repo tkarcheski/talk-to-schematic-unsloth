@@ -122,6 +122,9 @@ class AgentRuntime:
         self.pending = {}
         self.pending_lock = threading.Lock()
         self.timers = {}
+        # Model steps already spent in a turn that paused for a viewer action,
+        # keyed by the approved tool_call_id. Server-owned; never client-supplied.
+        self.turn_steps = {}
         self.model_details = safe_model_details({"served_model_name": config.model, "backend": "self_hosted"})
 
     def _expire(self, token):
@@ -180,6 +183,11 @@ class AgentRuntime:
                 message = state["messages"][-1]
                 state["events"].append({"id": secrets.token_hex(8), "tool": name,
                                         "status": "approved", "arguments": args})
+                with self.pending_lock:
+                    self.turn_steps = {k: v for k, v in self.turn_steps.items() if v[1] > now}
+                    if len(self.turn_steps) >= 64:
+                        raise ValueError("Pending continuation limit reached")
+                    self.turn_steps[call["id"]] = (state["steps"], time.time() + 300)
                 result = {"choices": [{"message": message}], "events": state["events"],
                           "messages": state["messages"][:-1],
                           "viewer_authorization": {"tool_call_id": call["id"], "tool": name, "arguments": args}}
@@ -192,7 +200,14 @@ class AgentRuntime:
             validation = dict(payload)
             validation["tools"] = [*VIEW_TOOLS, CALCULATE_TOOL, SEARCH_TOOL]
             validate_request(validation, config)
-            state = {"messages": copy.deepcopy(payload["messages"]), "events": [], "steps": 0, "max_tokens": payload.get("max_tokens", 1024), "temperature": payload.get("temperature", 0)}
+            last = payload["messages"][-1] if payload["messages"] else None
+            carried = 0
+            if isinstance(last, dict) and last.get("role") == "tool" and isinstance(last.get("tool_call_id"), str):
+                with self.pending_lock:
+                    spent = self.turn_steps.pop(last["tool_call_id"], None)
+                if spent and spent[1] > now:
+                    carried = spent[0]
+            state = {"messages": copy.deepcopy(payload["messages"]), "events": [], "steps": carried, "max_tokens": payload.get("max_tokens", 1024), "temperature": payload.get("temperature", 0)}
         metrics = InferenceMetrics()
         result = self._run(state, metrics)
         return self._finish(state, result, metrics)

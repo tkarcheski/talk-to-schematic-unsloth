@@ -31,6 +31,17 @@ def user_message(question, candidate, viewer, attach=False):
     return {'role': 'user', 'content': [{'type': 'image_url', 'image_url': {'url': image}}, {'type': 'text', 'text': text}]}
 
 
+EMPTY_ACKNOWLEDGED = re.compile(r"\b(no (search )?results?|empty|nothing (was )?(found|returned)|returned nothing|"
+                                r"no (relevant )?(information|evidence|data)|insufficient|not enough|cannot|can't|could not|couldn't|unable)\b", re.I)
+UNSUPPORTED_SPEC = re.compile(r"\b\d+(\.\d+)?\s?(v|mv|kv|a|ma|ua|mhz|khz|ghz|hz|w|mw|ohms?|k?\u03a9|\u00b0c|%)(?![a-z0-9])|"
+                              r"\b(datasheet|search results?) (says|states|specifies|lists|shows|confirms)\b|\baccording to the (datasheet|search)\b", re.I)
+
+
+def empty_search_answer_ok(content):
+    """An empty search supports neither datasheet specifications nor a contradictory 'found' claim."""
+    return bool(EMPTY_ACKNOWLEDGED.search(content)) and not UNSUPPORTED_SPEC.search(content)
+
+
 def final_matches(content, turn):
     if not isinstance(content, str) or not content.strip():
         return False
@@ -40,6 +51,8 @@ def final_matches(content, turn):
         return False
     if turn.get('clarify') and not (re.search(r'\b(which|select|specify|provide)\b', content, re.I)
                                     and re.search(r'\b(part|component|reference|designator)\b', content, re.I)):
+        return False
+    if turn.get('tool') == 'web_search' and not empty_search_answer_ok(content):
         return False
     if turn.get('refusal') and not any(word in content.lower() for word in ('not', 'cannot', "can't", 'unavailable', 'measurement', 'measure')):
         return False

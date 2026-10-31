@@ -212,3 +212,17 @@ def test_view_gold_is_validated():
                 {"type": "view_reply", "label": " "}):
         with pytest.raises(EvaluationError):
             validate_gold_rows([{"id": "x", "gold": [bad]}])
+
+
+@pytest.mark.parametrize("results", [
+    [{"role": "tool", "tool_call_id": "other", "content": "{}"}],
+    [{"role": "tool", "content": "{}"}],
+    [{"role": "tool", "tool_call_id": "c1", "content": "{}"}, {"role": "tool", "tool_call_id": "c1", "content": "{}"}],
+])
+def test_tool_results_must_match_unanswered_call_ids(results):
+    messages = [{"role": "user", "content": "Show U1"},
+                {"role": "assistant", "content": None, "tool_calls": [
+                    {"id": "c1", "type": "function", "function": {"name": "show_label", "arguments": {"label": "U1"}}}]},
+                *results]
+    with pytest.raises(ToolFormatError):
+        plain_messages(messages, VIEW_TOOLS)

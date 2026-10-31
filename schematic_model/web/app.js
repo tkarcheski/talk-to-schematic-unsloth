@@ -1243,6 +1243,7 @@ async function pdfjs() {
   }
   return pdfLibrary;
 }
+const PDF_MAX_PAGES = 200;
 async function openFile(file) {
   if (!file) return;
   $("library").close?.();
@@ -1277,6 +1278,13 @@ async function openFile(file) {
       enableXfa: false,
     }).promise;
     if (selection !== state.selection) return;
+    if (pdfDocument.numPages > PDF_MAX_PAGES) {
+      state.pdf = null;
+      renderPages();
+      throw new Error(
+        `PDFs over ${PDF_MAX_PAGES} pages are not supported (this one has ${pdfDocument.numPages}).`,
+      );
+    }
     state.pdf = {
       document: pdfDocument,
       name: file.name,
@@ -1317,6 +1325,19 @@ function uploadDoc(name, page, image, width, height, words) {
 async function openPdfPage(number) {
   const pdf = state.pdf;
   const selection = loading(`Rendering page ${number}…`);
+  try {
+    await renderPdfPage(pdf, number, selection);
+  } catch (error) {
+    // Only the active page reports; a superseded render stays silent.
+    if (selection === state.selection) {
+      $("placeholder-text").textContent = `Could not render page ${number}`;
+      showError(error.message || "The PDF page could not be rendered.");
+      renderPages(); // keep page navigation available so the user can retry
+      controls();
+    }
+  }
+}
+async function renderPdfPage(pdf, number, selection) {
   const page = await pdf.document.getPage(number);
   const base = page.getViewport({ scale: 1 });
   let scale = PDF_LONG_SIDE / Math.max(base.width, base.height);
@@ -1353,15 +1374,14 @@ function renderPages() {
   nav.replaceChildren();
   nav.hidden = !state.pdf || state.pdf.pages < 2;
   if (nav.hidden) return;
-  for (let number = 1; number <= Math.min(state.pdf.pages, 200); number += 1) {
+  for (let number = 1; number <= state.pdf.pages; number += 1) {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = String(number);
     button.setAttribute("aria-label", `Page ${number}`);
     if (number === state.pdf.page) button.setAttribute("aria-current", "page");
     button.addEventListener("click", () => {
-      if (number !== state.pdf.page && !state.pending)
-        openPdfPage(number).catch((error) => showError(error.message));
+      if (number !== state.pdf.page && !state.pending) openPdfPage(number);
     });
     nav.append(button);
   }

@@ -295,3 +295,15 @@ def test_viewer_approval_expires_and_stays_with_own_runtime(monkeypatch):
     monkeypatch.setattr('schematic_model.agent.time.time', lambda: pending['expires_at'] + 1)
     with pytest.raises(ValueError):
         agent.chat({'approval_id': pending['id'], 'decision': 'allow'})
+
+
+def test_viewer_continuation_keeps_the_turn_step_budget():
+    agent, seen = runtime([call('show_label', {'label': 'U1'}), answer('must not be requested')], max_steps=1)
+    proposed = agent.chat(payload())
+    approved = agent.chat({'approval_id': proposed['pending_approval']['id'], 'decision': 'allow'})
+    assistant_call = approved['choices'][0]['message']
+    browser_result = {'role': 'tool', 'tool_call_id': assistant_call['tool_calls'][0]['id'],
+                      'content': json.dumps({'status': 'shown', 'label': 'U1', 'kind': 'part', 'box': [10, 10, 100, 100]})}
+    result = agent.chat({'model': 'test', 'messages': [*approved['messages'], assistant_call, browser_result]})
+    assert 'step limit' in result['choices'][0]['message']['content']
+    assert len(seen) == 1  # the continuation did not start a fresh model-step budget

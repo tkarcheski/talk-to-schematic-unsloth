@@ -129,3 +129,18 @@ def test_page_change_replaces_image_evidence_and_clears_old_focus(candidate):
     text = seen[-1][-1]['content'][-1]['text']
     assert '"page": 2' in text and '"focused_label": null' in text and '10K' in text
     assert records[-1]['viewport_before'] == {'box': [0, 0, 1000, 1000], 'full_sheet': True}
+
+
+@pytest.mark.parametrize('invented', [
+    'The TPS63060 supports 2.5 V to 5.5 V input and 1.2 A output.',
+    'No results were returned, but the datasheet says the input range is wide.',
+    'I found the datasheet and it confirms the part.',
+])
+def test_empty_search_rejects_invented_or_contradictory_answers(candidate, invented):
+    case = scenario(candidate, 'search')
+    responses = [call('show_label', {'label': 'U1'}), answer('Showing U1.'),
+                 call('web_search', {'query': 'TPS63060 datasheet'}), answer(invented),
+                 answer('TPS63060'), answer('No measured startup voltage is supplied.')]
+    records = rollout(case, responder(responses, []))
+    assert not records[1]['passed']
+    assert records[1]['terminated']  # graded as wrong, not as a protocol failure

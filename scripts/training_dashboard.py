@@ -208,6 +208,11 @@ tick(); setInterval(tick,10000);
 </script>"""
 
 
+def allowed_host(host: str | None, port: int) -> bool:
+    """The dashboard is loopback-only; any other Host header is refused."""
+    return host in {f"127.0.0.1:{port}", f"localhost:{port}"}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--run", type=Path, help="run directory (default: newest under outputs/)")
@@ -221,6 +226,10 @@ def main() -> None:
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
+            # Reject DNS-rebinding and unexpected Host headers before serving anything.
+            if not allowed_host(self.headers.get("Host"), args.port):
+                self.send_error(403)
+                return
             if self.path == "/api/state":
                 selected = newest_run(run.parent) if args.follow else run
                 selected_log = progress_log(selected, args.log)

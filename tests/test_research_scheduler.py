@@ -314,3 +314,10 @@ def test_followed_run_discovers_current_log_and_preserves_override(tmp_path):
     os.utime(resumed, (second.stat().st_mtime + 2, second.stat().st_mtime + 2))
     assert progress_log(run_b) == resumed
     assert progress_log(run_b, first) == first
+
+
+@pytest.mark.parametrize("host,ok", [("127.0.0.1:8890", True), ("localhost:8890", True), (None, False),
+                                      ("evil.example:8890", False), ("127.0.0.1:9", False), ("127.0.0.1", False)])
+def test_dashboard_refuses_unexpected_host_headers(host, ok):
+    from scripts.training_dashboard import allowed_host
+    assert allowed_host(host, 8890) is ok

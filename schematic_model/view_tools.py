@@ -172,7 +172,7 @@ def plain_messages(messages: Any, tools: Any = None, *, registry=None) -> list[d
         output.append({"role": "system", "content": preamble + ("\n\n" + system if system else "")})
     else:
         output.append({"role": "system", "content": preamble})
-    pending_calls = 0
+    pending_ids: set[str] = set()
     for message in rest:
         if not isinstance(message, dict):
             raise ToolFormatError("messages must be objects")
@@ -180,9 +180,14 @@ def plain_messages(messages: Any, tools: Any = None, *, registry=None) -> list[d
         if role == "tool":
             if set(message) - {"role", "content", "tool_call_id", "name"}:
                 raise ToolFormatError("tool results allow only role, content, tool_call_id and name")
-            if pending_calls < 1:
+            if not pending_ids:
                 raise ToolFormatError("each tool result must answer an earlier tool call")
-            pending_calls -= 1
+            result_id = message.get("tool_call_id")
+            if not isinstance(result_id, str) or not result_id:
+                raise ToolFormatError("tool results need a tool_call_id")
+            if result_id not in pending_ids:
+                raise ToolFormatError("tool result does not match an unanswered tool call")
+            pending_ids.remove(result_id)
             block = "<tool_response>\n" + _block_text(message.get("content")) + "\n</tool_response>"
             previous = output[-1]
             if previous["role"] == "user" and isinstance(previous["content"], str) \
@@ -191,7 +196,7 @@ def plain_messages(messages: Any, tools: Any = None, *, registry=None) -> list[d
             else:
                 output.append({"role": "user", "content": block})
             continue
-        if pending_calls:
+        if pending_ids:
             raise ToolFormatError("every tool call needs a tool result before the conversation continues")
         if role == "assistant" and message.get("tool_calls"):
             if set(message) - {"role", "content", "tool_calls"}:
@@ -203,7 +208,10 @@ def plain_messages(messages: Any, tools: Any = None, *, registry=None) -> list[d
             content = _block_text(content).strip() if content else ""
             text = content + ("\n\n" if content else "") + "\n".join(_render_call(c, registry) for c in calls)
             output.append({"role": "assistant", "content": text})
-            pending_calls = len(calls)
+            ids = [c.get("id") if isinstance(c, dict) else None for c in calls]
+            if any(not isinstance(i, str) or not i for i in ids) or len(set(ids)) != len(ids):
+                raise ToolFormatError("tool calls need unique non-empty ids")
+            pending_ids = set(ids)
             continue
         output.append({key: value for key, value in message.items() if key != "tool_calls"})
     return output
