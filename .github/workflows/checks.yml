@@ -45,6 +45,8 @@ jobs:
           npm run test:browser-agent
           npm run test:browser-navigation
           npm run test:browser-comparison
+          npm run test:saved-benchmark
+          npm run test:browser-saved
           uv build
           CHECKS
 

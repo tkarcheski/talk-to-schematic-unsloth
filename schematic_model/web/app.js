@@ -320,7 +320,7 @@ function controls() {
     state.pending || !state.doc || state.doc.kind !== "example";
   $("reset").disabled = state.pending || !state.history.length;
   $("open-library").disabled = state.pending;
-  $("open-comparison").disabled = state.pending || !state.doc;
+  $("open-comparison").disabled = state.pending;
   for (const id of ["zoom-in", "zoom-out", "zoom-fit"])
     $(id).disabled = !state.doc;
   for (const button of $("suggestions").children) button.disabled = !ok;
