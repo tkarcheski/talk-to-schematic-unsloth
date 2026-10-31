@@ -261,7 +261,7 @@ def recorded_resume(dataset, resume_checkpoint):
 
 
 def test_complete_bound_resume_passes_cpu_preflight_without_writes(dataset, resume_checkpoint, monkeypatch):
-    config, manifest = recorded_resume(dataset, resume_checkpoint)
+    config, manifest = recorded_resume(replace(dataset, max_steps=400), resume_checkpoint)
     before = manifest.read_bytes()
     gpu = Mock(side_effect=AssertionError("preflight must stay on CPU"))
     monkeypatch.setattr(training, "gpu_inventory", gpu)
@@ -273,7 +273,7 @@ def test_complete_bound_resume_passes_cpu_preflight_without_writes(dataset, resu
 
 @pytest.mark.parametrize("placement", ["auto", "single_gpu"])
 def test_resume_legacy_placement_preserves_default_policy(dataset, resume_checkpoint, placement):
-    config, manifest = recorded_resume(dataset, resume_checkpoint)
+    config, manifest = recorded_resume(replace(dataset, max_steps=400), resume_checkpoint)
     previous = json.loads(manifest.read_text())
     del previous["config"]["placement"]
     manifest.write_text(json.dumps(previous))
@@ -719,10 +719,12 @@ def test_resume_remaining_explicit_budget_and_epoch_mode_preflight(
         dataset, resume_checkpoint, monkeypatch, max_steps):
     gpu = Mock(side_effect=AssertionError("preflight must stay on CPU"))
     monkeypatch.setattr(training, "gpu_inventory", gpu)
-    report = training.preflight(replace(dataset, max_steps=max_steps, epochs=301, resume=str(resume_checkpoint)))
+    config, manifest = recorded_resume(replace(dataset, max_steps=max_steps, epochs=301), resume_checkpoint)
+    before = manifest.read_bytes()
+    report = training.preflight(config)
     assert report["config"]["max_steps"] == max_steps
     gpu.assert_not_called()
-    assert not Path(dataset.out).exists()
+    assert manifest.read_bytes() == before
 
 
 @pytest.mark.parametrize("row_count,epochs,limit", [
@@ -754,11 +756,12 @@ def test_resume_fractional_epoch_budget_with_one_remaining_step(
                               for index in range(row_count)))
     gpu = Mock(side_effect=AssertionError("preflight must stay on CPU"))
     monkeypatch.setattr(training, "gpu_inventory", gpu)
-    report = training.preflight(replace(dataset, epochs=epochs, max_train_rows=limit,
-                                        resume=str(resume_checkpoint)))
+    config, manifest = recorded_resume(replace(dataset, epochs=epochs, max_train_rows=limit), resume_checkpoint)
+    before = manifest.read_bytes()
+    report = training.preflight(config)
     assert report["training_step_budget"]["max_optimizer_steps"] == 301
     gpu.assert_not_called()
-    assert not Path(dataset.out).exists()
+    assert manifest.read_bytes() == before
 def test_model_binding_rejects_missing_indexed_shard(tmp_path):
     (tmp_path / "model-1.safetensors").write_bytes(b"fixture")
     (tmp_path / "model.safetensors.index.json").write_text(json.dumps({
