@@ -572,9 +572,12 @@ def test_loss_history_rejects_nonfinite_or_missing_best_checkpoint(dataset):
 
 
 @pytest.mark.parametrize("placement,expected_device_map", [("auto", None), ("single_gpu", {"": 0})])
-def test_mocked_training_wires_loss_selection_callback_and_records_history(dataset, monkeypatch, placement, expected_device_map):
+@pytest.mark.parametrize("last_response_only", [False, True])
+def test_mocked_training_wires_loss_selection_callback_and_records_history(
+        dataset, monkeypatch, placement, expected_device_map, last_response_only):
     """Exercise the training integration without importing GPU/Transformers packages."""
-    config = replace(dataset, max_steps=100, eval_steps=50, load_best_model_at_end=True, early_stopping_patience=2, placement=placement)
+    config = replace(dataset, max_steps=100, eval_steps=50, load_best_model_at_end=True,
+                     early_stopping_patience=2, placement=placement, last_response_only=last_response_only)
     model = SimpleNamespace(config=SimpleNamespace(_commit_hash="test-revision"), save_pretrained=Mock())
     processor = SimpleNamespace(chat_template="fixture", save_pretrained=Mock())
     state = SimpleNamespace(
@@ -585,6 +588,7 @@ def test_mocked_training_wires_loss_selection_callback_and_records_history(datas
                               save_state=Mock())
     trainer_factory = Mock(return_value=trainer)
     early_stop = Mock()
+    collator_factory = Mock(return_value=NativeCollator(10))
     cuda = SimpleNamespace(
         is_available=lambda: True, mem_get_info=lambda: (20 * 1024**3, 24 * 1024**3),
         reset_peak_memory_stats=lambda: None, get_device_name=lambda: "test GPU",
@@ -594,7 +598,7 @@ def test_mocked_training_wires_loss_selection_callback_and_records_history(datas
         "unsloth": SimpleNamespace(FastVisionModel=SimpleNamespace(
             from_pretrained=Mock(return_value=(model, processor)), get_peft_model=lambda model, **kw: model,
             for_training=lambda model: None), is_bf16_supported=lambda: True),
-        "unsloth.trainer": SimpleNamespace(UnslothVisionDataCollator=lambda *a, **kw: NativeCollator(10)),
+        "unsloth.trainer": SimpleNamespace(UnslothVisionDataCollator=collator_factory),
         "torch": SimpleNamespace(cuda=cuda, bfloat16="bf16", float16="fp16"),
         "trl": SimpleNamespace(SFTConfig=lambda **kw: SimpleNamespace(**kw), SFTTrainer=trainer_factory),
         "transformers": SimpleNamespace(TrainerCallback=object, EarlyStoppingCallback=early_stop),
@@ -606,6 +610,7 @@ def test_mocked_training_wires_loss_selection_callback_and_records_history(datas
     report = training.run_training(config)
     assert modules["unsloth"].FastVisionModel.from_pretrained.call_args.kwargs.get("device_map") == expected_device_map
     kwargs = trainer_factory.call_args.kwargs
+    assert collator_factory.call_args.kwargs["last_response_only"] is last_response_only
     assert kwargs["args"].eval_strategy == "steps"
     assert kwargs["args"].eval_steps == kwargs["args"].save_steps == 50
     assert kwargs["args"].load_best_model_at_end is True
@@ -622,6 +627,34 @@ def test_mocked_training_wires_loss_selection_callback_and_records_history(datas
     assert report["validation"]["observations"] == state.log_history
     assert "quality is not measured" in report["validation"]["scope"]
     model.save_pretrained.assert_called_once()
+
+
+def test_last_response_only_cli_and_resume_are_bound(dataset, resume_checkpoint, capsys):
+    assert training.main(["--data", dataset.data, "--dry-run", "--last-response-only"]) == 0
+    assert json.loads(capsys.readouterr().out)["config"]["last_response_only"] is True
+    config, manifest = recorded_resume(
+        replace(dataset, max_steps=400, last_response_only=True), resume_checkpoint)
+    before = manifest.read_bytes()
+    assert training.preflight(config)["config"]["last_response_only"] is True
+    with pytest.raises(ValueError, match="Resume supervision recipe differs"):
+        training.preflight(replace(config, last_response_only=False))
+    assert manifest.read_bytes() == before
+
+
+@pytest.mark.parametrize("last_response_only", [False, True])
+def test_resume_legacy_supervision_preserves_default_policy(dataset, resume_checkpoint, last_response_only):
+    config, manifest = recorded_resume(replace(dataset, max_steps=400), resume_checkpoint)
+    previous = json.loads(manifest.read_text())
+    del previous["config"]["last_response_only"]
+    manifest.write_text(json.dumps(previous))
+    before = manifest.read_bytes()
+    config = replace(config, last_response_only=last_response_only)
+    if last_response_only:
+        with pytest.raises(ValueError, match="Resume supervision recipe differs"):
+            training.preflight(config)
+    else:
+        assert training.preflight(config)["config"]["last_response_only"] is False
+    assert manifest.read_bytes() == before
 
 
 @pytest.mark.parametrize("recorded", [

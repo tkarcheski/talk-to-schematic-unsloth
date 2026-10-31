@@ -17,7 +17,8 @@ from schematic_model.training import TrainingConfig
 def training_argv(plan):
     required = {'data', 'out', 'model', 'max_steps', 'save_steps', 'max_seq', 'rank', 'gradient_accumulation'}
     optional = {'continue_adapter', 'lr', 'max_image_size', 'finetune_vision',
-                'eval_steps', 'load_best_model_at_end', 'early_stopping_patience'}
+                'eval_steps', 'load_best_model_at_end', 'early_stopping_patience',
+                'last_response_only'}
     if set(plan) - required - optional or not required <= set(plan):
         raise ValueError('unknown/missing training plan fields')
     for key in ('data', 'out', 'model'):
@@ -36,7 +37,8 @@ def training_argv(plan):
     evaluation = TrainingConfig(max_steps=plan['max_steps'], save_steps=plan['save_steps'],
                                 eval_steps=plan.get('eval_steps'),
                                 load_best_model_at_end=plan.get('load_best_model_at_end', False),
-                                early_stopping_patience=plan.get('early_stopping_patience'))
+                                early_stopping_patience=plan.get('early_stopping_patience'),
+                                last_response_only=plan.get('last_response_only', False))
     evaluation.validate()
     data = Path(plan['data'])
     hashes = {name: hashlib.sha256((data / name).read_bytes()).hexdigest() for name in ('train.jsonl', 'val.jsonl')}
@@ -65,6 +67,8 @@ def training_argv(plan):
             argv.extend(['--' + key.replace('_', '-'), str(plan[key])])
     if evaluation.load_best_model_at_end:
         argv.append('--load-best-model-at-end')
+    if evaluation.last_response_only:
+        argv.append('--last-response-only')
     checkpoints = sorted((p for p in out.glob('checkpoint-*') if p.name.removeprefix('checkpoint-').isdigit()),
                          key=lambda p: int(p.name.split('-')[-1]), reverse=True)
     recovered = None
