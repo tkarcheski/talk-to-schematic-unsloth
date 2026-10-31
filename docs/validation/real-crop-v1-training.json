@@ -38,13 +38,13 @@
   },
   "datasets": {
     "train": {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/train.jsonl",
+      "path": "data/training/real-crop-v1/train.jsonl",
       "sha256": "a942cc01beee3976340e770c994dd985db7d6595b5ba0ca99e7a49185948127a",
       "rows": 173,
       "assistant_turns": 866
     },
     "validation": {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/val.jsonl",
+      "path": "data/training/real-crop-v1/val.jsonl",
       "sha256": "de9707f9b79a9110826f98ea36df760ff1a581b99134a188e8094498574c4563",
       "rows": 26,
       "assistant_turns": 130
@@ -110,5 +110,9 @@
   "distinct_validation_boards": 13,
   "distinct_held_out_boards": 20,
   "trained_rows": 173,
-  "verified_input_images": 100
+  "verified_input_images": 100,
+  "public_copy": {
+    "scope": "Public summary with repository-relative dataset paths. training_manifest_sha256 identifies the original completed-run manifest, not this edited summary. Measured metrics, settings, artifact hashes and frozen dataset identities are unchanged; no training or qualification was rerun.",
+    "historical_file_sha256": "df61990aefae75d2e18ff942773feff99b09fc4e5b48ac2a0eeee16563fe51b7"
+  }
 }
