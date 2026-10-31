@@ -14,6 +14,7 @@ import tempfile
 
 from .corpus import _split, parse_eagle
 from .training import sha256
+from .render_eagle import CROP_POLICY, RENDER_METHOD, render_eagle
 
 
 def canonical(value):
@@ -25,6 +26,25 @@ def verified_path(root, relative, expected_hash):
     if root.resolve() not in path.parents or not path.is_file() or sha256(path) != expected_hash:
         raise ValueError('Source or license path escapes root, is missing, or differs from pinned hash')
     return path
+
+
+def source_complexity(parsed):
+    """Count source structure; these measures do not imply electrical difficulty."""
+    sheets = [sheet for sheet in parsed['sheets'] if sheet['bom'] and sheet['nets']]
+    named_pages: dict[str, set[int]] = {}
+    for sheet in sheets:
+        for name in sheet['nets']:
+            if not name.startswith('N$'):
+                named_pages.setdefault(name, set()).add(sheet['page'])
+    return {
+        'total_pages': len(parsed['sheets']),
+        'populated_pages': len(sheets),
+        'physical_component_count': len({part['refdes'] for sheet in sheets for part in sheet['bom']}),
+        'sheet_component_entries': sum(len(sheet['bom']) for sheet in sheets),
+        'sheet_net_entries': sum(len(sheet['nets']) for sheet in sheets),
+        'physical_pad_occurrences': sum(len(pads) for sheet in sheets for pads in sheet['nets'].values()),
+        'named_cross_page_nets': sum(len(pages) > 1 for pages in named_pages.values()),
+    }
 
 
 def endpoint_candidates(parsed, provenance, count_tokens, context_limit, answer_reserve):
@@ -63,7 +83,7 @@ def endpoint_candidates(parsed, provenance, count_tokens, context_limit, answer_
     return rows
 
 
-def build(plan_path, roots, output, count_tokens, tokenizer_evidence, *, context_limit=8192, answer_reserve=256):
+def build(plan_path, roots, output, count_tokens, tokenizer_evidence, *, context_limit=8192, answer_reserve=256, render_pages=False):
     if output.exists():
         raise ValueError('Output already exists; preserve the prior candidate queue')
     if type(context_limit) is not int or type(answer_reserve) is not int or not 0 < answer_reserve < context_limit:
@@ -72,7 +92,11 @@ def build(plan_path, roots, output, count_tokens, tokenizer_evidence, *, context
     families = plan['families']
     if len({family['repository'] for family in families}) != len(families):
         raise ValueError('Related source variants must share one family record')
+    excluded_families = plan.get('excluded_families', [])
+    if {family['repository'] for family in families} & {family['repository'] for family in excluded_families}:
+        raise ValueError('Excluded source families cannot enter the candidate queue')
     rows, sources, exclusions = [], [], []
+    render_jobs = []
     for family in families:
         repository = family['repository']
         if family.get('role') == 'diagnostic' or family['split'] != _split(repository):
@@ -91,16 +115,35 @@ def build(plan_path, roots, output, count_tokens, tokenizer_evidence, *, context
                           'source_sha256': source['sha256'], 'license': family['license'], 'split': family['split'],
                           'license_sha256': family['license_sha256'], 'attribution': family['attribution']}
             rows += endpoint_candidates(parsed, provenance, count_tokens, context_limit, answer_reserve)
-            sources.append({**provenance, 'pages': len(parsed['sheets'])})
+            sources.append({**provenance, 'pages': len(parsed['sheets']), 'complexity': source_complexity(parsed)})
+            render_jobs.append((path, [sheet['page'] for sheet in parsed['sheets'] if sheet['bom'] and sheet['nets']]))
     if not rows or len({row['id'] for row in rows}) != len(rows):
         raise ValueError('Candidates must be nonempty with unique source/net identifiers')
     output.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=output.name + '.partial-', dir=output.parent))
     try:
+        if render_pages:
+            for source, (path, pages) in zip(sources, render_jobs, strict=True):
+                if sha256(path) != source['source_sha256']:
+                    raise ValueError('Source changed before rendering review pages')
+                assets = []
+                for page in pages:
+                    png = staging / 'images' / f"{source['source_sha256']}-page-{page}.png"
+                    render_eagle(path, page, png, attribution=f"{source['attribution']} | {source['license']}")
+                    svg = png.with_suffix('.svg')
+                    assets.append({'page': page,
+                                   'png': {'path': png.relative_to(staging).as_posix(), 'sha256': sha256(png)},
+                                   'svg': {'path': svg.relative_to(staging).as_posix(), 'sha256': sha256(svg)},
+                                   'visual_review_status': 'unreviewed'})
+                if sha256(path) != source['source_sha256']:
+                    raise ValueError('Source changed while rendering review pages')
+                source['rendered_pages'] = assets
+                source['render_method'] = RENDER_METHOD
+                source['crop_policy'] = CROP_POLICY
         candidate_file = staging / 'review-queue.jsonl'
         candidate_file.write_text(''.join(canonical(row) + '\n' for row in rows))
         manifest = {'schema_version': 1, 'plan_sha256': sha256(plan_path), 'sources': sources,
-                    'tokenizer': tokenizer_evidence, 'exclusions': exclusions, 'rows': len(rows), 'candidate_sha256': sha256(candidate_file),
+                    'tokenizer': tokenizer_evidence, 'exclusions': exclusions, 'excluded_families': excluded_families, 'rows': len(rows), 'candidate_sha256': sha256(candidate_file),
                     'families': sorted({row['family_id'] for row in rows}),
                     'full_context_over_budget': sum(not row['variants']['full']['fits_text_context'] for row in rows),
                     'scope': 'Review-required source-derived native endpoint candidates. No training data modified; no visual or model-quality claim.'}
@@ -129,6 +172,8 @@ def main():
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--tokenizer', type=Path, required=True)
     parser.add_argument('--context-limit', type=int, default=8192)
+    parser.add_argument('--answer-reserve', type=int, default=256)
+    parser.add_argument('--render-pages', action='store_true', help='render unreviewed PNG/SVG page assets for visual review')
     args = parser.parse_args()
     from transformers import AutoTokenizer
     tokenizer = AutoTokenizer.from_pretrained(str(args.tokenizer), local_files_only=True, trust_remote_code=False)
@@ -138,7 +183,7 @@ def main():
                 for name in ('tokenizer.json', 'tokenizer_config.json', 'chat_template.jinja') if (args.tokenizer / name).is_file()},
                 'method': 'apply_chat_template with generation prompt; text only, no images'}
     print(json.dumps(build(args.plan, json.loads(args.roots.read_text()), args.out, count, evidence,
-                           context_limit=args.context_limit), indent=2))
+                           context_limit=args.context_limit, answer_reserve=args.answer_reserve, render_pages=args.render_pages), indent=2))
 
 
 if __name__ == '__main__':
