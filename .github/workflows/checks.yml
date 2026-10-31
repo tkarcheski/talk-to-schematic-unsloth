@@ -23,6 +23,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       # System and browser dependencies belong to a disposable image, not the hosted runner.
       - name: Build isolated CPU and browser toolchain
         run: docker build --file docker/Dockerfile.tests --tag schematic-tests .
@@ -33,12 +34,13 @@ jobs:
           docker run --rm --init --interactive --user "$(id -u):$(id -g)" \
             --cap-drop ALL --security-opt no-new-privileges --shm-size 1g \
             --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace" \
+            --env "PRE_COMMIT_TO_REF=${{ github.event.pull_request.head.sha || github.sha }}" \
             --workdir /workspace --env CI=true schematic-tests bash -euo pipefail -s <<'CHECKS'
           npm ci --ignore-scripts
           node -e 'const assert = require("node:assert/strict"); assert.equal(require("@playwright/test/package.json").version, process.env.PLAYWRIGHT_VERSION, "Update the test image browser when Playwright changes");'
           uv sync --locked
           # Run every deterministic source hook; staged model-review hooks need private credentials.
-          for hook in check-merge-conflict check-yaml check-toml check-json check-added-large-files ruff cspell prettier; do
+          for hook in delivery-checks check-merge-conflict check-yaml check-toml check-json check-added-large-files ruff cspell prettier; do
             uv run --locked python -m pre_commit run "$hook" --all-files --show-diff-on-failure
           done
           uv run --locked ai-pilled scan --scope worktree

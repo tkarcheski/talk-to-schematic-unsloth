@@ -3,9 +3,9 @@
 ## Mandatory workflow
 
 - Follow this workflow for every task, including work by the main agent and all sub-agents. Failure to follow AGENTS.md is grounds for immediate termination. On a violation, stop immediately, report it briefly, and await instructions; do not self-authorize recovery.
-- Start with focused multi-select Q&A to clarify requirements, scope, decisions, and acceptance checks. Allow multiple compatible choices in each question; put incompatible alternatives in separate questions. Keep asking targeted follow-ups until the work is clear rather than guessing.
+- Use focused multi-select Q&A to resolve material uncertainty about scope, decisions, and acceptance checks. Allow multiple compatible choices in each question. Once a task is approved, carry out routine discovery, implementation, verification, and expected fixes without per-command approval loops.
 - Create an ordered todo list and obtain explicit user approval before execution. Work through the approved todos in order, keep exactly one item in progress while working, and mark items complete only when their stated work is done.
-- Before every unplanned step, stop for multi-select Q&A. This includes unplanned reads, searches, edits, commands, verification, and delegation. Explain the need and scope, resolve the questions, update the todo list, and obtain explicit approval for the revised list before resuming. New requirements use the same gate; do not silently expand scope.
+- Stop for multi-select Q&A when an unplanned step materially expands scope, permissions, destructive behavior, external disclosure, or publication. Explain the impact, update the todo list, and obtain approval for that expansion. Do not treat routine reads, checks, or expected fixes within the approved task as new approval requests.
 - Before requesting access, explain why it is needed and identify the exact files, directories, commands, or services involved. Request only the minimum necessary access. Do not explore unrelated locations or retry denied access without approval.
 - Keep reports ADHD-friendly: use plain language and 2-3 short summary bullets, including essential blockers and verification status. Provide detail only when requested.
 
@@ -52,6 +52,10 @@
 
 ## Delivery
 
+- Use one current branch and PR for an approved task. Check for an existing PR before publishing and extend it instead of creating duplicate or replacement PRs just to rerun checks.
+- Do not open standalone Markdown-only PRs. Bundle supporting documentation with relevant implementation, tests, or configuration; never manufacture unrelated code changes to satisfy this rule.
+- Fetch the actual PR base and task branch before starting or publishing work. Confirm the base is included in the proposed history, integrate updates safely in the same branch, and rerun affected checks. A stale local tracking ref is not evidence of the live remote state.
+- Run the delivery guard before expensive gates. It rejects stale bases and empty or Markdown-only proposals, and verifies the live remote base before push. Do not bypass it or escape a failure by opening another PR.
 - Delegate bounded work when useful, coordinate privately, and keep one Git owner. Do not publish the coordination record.
 - Prepare reviewable changes and relevant verification within the requested scope. The user owns PR merge and close decisions.
 - Require the existing pre-commit checks and configured ai-pilled quality-review gate to pass before calling changes ready. Include gate runs in the approved todo and clearly report which checks failed, were blocked, or were not run. Never skip hooks, suppress findings, or weaken gate configuration just to pass.
