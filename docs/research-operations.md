@@ -36,6 +36,13 @@ Example operator configuration:
 
 Set training ready only after verifying the integrated training deadline callback and data/model fit. Training plan fields: absolute `data`, `out`, `model`; positive bounded `max_steps`, `save_steps`, `max_seq`, `rank`, `gradient_accumulation`; optional boolean `continue_adapter` (the `model` path is the existing adapter), `lr` (default 5e-5), `max_image_size` (default 1024), and `finetune_vision` (default false). The wrapper binds the plan and train/validation file hashes to a sibling marker outside its output directory, resumes the latest checkpoint from that same plan, and refuses unrelated existing output. Dataset images and model weights still require operator immutability. Use a fresh output for a changed plan.
 
+Training plans may also set `eval_steps`, `load_best_model_at_end`, and
+`early_stopping_patience`. These use the training CLI's validation rules:
+best-loss selection requires equal evaluation/save intervals within the step
+budget, and early stopping requires best-loss selection. The settings are part
+of the plan identity, so changing them requires a separate candidate output.
+This evaluates teacher-forced loss only; qualify generated answers separately.
+
 Research plan:
 
 ```json
