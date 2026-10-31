@@ -8,10 +8,14 @@ from pathlib import Path
 import subprocess
 import sys
 
+from schematic_model.training import TrainingConfig
+
 
 def training_argv(plan):
     required = {'data', 'out', 'model', 'max_steps', 'save_steps', 'max_seq', 'rank', 'gradient_accumulation'}
-    if set(plan) - required - {'continue_adapter', 'lr', 'max_image_size', 'finetune_vision'} or not required <= set(plan):
+    optional = {'continue_adapter', 'lr', 'max_image_size', 'finetune_vision',
+                'eval_steps', 'load_best_model_at_end', 'early_stopping_patience'}
+    if set(plan) - required - optional or not required <= set(plan):
         raise ValueError('unknown/missing training plan fields')
     for key in ('data', 'out', 'model'):
         if not isinstance(plan[key], str) or not Path(plan[key]).is_absolute():
@@ -21,6 +25,16 @@ def training_argv(plan):
             raise ValueError('invalid training bound')
     if plan['save_steps'] > plan['max_steps']:
         raise ValueError('checkpoint interval exceeds run')
+    for key in ('eval_steps', 'early_stopping_patience'):
+        if key in plan and (type(plan[key]) is not int or not 1 <= plan[key] <= 10000):
+            raise ValueError('invalid evaluation bound')
+    if type(plan.get('load_best_model_at_end', False)) is not bool:
+        raise ValueError('best model selection must be boolean')
+    evaluation = TrainingConfig(max_steps=plan['max_steps'], save_steps=plan['save_steps'],
+                                eval_steps=plan.get('eval_steps'),
+                                load_best_model_at_end=plan.get('load_best_model_at_end', False),
+                                early_stopping_patience=plan.get('early_stopping_patience'))
+    evaluation.validate()
     data = Path(plan['data'])
     hashes = {name: hashlib.sha256((data / name).read_bytes()).hexdigest() for name in ('train.jsonl', 'val.jsonl')}
     identity = hashlib.sha256(json.dumps({'plan': plan, 'data_hashes': hashes}, sort_keys=True).encode()).hexdigest()
@@ -42,6 +56,11 @@ def training_argv(plan):
     if type(image_size) is not int or not 64 <= image_size <= 4096:
         raise ValueError('invalid image bound')
     argv.extend(['--lr', str(lr), '--max-image-size', str(image_size), '--finetune-vision' if plan.get('finetune_vision', False) else '--no-finetune-vision'])
+    for key in ('eval_steps', 'early_stopping_patience'):
+        if key in plan:
+            argv.extend(['--' + key.replace('_', '-'), str(plan[key])])
+    if evaluation.load_best_model_at_end:
+        argv.append('--load-best-model-at-end')
     checkpoints = [p for p in out.glob('checkpoint-*') if p.name.removeprefix('checkpoint-').isdigit() and (p / 'trainer_state.json').is_file()]
     if checkpoints:
         argv.extend(['--resume', str(max(checkpoints, key=lambda p: int(p.name.split('-')[-1])))])

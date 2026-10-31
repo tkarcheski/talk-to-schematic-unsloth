@@ -1,8 +1,33 @@
-<!-- cspell:words Pynt Titano QSPI -->
+<!-- cspell:words Pynt Titano QSPI EVK MicroMod MacroPad MEMENTO FreeSoC -->
 
 # Multi-page evidence and longer-context candidates
 
 Research only; none of these rows are included in the routing retrain. Preserve related board revisions as one family. Existing independent-vendor diagnostic sources must remain evaluation-only unless their role is deliberately changed.
+
+## Accepted expansion
+
+The reproducible review queue now contains **10 families, 12 source schematics, 27 populated sheets, and 318 cross-page endpoint questions**, up from two families, three schematics, eight sheets, and 102 questions. Eight new families add power, cellular/satellite tracking, GNSS, camera, display/audio, and programmable-controller circuits. The largest source grows from 194 to 312 unique physical reference designators. These counts describe native circuit structure, not measured model reasoning quality.
+
+| Family | Populated sheets per source | Unique physical components per source | Cross-page questions |
+|---|---:|---:|---:|
+| [Tsunami Qwiic](https://github.com/sparkfun/SparkFun_Tsunami_Super_WAV_Trigger_Qwiic/tree/336eb78afcebdcea91bf6caa554670940aae7bd5) | 2 | 194 | 16 |
+| [PyPortal / Pynt](https://github.com/adafruit/Adafruit-PyPortal-PCB/tree/90d9aa7ba3f892fd4adb31815c99ede26c10757c) | 3 / 3 | 76 / 81 | 86 |
+| [MicroMod Asset Tracker](https://github.com/sparkfun/MicroMod_Asset_Tracker/tree/d0f4731a7c3d8cb791db75c5734e7c261e82f5de) | 2 | 206 | 41 |
+| [RTK EVK](https://github.com/sparkfun/SparkFun_RTK_EVK/tree/5704e26d9ca373bed4e0504b0571e29be5153b1c) | 2 | 312 | 18 |
+| [Artemis Global Tracker](https://github.com/sparkfun/SparkFun_Artemis_Global_Tracker/tree/3212a30d17952d89d7fb301f154e82907fe01a70) | 2 | 148 | 22 |
+| [RTK Facet variants](https://github.com/sparkfun/SparkFun_RTK_Facet/tree/47aa0abf364b5d41a1568778cb3abd4f2d598c22) | 2 / 2 | 131 / 113 | 37 |
+| [MacroPad RP2040](https://github.com/adafruit/Adafruit-MacroPad-RP2040-PCB/tree/fdd7f2cb3bc2b3c7a9c0765780387647ea872141) | 2 | 96 | 26 |
+| [Fruit Jam](https://github.com/adafruit/Adafruit-Fruit-Jam-PCB/tree/252dc09456ee447b3d7eeb4fa99877898503e81a) | 2 | 134 | 33 |
+| [MEMENTO](https://github.com/adafruit/Adafruit-MEMENTO-PCB/tree/8f1e07b4baa4e43749793e3ebebd12005a5a8f96) | 2 | 121 | 19 |
+| [FreeSoC2](https://github.com/sparkfun/FreeSoc2/tree/7a7a325278c0fb96ba51e05cd0fb847a73feb79f) | 3 | 109 | 20 |
+
+All selected sources retain their existing deterministic train partition. Related PyPortal and Facet revisions stay together. RTK mosaic-X5 is excluded because its test assignment would separate substantially reused circuitry from the training-partition EVK. BeagleBone Blue is excluded pending clarification of conflicting schematic and repository license notices. Sources without reviewed license evidence or supported physical-pad mappings are not admitted.
+
+The accepted queue uses a 2,048-token answer reserve, above the measured longest canonical endpoint answer of 1,880 tokens. All 318 focused text variants fit 8,192 tokens; **232 full-evidence variants exceed that limit**. Full input reaches 21,712 tokens before the answer reserve. Nothing is truncated, and image tokens are not included in these text measurements. The accepted candidate hash is `742073ac036670ea1fc7ba85b331a86b8ee220631931159abb521d0d6eb76b47`.
+
+All 27 source pages have attributed PNG/SVG review assets with recorded hashes. The extracted candidate answers were checked against pinned native endpoints; visual labels and narrative engineering answers remain unreviewed. Existing training, validation, and test snapshots were not modified. See [build instructions](build-multipage-candidates.md) and the [pinned source plan](multipage-source-plan.json).
+
+## Earlier source investigation
 
 | Source | Verified native sheets | License / status |
 |---|---:|---|

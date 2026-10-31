@@ -42,6 +42,162 @@
           "reason": "Missing embedded device set SUPPLY2; parser refuses physical-pad evidence"
         }
       ]
+    },
+    {
+      "repository": "sparkfun/MicroMod_Asset_Tracker",
+      "revision": "d0f4731a7c3d8cb791db75c5734e7c261e82f5de",
+      "split": "train",
+      "license": "CC-BY-SA-4.0",
+      "license_path": "LICENSE.md",
+      "license_sha256": "c1c2edd71632d81e380fe02aa45347ed5ed50d73d55c1c21fc2ae6539a9533f2",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "sources": [
+        {
+          "path": "Hardware/MicroMod_Asset_Tracker.sch",
+          "sha256": "4ba07708d9ef34a8bd6a39bdfa48ae76909e64347e59428cb5b5ec8f31f4cf7c"
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_RTK_EVK",
+      "revision": "5704e26d9ca373bed4e0504b0571e29be5153b1c",
+      "split": "train",
+      "license": "CC-BY-SA-4.0",
+      "license_path": "LICENSE.md",
+      "license_sha256": "cc2731bed1b3d28242eaa4bc9992864b28650bdc69fb4c558ce6e0b7bfc74680",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "sources": [
+        {
+          "path": "Hardware/SparkFun_RTK_EVK.sch",
+          "sha256": "8ad9be55d00ee0af41ed3f7048cf32064114f749946361bff7e66934af651a44"
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_Artemis_Global_Tracker",
+      "revision": "3212a30d17952d89d7fb301f154e82907fe01a70",
+      "split": "train",
+      "license": "CC-BY-SA-4.0",
+      "license_path": "LICENSE.md",
+      "license_sha256": "60350b68666a0d4903a7197114c723fc6d398d72218b785cc074013e39db374d",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "sources": [
+        {
+          "path": "Hardware/SparkFun_Artemis_Global_Tracker.sch",
+          "sha256": "4d3aaf25053893b89d0fbde0cb1074e4b83e6e28c74fe73aafd14692ae5b4fea"
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/SparkFun_RTK_Facet",
+      "revision": "47aa0abf364b5d41a1568778cb3abd4f2d598c22",
+      "split": "train",
+      "license": "CC-BY-SA-4.0",
+      "license_path": "LICENSE.md",
+      "license_sha256": "6532771f09b24eadc3e75b9c2ecb035c38ebea295542833e892fab9018c678da",
+      "attribution": "SparkFun Electronics; original notices retained in source README and license",
+      "sources": [
+        {
+          "path": "Hardware/Main-LBand/SparkFun RTK Facet L-Band - Main.sch",
+          "sha256": "d8510c0d67475b242a8e110c534d53012a8e6a09bfa3ab3076157d98e626b3fc"
+        },
+        {
+          "path": "Hardware/Main/SparkFun RTK Facet - Main.sch",
+          "sha256": "18047b64434f9f4c3e045f016e5cb963335cdb9bf2c80d69fafaf53d11086dff"
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-MacroPad-RP2040-PCB",
+      "revision": "fdd7f2cb3bc2b3c7a9c0765780387647ea872141",
+      "split": "train",
+      "license": "CC-BY-SA-3.0",
+      "license_path": "license.txt",
+      "license_sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "sources": [
+        {
+          "path": "Adafruit MacroPad 2040 rev D.sch",
+          "sha256": "14032b0369506a553736dcbd8cd3861543c164badd8d15eac6a3bb2aa4b12eaa"
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-Fruit-Jam-PCB",
+      "revision": "252dc09456ee447b3d7eeb4fa99877898503e81a",
+      "split": "train",
+      "license": "CC-BY-SA-3.0",
+      "license_path": "license.txt",
+      "license_sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "sources": [
+        {
+          "path": "Adafruit Fruit Jam.sch",
+          "sha256": "a5016c7d1abe705a7b3c368f5b46b84f6b00167c797732cad5dc8ee2f01e7c5b"
+        }
+      ]
+    },
+    {
+      "repository": "adafruit/Adafruit-MEMENTO-PCB",
+      "revision": "8f1e07b4baa4e43749793e3ebebd12005a5a8f96",
+      "split": "train",
+      "license": "CC-BY-SA-3.0",
+      "license_path": "license.txt",
+      "license_sha256": "075dad5e5fc96c27014fabc269f4f5732909cffd178a486f546d982b6cf86b74",
+      "attribution": "Adafruit Industries; original notices retained in source README and license",
+      "sources": [
+        {
+          "path": "Adafruit MEMENTO Camera Board.sch",
+          "sha256": "0b9e68d8ab3eb398210ecd311032c230e65003167f870c7bfbd447a1c43b6c79"
+        }
+      ]
+    },
+    {
+      "repository": "sparkfun/FreeSoc2",
+      "revision": "7a7a325278c0fb96ba51e05cd0fb847a73feb79f",
+      "split": "train",
+      "license": "CC-BY-SA-4.0",
+      "license_path": "README.md",
+      "license_sha256": "5cbf188c17a5a7cb35407a74a4127546f6a806a1c64a62c7d0e25e931e94b584",
+      "attribution": "SparkFun Electronics; original hardware license and attribution notices retained in README.md and native source",
+      "sources": [
+        {
+          "path": "Hardware/SparkFun_FreeSoC2.sch",
+          "sha256": "023f32bbe4d5a8fafbd76006c08fc8026da5909bcc5a6e57fa530ca4ae65119d"
+        }
+      ]
+    }
+  ],
+  "excluded_families": [
+    {
+      "repository": "sparkfun/SparkFun_RTK_mosaic-X5",
+      "revision": "b0e48fceb203100c6d2cc7698631e4260a7d4b12",
+      "reason": "Existing deterministic test split conflicts with substantial circuit reuse from selected train-family RTK EVK. Exclude rather than contaminate held-out evidence.",
+      "measured_overlap": {
+        "identical_refdes_device_value_package": 128,
+        "identical_multi_pad_net_endpoint_sets": 28
+      },
+      "status": "source/license/parse verified; excluded from candidate generation"
+    },
+    {
+      "repository": "sparkfun/Purpletooth_Jamboree",
+      "revision": "7d49b86a7160077d46137d4a8d0313fa167dc074",
+      "reason": "No explicit reviewed hardware license file found; not admitted."
+    },
+    {
+      "repository": "sparkfun/SparkFun_RTK_Express",
+      "reason": "Related ESP32/ZED-F9P RTK design lineage; omitted to avoid expanding correlated sources."
+    },
+    {
+      "repository": "sparkfun/SparkFun_RTK_Express_Plus",
+      "reason": "Related RTK Express variant; omitted to avoid expanding correlated sources."
+    },
+    {
+      "repository": "beagleboard/beaglebone-blue",
+      "revision": "9812bd927a0157a0a326debb858e36678e6eed64",
+      "source_path": "EAGLE/BeagleBone_Blue.sch",
+      "source_sha256": "af2d538cc232fa067304d87a126deb5d25bc2199eeaf50d2f968f9ee1e2d8e16",
+      "reason": "Unresolved license scope: embedded schematic notice says CC-BY-SA-3.0-US; root LICENSE says CC-BY-4.0. Excluded pending clarification."
     }
   ]
 }
