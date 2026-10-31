@@ -18,7 +18,7 @@ from .eagle_source import load_eagle
 
 Transform = tuple[float, float, float, bool]
 IDENTITY: Transform = (0, 0, 0, False)
-RENDER_METHOD = "eagle_xml_geometry_v3_text_alignment"
+RENDER_METHOD = "eagle_xml_geometry_v4_arc_bounds"
 CROP_POLICY = "electrical_symbols_and_source_nets_with_text_bounds; frames_and_fiducials_do_not_expand_view"
 
 
@@ -104,13 +104,35 @@ class _Drawing:
         x2, y2 = self.point(node.get("x2"), node.get("y2"), transform)
         width = max(float(node.get("width", "0.1524")), 0.08)
         curve = float(node.get("curve", "0"))
+        if not math.isfinite(curve):
+            raise ValueError("Unsupported degenerate EAGLE arc")
         if abs(curve) > 0.001:
-            radius = math.hypot(x2 - x1, y2 - y1) / (2 * abs(math.sin(math.radians(curve / 2))))
-            sweep = int((curve < 0) != transform[3])
-            path = f'M{x1},{y1} A{radius},{radius} 0 {int(abs(curve) > 180)},{sweep} {x2},{y2}'
+            path = f'M{x1},{y1} ' + self.arc((x1, y1), (x2, y2), curve, transform[3])
             self.elements.append(f'<path d="{path}" fill="none" stroke="{color}" stroke-width="{width}"/>')
         else:
             self.elements.append(f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{color}" stroke-width="{width}"/>')
+
+    def arc(self, start, end, curve, mirrored):
+        """Return a circular SVG segment and retain extrema along its actual sweep."""
+        if not math.isfinite(curve) or not 0 < abs(curve) < 360 or start == end:
+            raise ValueError("Unsupported degenerate EAGLE arc")
+        x1, y1 = start
+        x2, y2 = end
+        # Coordinates already include instance rotation/mirroring and SVG's
+        # inverted y axis. The signed sweep determines which circle center and
+        # which cardinal extrema belong to this arc, including arcs over 180°.
+        angle = math.radians(curve) * (1 if mirrored else -1)
+        offset = 2 * math.tan(angle / 2)
+        cx = (x1 + x2) / 2 - (y2 - y1) / offset
+        cy = (y1 + y2) / 2 + (x2 - x1) / offset
+        radius = math.hypot(x2 - x1, y2 - y1) / (2 * abs(math.sin(angle / 2)))
+        first = math.atan2(y1 - cy, x1 - cx)
+        for candidate in (0, math.pi / 2, math.pi, 3 * math.pi / 2):
+            distance = ((candidate - first) if angle > 0 else (first - candidate)) % math.tau
+            if distance <= abs(angle) + 1e-12:
+                self.points.append((cx + radius * math.cos(candidate), cy + radius * math.sin(candidate)))
+        sweep = int((curve < 0) != mirrored)
+        return f'A{radius},{radius} 0 {int(abs(curve) > 180)},{sweep} {x2},{y2}'
 
     def primitive(self, node, transform=IDENTITY, substitutions=None, smashed=False, pads=None):
         tag = node.tag
@@ -144,8 +166,7 @@ class _Drawing:
                 curve = float(start.get("curve", "0"))
                 if curve:
                     begin = transformed[index]
-                    radius = math.dist(begin, end) / (2 * abs(math.sin(math.radians(curve / 2))))
-                    pieces.append(f'A{radius},{radius} 0 {int(abs(curve)>180)},{int((curve<0)!=transform[3])} {end[0]},{end[1]}')
+                    pieces.append(self.arc(begin, end, curve, transform[3]))
                 else:
                     pieces.append(f'L{end[0]},{end[1]}')
             self.elements.append(f'<path d="{" ".join(pieces)} Z" stroke="{color}" fill="{color}" stroke-width=".1"/>')
