@@ -76,6 +76,7 @@ class TrainingConfig:
     eval_steps: int | None = None
     load_best_model_at_end: bool = False
     early_stopping_patience: int | None = None
+    last_response_only: bool = False
     seed: int = 3407
     resume: str | None = None
     continue_adapter: bool = False
@@ -86,6 +87,8 @@ class TrainingConfig:
     cache_dir: str = "models/huggingface"
 
     def validate(self) -> None:
+        if type(self.last_response_only) is not bool:
+            raise ValueError("last_response_only must be a boolean")
         for name in ("max_seq", "max_image_size", "rank", "gradient_accumulation", "save_steps"):
             if getattr(self, name) < 1:
                 raise ValueError(f"{name} must be positive")
@@ -171,6 +174,8 @@ def _validate_resume_evaluation(config: TrainingConfig) -> None:
                          ("early_stopping_patience", None)):
         if previous["config"].get(key, default) != getattr(config, key):
             raise ValueError("Resume evaluation recipe differs from recorded run; start a separate candidate")
+    if previous["config"].get("last_response_only", False) != config.last_response_only:
+        raise ValueError("Resume supervision recipe differs from recorded run; start a separate candidate")
 
 
 def continuation_source(config):
@@ -566,6 +571,7 @@ def run_training(config: TrainingConfig) -> dict[str, Any]:
             model, processor, resize=config.max_image_size, resize_dimension="max",
             train_on_responses_only=True, instruction_part="<|im_start|>user\n",
             response_part="<|im_start|>assistant\n",
+            last_response_only=config.last_response_only,
         ), config.max_seq, image_hashes={record["path"]: record["sha256"] for record in manifest["images"]})
         collator([train_data[0]])
         deadline_control = None
@@ -666,6 +672,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="save the lowest validation-loss adapter; requires equal eval/save intervals")
     parser.add_argument("--early-stopping-patience", type=int,
                         help="stop after this many unimproved evaluations; requires best loss selection")
+    parser.add_argument("--last-response-only", action="store_true",
+                        help="supervise only the final assistant answer; earlier answers remain context")
     parser.add_argument("--seed", type=int, default=3407)
     parser.add_argument("--resume", metavar="CHECKPOINT")
     parser.add_argument("--continue-adapter", action="store_true", help="train existing local LoRA weights in a new run with a fresh optimizer")
