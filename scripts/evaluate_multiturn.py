@@ -16,6 +16,38 @@ from schematic_model.multiturn_data import SYSTEM, current_context, tool_result,
 from schematic_model.training import sha256
 
 NAVIGATION = {'show_label', 'show_region', 'show_full_sheet'}
+SEARCH_ANSWER_SCORER = 'empty-search-evidence-v1'
+
+
+def empty_search_answer(content, part):
+    """Conservative, versioned grammar for the simulated empty-search case.
+
+    Recognized abstentions and exact supplied part identity are allowed. Unknown
+    clauses fail review; this is not a general semantic claim detector.
+    """
+    clauses = [re.sub(r'\s+', ' ', clause).strip() for clause in re.split(r'[.!?;\n]+', content)
+               if clause.strip()]
+    abstentions = [
+        r'no (?:search )?(?:results|matches)(?:(?: were)? (?:returned|found|available))?',
+        r'(?:the )?(?:search|lookup) (?:returned|found|yielded) (?:no|zero) (?:results|matches)',
+        r"(?:i )?(?:cannot|can't|could not|couldn't|am unable to) (?:verify|confirm|determine|find|retrieve|infer) "
+        r'(?:the |any |a )?(?:datasheet(?: specifications)?|specifications|ratings|limits)'
+        r'(?: (?:from|with|without|using) (?:(?:the |these |any )?(?:search results|results|datasheet|source evidence)|an empty (?:search )?result))?',
+    ]
+    requests = [
+        r'(?:please )?(?:provide|share|upload|check|consult) (?:the |a |an )?(?:manufacturer\x27s )?datasheet'
+        r'(?: (?:to verify|to confirm|for) (?:the )?(?:specifications|ratings|limits))?',
+    ]
+    identity = rf'(?:{re.escape(part["refdes"])} (?:is marked|is labeled|is) )?{re.escape(part["value"])}'
+    acknowledged = False
+    unknown = 0
+    for clause in clauses:
+        abstains = any(re.fullmatch(pattern, clause, re.I) for pattern in abstentions)
+        acknowledged = acknowledged or abstains
+        if not abstains and not any(re.fullmatch(pattern, clause, re.I) for pattern in [*requests, identity]):
+            unknown += 1
+    return {'scorer': SEARCH_ANSWER_SCORER, 'insufficient_evidence_acknowledged': acknowledged,
+            'unrecognized_or_unsupported_clauses': unknown, 'passed': acknowledged and unknown == 0}
 
 
 def user_message(question, candidate, viewer, attach=False):
@@ -114,7 +146,21 @@ def rollout(case, complete, max_rounds=4):
             if expected == 'show_label' and actions_match:
                 actions_match = record['events'][0]['arguments'] == turn['arguments']
             record['viewport_invariant'] = viewer['viewport'] == before and not any(name in NAVIGATION for name in names)
-            record['passed'] = actions_match and final_matches(final, turn) and (turn['allow_navigation'] or record['viewport_invariant'])
+            evidence_passed = True
+            if any(event['tool'] == 'web_search' and event['result'].get('status') == 'empty'
+                   for event in record['events']):
+                record['search_evidence'] = empty_search_answer(final, candidate['part'])
+                # Tool-call prefaces are user-visible claims too. They need not
+                # acknowledge a result that has not arrived, but unsupported
+                # assertions there cannot be erased by a cautious final answer.
+                prefaces = [response['choices'][0]['message'].get('content') for response in record['responses']
+                            if response['choices'][0]['message'].get('tool_calls')]
+                unknown = sum(empty_search_answer(text, candidate['part'])['unrecognized_or_unsupported_clauses']
+                              for text in prefaces if isinstance(text, str) and text.strip())
+                record['search_evidence']['intermediate_unrecognized_or_unsupported_clauses'] = unknown
+                record['search_evidence']['passed'] = record['search_evidence']['passed'] and unknown == 0
+                evidence_passed = record['search_evidence']['passed']
+            record['passed'] = actions_match and final_matches(final, turn) and evidence_passed and (turn['allow_navigation'] or record['viewport_invariant'])
             record['answer'] = final
         except Exception as error:
             record['error'] = {'type': type(error).__name__, 'message': str(error)}
@@ -145,12 +191,13 @@ def run(cases_path, output, endpoint, model, max_tokens=256):
         print(json.dumps({'case': case['id'], 'passed_turns': sum(r['passed'] for r in records), 'turns': len(records)}), flush=True)
     non_navigation = [r for r in all_records if not r['allow_navigation']]
     report = {'cases_sha256': sha256(cases_path), 'endpoint': endpoint, 'model': model, 'max_tokens': max_tokens,
+              'search_answer_scorer': SEARCH_ANSWER_SCORER,
               'cases': len(cases), 'user_turns': len(all_records), 'passed_turns': sum(r['passed'] for r in all_records),
               'terminated_turns': sum(r['terminated'] for r in all_records),
               'non_navigation_turns': len(non_navigation), 'viewport_invariant_turns': sum(r['viewport_invariant'] for r in non_navigation),
               'unsolicited_navigation_calls': sum(e['tool'] in NAVIGATION for r in non_navigation for e in r['events']),
               'passed': all(r['passed'] for r in all_records),
-              'scope': 'Actual model generated-history rollout; viewer tool state executed offline; web search returns explicit simulated empty results without network traffic. Not electrical answer qualification.'}
+              'scope': 'Actual model generated-history rollout; viewer tool state executed offline; web search returns explicit simulated empty results without network traffic. Empty-search answers use a conservative abstention grammar that may reject valid paraphrases. Not electrical answer qualification.'}
     (output / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     return report
 

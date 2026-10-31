@@ -59,13 +59,13 @@ def research(plan):
             candidates.append({'url': url, 'license': None, 'review_status': 'needs-provenance-and-license-review'})
     next_job_id = None
     if plan['backend'] == 'native-owned':
-        candidates = json.loads(os.environ.get('SCHEMATIC_QUEUE_METADATA', '[]'))
-        if not isinstance(candidates, list) or len(candidates) > 100 or any(set(c) != {'id', 'kind'} or c['kind'] not in ('research', 'training', 'proposal') or not isinstance(c['id'], str) or len(c['id']) != 32 or any(x not in '0123456789abcdef' for x in c['id']) for c in candidates):
+        queued_jobs = json.loads(os.environ.get('SCHEMATIC_QUEUE_METADATA', '[]'))
+        if not isinstance(queued_jobs, list) or len(queued_jobs) > 100 or any(not isinstance(c, dict) or set(c) != {'id', 'kind'} or c['kind'] not in ('research', 'training', 'proposal') or not isinstance(c['id'], str) or len(c['id']) != 32 or any(x not in '0123456789abcdef' for x in c['id']) for c in queued_jobs):
             raise ValueError('invalid opaque scheduler metadata')
         remaining = float(os.environ.get('SCHEMATIC_DEADLINE', time.time() + 300)) - time.time()
-        if candidates and remaining >= 30:
-            advice = engine.complete('schematic', [{'role': 'user', 'content': 'Choose the next queued job to balance public research and training. Return only one exact job ID: ' + json.dumps(candidates)}], max_tokens=64)['output'].strip()
-            if advice in {c['id'] for c in candidates}:
+        if queued_jobs and remaining >= 30:
+            advice = engine.complete('schematic', [{'role': 'user', 'content': 'Choose the next queued job to balance public research and training. Return only one exact job ID: ' + json.dumps(queued_jobs)}], max_tokens=64)['output'].strip()
+            if advice in {c['id'] for c in queued_jobs}:
                 next_job_id = advice
     return {'next_job_id': next_job_id, 'schema': 1, 'public_topic': plan['public_topic'], 'query': query, 'backend': plan['backend'],
             'model': plan['model'], 'candidates': candidates, 'ready_for_training': False}
