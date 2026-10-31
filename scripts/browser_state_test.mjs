@@ -74,9 +74,10 @@ function answer(text) {
     ],
   };
 }
-function harness() {
+function harness({ decodes = new Map() } = {}) {
   const nodes = new Map();
   const requests = [];
+  const resizeCallbacks = [];
   class ClassList {
     constructor() {
       this.names = new Set();
@@ -153,8 +154,15 @@ function harness() {
     focus() {}
     close() {}
     async decode() {
+      if (decodes.has(this.src)) await decodes.get(this.src).promise;
       this.naturalWidth = 2000;
       this.naturalHeight = 1000;
+    }
+    getContext() {
+      return { fillRect() {} };
+    }
+    toDataURL() {
+      return this.image || "data:image/png;base64,AAAA";
     }
     getBoundingClientRect() {
       return { left: 0, top: 0 };
@@ -177,12 +185,19 @@ function harness() {
     structuredClone,
     DOMException,
     ResizeObserver: class {
+      constructor(callback) {
+        resizeCallbacks.push(callback);
+      }
       observe() {}
     },
     FileReader: class {
       readAsDataURL(blob) {
-        this.result = blob.url;
-        this.onload();
+        const finish = () => {
+          this.result = blob.url;
+          this.onload();
+        };
+        if (blob.read) blob.read.promise.then(finish, () => this.onerror());
+        else finish();
       }
     },
     fetch: (path, options) => {
@@ -199,11 +214,46 @@ function harness() {
     },
   };
   vm.runInNewContext(
-    `${isolatedSource}\n${comparisonSource}\nglobalThis.ui = { comparison, resetComparison, submitComparison, comparisonControls, state, health, controls, fitView, viewForBox, textWords, locateLabel, executeCall, present, reset, submit, openExample, openPdfPage, actionChip, firstMessages, stopRequest, bind };`,
+    `${isolatedSource}\n${comparisonSource}\nglobalThis.ui = { comparison, resetComparison, submitComparison, comparisonControls, state, health, controls, fitView, viewForBox, textWords, locateLabel, executeCall, present, reset, submit, openExample, openFile, openPdfPage, actionChip, firstMessages, stopRequest, renderPages, accumulateMetrics, renderMetrics, questionWithViewerContext, setPdfLibrary: (library) => { pdfLibrary = library; }, bind };`,
     context,
   );
   context.ui.bind();
-  return { element, requests, ui: context.ui };
+  return { element, requests, resizeCallbacks, ui: context.ui };
+}
+
+function pdfFixture(h, { pages = 1, render } = {}) {
+  const requested = [];
+  const document = {
+    numPages: pages,
+    async getPage(number) {
+      requested.push(number);
+      return {
+        getViewport: ({ scale }) => ({
+          width: 100 * scale,
+          height: 50 * scale,
+          scale,
+          transform: [scale, 0, 0, scale, 0, 0],
+        }),
+        render: ({ canvas }) => {
+          canvas.image = `data:image/png;base64,PAGE${number}`;
+          return { promise: render ? render(number) : Promise.resolve() };
+        },
+        getTextContent: async () => ({ items: [] }),
+      };
+    },
+  };
+  h.ui.setPdfLibrary({
+    getDocument: () => ({ promise: Promise.resolve(document) }),
+  });
+  return {
+    requested,
+    file: {
+      name: "schematic.pdf",
+      type: "application/pdf",
+      size: 1,
+      arrayBuffer: async () => new ArrayBuffer(1),
+    },
+  };
 }
 function exampleDoc(overrides = {}) {
   return {
@@ -289,6 +339,231 @@ test("PDF text items become word boxes, including rotated labels", () => {
   const [r1, value, scl] = words.map((word) => word.box);
   assert.ok(r1[0] < r1[2] && r1[1] < r1[3] && r1[2] <= value[0]);
   assert.ok(scl[3] - scl[1] > scl[2] - scl[0], "vertical text is tall");
+});
+
+test("late upload reads and decodes cannot replace the active schematic", async (t) => {
+  for (const delayed of ["read", "decode"]) {
+    await t.test(delayed, async () => {
+      const wait = deferred();
+      const oldImage = "data:image/png;base64,OLD";
+      const newImage = "data:image/png;base64,NEW";
+      const h = harness({
+        decodes: delayed === "decode" ? new Map([[oldImage, wait]]) : new Map(),
+      });
+      seedReady(h);
+      const old = h.ui.openFile({
+        name: "old.png",
+        type: "image/png",
+        size: 1,
+        url: oldImage,
+        ...(delayed === "read" ? { read: wait } : {}),
+      });
+      await drain();
+      await h.ui.openFile({
+        name: "new.png",
+        type: "image/png",
+        size: 1,
+        url: newImage,
+      });
+      h.element("question").value = "Keep this next question";
+      const view = plain(h.ui.state.view);
+      wait.resolve();
+      await old;
+      assert.equal(h.ui.state.doc.title, "new.png");
+      assert.equal(h.ui.state.doc.image, newImage);
+      assert.equal(h.element("sheet").src, newImage);
+      assert.equal(h.element("sheet").hidden, false);
+      assert.equal(h.element("question").value, "Keep this next question");
+      assert.deepEqual(plain(h.ui.state.view), view);
+      assert.equal(h.element("error").hidden, true);
+    });
+  }
+});
+
+test("an initial PDF render failure is visible and its page can be retried", async () => {
+  const h = harness();
+  seedReady(h);
+  let fail = true;
+  const pdf = pdfFixture(h, {
+    render: () =>
+      fail
+        ? Promise.reject(new Error("Page render failed"))
+        : Promise.resolve(),
+  });
+  await h.ui.openFile(pdf.file);
+  assert.equal(h.ui.state.doc, null);
+  assert.equal(h.element("sheet").hidden, true);
+  assert.equal(h.element("error").hidden, false);
+  assert.match(h.element("error").textContent, /Page render failed/u);
+  assert.match(
+    h.element("placeholder-text").textContent,
+    /Could not render page 1/u,
+  );
+  const retry = h
+    .element("pages")
+    .children.find((button) => button.attributes["aria-label"] === "Page 1");
+  assert.ok(retry, "the failed initial page remains reachable for retry");
+  assert.equal(h.element("pages").hidden, false);
+  fail = false;
+  retry.listeners.click[0]();
+  await drain();
+  assert.deepEqual(pdf.requested, [1, 1]);
+  assert.equal(h.ui.state.doc.page, 1);
+  assert.equal(h.element("sheet").hidden, false);
+  assert.equal(h.element("error").hidden, true);
+  assert.equal(h.element("send").disabled, false);
+});
+
+test("a stale PDF page failure cannot overwrite a newer upload", async () => {
+  const h = harness();
+  seedReady(h);
+  const wait = deferred();
+  const pdf = pdfFixture(h, {
+    pages: 2,
+    render: (number) => (number === 2 ? wait.promise : Promise.resolve()),
+  });
+  await h.ui.openFile(pdf.file);
+  const second = h
+    .element("pages")
+    .children.find((button) => button.attributes["aria-label"] === "Page 2");
+  second.listeners.click[0]();
+  await drain();
+  await h.ui.openFile({
+    name: "current.png",
+    type: "image/png",
+    size: 1,
+    url: "data:image/png;base64,CURRENT",
+  });
+  wait.reject(new Error("Obsolete render failed"));
+  await drain();
+  assert.equal(h.ui.state.doc.title, "current.png");
+  assert.equal(h.element("error").hidden, true);
+  assert.equal(h.element("pages").hidden, true);
+});
+
+test("long PDFs keep bounded navigation while exposing pages beyond 200", async () => {
+  const h = harness();
+  seedReady(h);
+  const pdf = pdfFixture(h, { pages: 10_000 });
+  await h.ui.openFile(pdf.file);
+  h.ui.controls();
+  assert.equal(
+    h
+      .element("pages")
+      .children.find(
+        (node) => node.attributes["aria-label"] === "Previous page",
+      ).disabled,
+    true,
+  );
+  const click = async (label) => {
+    const button = h
+      .element("pages")
+      .children.find((node) => node.attributes["aria-label"] === label);
+    assert.ok(button, `${label} is reachable`);
+    assert.equal(button.disabled, false);
+    button.listeners.click[0]();
+    await drain();
+    assert.ok(
+      h.element("pages").children.length <= 13,
+      "navigation stays bounded",
+    );
+  };
+  await click("Page 10000");
+  assert.equal(h.ui.state.doc.page, 10_000);
+  h.ui.controls();
+  assert.equal(
+    h
+      .element("pages")
+      .children.find((node) => node.attributes["aria-label"] === "Next page")
+      .disabled,
+    true,
+  );
+  await click("Previous page");
+  assert.equal(h.ui.state.doc.page, 9_999);
+  await click("Page 1");
+  assert.equal(h.ui.state.doc.page, 1);
+  await h.ui.openPdfPage(200);
+  await click("Page 201");
+  assert.equal(h.ui.state.doc.page, 201);
+  assert.equal(
+    h
+      .element("pages")
+      .children.find((node) => node.attributes["aria-label"] === "Page 201")
+      .attributes["aria-current"],
+    "page",
+  );
+});
+
+test("keyboard panning changes viewer context and survives resize", () => {
+  const h = harness();
+  seedReady(h);
+  const before = plain(h.ui.state.view);
+  let prevented = false;
+  h.element("stage").listeners.keydown[0]({
+    key: "ArrowRight",
+    preventDefault() {
+      prevented = true;
+    },
+  });
+  const after = plain(h.ui.state.view);
+  assert.equal(after.x, before.x - 60);
+  assert.equal(prevented, true);
+  assert.equal(h.ui.state.fit, false);
+  const context = JSON.parse(
+    h.ui.questionWithViewerContext("Read R1").split("\n")[1],
+  );
+  assert.equal(context.viewport.full_sheet, false);
+  for (const callback of h.resizeCallbacks) callback();
+  assert.deepEqual(plain(h.ui.state.view), after);
+});
+
+test("approval responses with zero model steps preserve measured inference totals", () => {
+  const h = harness();
+  const measured = {
+    model_steps: 1,
+    prompt_tokens: 20,
+    completion_tokens: 10,
+    total_tokens: 30,
+    inference_seconds: 2,
+    timing_scope: "upstream_wall_time",
+  };
+  const approval = {
+    model_steps: 0,
+    prompt_tokens: null,
+    completion_tokens: null,
+    total_tokens: null,
+    inference_seconds: null,
+    timing_scope: null,
+  };
+  h.ui.accumulateMetrics(approval);
+  assert.equal(
+    h.ui.state.metrics,
+    null,
+    "an approval alone has no inference measurements",
+  );
+  h.ui.accumulateMetrics(measured);
+  h.ui.accumulateMetrics(approval);
+  h.ui.accumulateMetrics(measured);
+  h.ui.renderMetrics("Last answer");
+  assert.deepEqual(plain(h.ui.state.metrics), {
+    responses: 2,
+    prompt_tokens: 40,
+    completion_tokens: 20,
+    total_tokens: 60,
+    inference_seconds: 4,
+    timing_scope: "upstream_wall_time",
+  });
+  assert.match(
+    h.element("metrics-summary").textContent,
+    /5\.0 tokens\/s.*20 output tokens/u,
+  );
+  h.ui.accumulateMetrics(undefined);
+  assert.equal(
+    h.ui.state.metrics.completion_tokens,
+    null,
+    "missing metrics are still unavailable",
+  );
+  assert.equal(h.ui.state.metrics.inference_seconds, null);
 });
 
 test("labels resolve to parts, then nets, then PDF words; absent labels are null", () => {
@@ -810,4 +1085,93 @@ test("each HTTP tool round uses a distinct cancellation token", async () => {
   completion(h, 1).resolve(response(answer("Showing R1.")));
   await finish(h, pending);
   assert.equal(h.ui.state.requestId, null);
+});
+
+test("gateway viewer continuation sends the exact result with its single-use token", async () => {
+  const h = harness();
+  seedReady(h);
+  h.ui.state.agent = { enabled: true };
+  const gateway = (index) =>
+    h.requests.filter((request) => request.path === "/api/agent/chat")[index];
+  const pending = await send(h, "Show me R1.");
+  const before = h.element("world").style.transform;
+  gateway(0).resolve(
+    response({
+      pending_approval: {
+        id: "approval-one",
+        tool: "show_label",
+        arguments: { label: "R1" },
+        destination: "schematic viewer",
+      },
+    }),
+  );
+  await drain();
+  assert.equal(h.element("world").style.transform, before);
+  h.ui.state.approvalResolve("allow");
+  await drain();
+  assert.equal(body(gateway(1)).approval_id, "approval-one");
+  gateway(1).resolve(
+    response({
+      ...toolReply("show_label", { label: "R1" }),
+      continuation_id: "viewer-result-one",
+      viewer_authorization: {
+        tool_call_id: "call-1",
+        tool: "show_label",
+        arguments: { label: "R1" },
+      },
+    }),
+  );
+  await drain();
+  const resumed = body(gateway(2));
+  const { request_id, ...continuation } = resumed;
+  assert.deepEqual(continuation, {
+    continuation_id: "viewer-result-one",
+    tool_call_id: "call-1",
+    tool: "show_label",
+    arguments: { label: "R1" },
+    result: {
+      status: "shown",
+      label: "R1",
+      kind: "part",
+      box: [100, 100, 200, 200],
+    },
+  });
+  assert.equal(
+    new Set([
+      body(gateway(0)).request_id,
+      body(gateway(1)).request_id,
+      request_id,
+    ]).size,
+    3,
+  );
+  assert.notEqual(h.element("world").style.transform, before);
+  gateway(2).resolve(
+    response(answer("Stopped at the configured agent step limit.")),
+  );
+  await finish(h, pending);
+  assert.equal(h.ui.state.history.at(-2).role, "tool");
+  assert.equal(
+    h.ui.state.history.at(-1).content,
+    "Stopped at the configured agent step limit.",
+  );
+});
+
+test("gateway viewer calls without a continuation fail before moving the view", async () => {
+  const h = harness();
+  seedReady(h);
+  h.ui.state.agent = { enabled: true };
+  const before = h.element("world").style.transform;
+  const pending = await send(h, "Show me R1.");
+  h.requests
+    .find((request) => request.path === "/api/agent/chat")
+    .resolve(response(toolReply("show_label", { label: "R1" })));
+  await finish(h, pending);
+  assert.equal(h.element("world").style.transform, before);
+  assert.equal(h.ui.state.history.length, 0);
+  assert.equal(h.element("question").value, "Show me R1.");
+  assert.equal(h.ui.state.approvalResolve, null);
+  assert.equal(
+    h.requests.filter((request) => request.path === "/api/agent/chat").length,
+    1,
+  );
 });

@@ -46,119 +46,119 @@
   ],
   "inputs": [
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-STEMMA-Audio-Amp-PCB/Adafruit STEMMA Audio Amp.sch",
+      "path": "data/real/sources/adafruit__Adafruit-STEMMA-Audio-Amp-PCB/Adafruit STEMMA Audio Amp.sch",
       "sha256": "2aa9670d485c014258dc4ec5d057799a481161905ba09914b05a2650bbf3c0d8"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-STMPE610-Breakout-PCB/Adafruit STMPE610.sch",
+      "path": "data/real/sources/adafruit__Adafruit-STMPE610-Breakout-PCB/Adafruit STMPE610.sch",
       "sha256": "345815802bcdb2b61a55bc69b1fadbb33e7ca4fb24c7300e3c54635f6ad0f877"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-TMP119-Temperature-Sensor-PCB/Adafruit TMP119 Temperature Sensor.sch",
+      "path": "data/real/sources/adafruit__Adafruit-TMP119-Temperature-Sensor-PCB/Adafruit TMP119 Temperature Sensor.sch",
       "sha256": "438e19d1be9c30f7d8a4c94127d4679559369abfe0f5af59968014672e2d6a1f"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-TPA2012-or-TS2012-Breakout-PCB/Adafruit TS2012 TPA2012 Class D Audio Amp.sch",
+      "path": "data/real/sources/adafruit__Adafruit-TPA2012-or-TS2012-Breakout-PCB/Adafruit TS2012 TPA2012 Class D Audio Amp.sch",
       "sha256": "91c9543e7305527060ab9b92e5949215a9b44d49a822db974918afb712f6ab3a"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-Terminal-Block-BFF-PCB/Adafruit Terminal Block BFF.sch",
+      "path": "data/real/sources/adafruit__Adafruit-Terminal-Block-BFF-PCB/Adafruit Terminal Block BFF.sch",
       "sha256": "c8a604dd5dde4cd64418c0e667b33b1a2ea9849c85062c47f7bc7271c0517278"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-Terminal-PiCowbell-for-Pico/Adafruit Terminal PiCowbell for Pico.sch",
+      "path": "data/real/sources/adafruit__Adafruit-Terminal-PiCowbell-for-Pico/Adafruit Terminal PiCowbell for Pico.sch",
       "sha256": "0cfb7ac859c9935d48f9a8ce4b55f1c1eed5700e8e22538fdfe40d6b305f5142"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-Trinket-M0-PCB/Trinket M0 rev D.sch",
+      "path": "data/real/sources/adafruit__Adafruit-Trinket-M0-PCB/Trinket M0 rev D.sch",
       "sha256": "1d419f20aad342c8a8c792a2c2aa8dee3a5be90333e53874f60a85b8ab580307"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-UDA1334A-I2S-Stereo-DAC-PCB/Adafruit UDA1334 I2S DAC.sch",
+      "path": "data/real/sources/adafruit__Adafruit-UDA1334A-I2S-Stereo-DAC-PCB/Adafruit UDA1334 I2S DAC.sch",
       "sha256": "ed5f22fd2b645d797d97316cc02a8872d747e7b37163ff7cb2b6bfcdabc89327"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-USB-Host-FeatherWing-PCB/Adafruit USB Host FeatherWing.sch",
+      "path": "data/real/sources/adafruit__Adafruit-USB-Host-FeatherWing-PCB/Adafruit USB Host FeatherWing.sch",
       "sha256": "4f7c1a85ea9f65994535e865aef3353420df58e2bbf0e7d14da67ad4d48e7c73"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-Verter-PCB/Adafruit Verter TPS63060 2A BoostBuck.sch",
+      "path": "data/real/sources/adafruit__Adafruit-Verter-PCB/Adafruit Verter TPS63060 2A BoostBuck.sch",
       "sha256": "64da290fb975b669352cf63e2c187b6d28431df4864f31dc31252d978b1784e5"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-WCH-CH9102F-Friend-PCB/Adafruit CH9102F.sch",
+      "path": "data/real/sources/adafruit__Adafruit-WCH-CH9102F-Friend-PCB/Adafruit CH9102F.sch",
       "sha256": "9508a2b89bbb403e43e1b850dfa9a986e75b5c08f419f2885610413d509e1821"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit_2.8_Inch_TFT_Shield_PCB/tfttouchshield.sch",
+      "path": "data/real/sources/adafruit__Adafruit_2.8_Inch_TFT_Shield_PCB/tfttouchshield.sch",
       "sha256": "8cfa9f969cd7abdef57679dd94c53fb6968bec9b11ad120638ee8d6853d28413"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit_ADXL343_PCB/ADXL343 Rev B.sch",
+      "path": "data/real/sources/adafruit__Adafruit_ADXL343_PCB/ADXL343 Rev B.sch",
       "sha256": "8914b549208865182257a379bb148d10218440743f5c21a4919c52c02c5c5be2"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/evidence/val.jsonl",
+      "path": "data/training/real-crop-v1/evidence/val.jsonl",
       "sha256": "86b94c6e09877b6899260f90b63abd5d374d933820863e67d0dc8632fa126ef4"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/12d1ad4a99534d842ff3cb49fe5eda2d2bc0ae8314fcf48eab2d0cbcdc09d2c7.png",
+      "path": "data/training/real-crop-v1/images/12d1ad4a99534d842ff3cb49fe5eda2d2bc0ae8314fcf48eab2d0cbcdc09d2c7.png",
       "sha256": "12d1ad4a99534d842ff3cb49fe5eda2d2bc0ae8314fcf48eab2d0cbcdc09d2c7"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/146ef5c8e83c58d0dacffb03b680f13f84894a67921e4ffa201c7a75af1b01b6.png",
+      "path": "data/training/real-crop-v1/images/146ef5c8e83c58d0dacffb03b680f13f84894a67921e4ffa201c7a75af1b01b6.png",
       "sha256": "146ef5c8e83c58d0dacffb03b680f13f84894a67921e4ffa201c7a75af1b01b6"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/5855ba1136e38f766e97462a2d40818590f27f3f4e2e01189ec99a19d20ae023.png",
+      "path": "data/training/real-crop-v1/images/5855ba1136e38f766e97462a2d40818590f27f3f4e2e01189ec99a19d20ae023.png",
       "sha256": "5855ba1136e38f766e97462a2d40818590f27f3f4e2e01189ec99a19d20ae023"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/63f24327ba7374084b8522948e53b1aa91aab390c5f4af8d178a616a7ded74c9.png",
+      "path": "data/training/real-crop-v1/images/63f24327ba7374084b8522948e53b1aa91aab390c5f4af8d178a616a7ded74c9.png",
       "sha256": "63f24327ba7374084b8522948e53b1aa91aab390c5f4af8d178a616a7ded74c9"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/6ac7eb2686c99469741ef9c4057a2cc149ecc2e2aef183c2a957aac2acef765f.png",
+      "path": "data/training/real-crop-v1/images/6ac7eb2686c99469741ef9c4057a2cc149ecc2e2aef183c2a957aac2acef765f.png",
       "sha256": "6ac7eb2686c99469741ef9c4057a2cc149ecc2e2aef183c2a957aac2acef765f"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/761b8ce691c7cce109a25c246c0a4b487c69c56d59261d424c4467adfc63ce87.png",
+      "path": "data/training/real-crop-v1/images/761b8ce691c7cce109a25c246c0a4b487c69c56d59261d424c4467adfc63ce87.png",
       "sha256": "761b8ce691c7cce109a25c246c0a4b487c69c56d59261d424c4467adfc63ce87"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/96c1acf4918a7a62b2bc150e0cd791818c6a30f81dc0e2426b17627097d7d667.png",
+      "path": "data/training/real-crop-v1/images/96c1acf4918a7a62b2bc150e0cd791818c6a30f81dc0e2426b17627097d7d667.png",
       "sha256": "96c1acf4918a7a62b2bc150e0cd791818c6a30f81dc0e2426b17627097d7d667"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/a59b262f9484236879aca9992bbd41d014638ef7cbd3eb07687bffaea3dc511d.png",
+      "path": "data/training/real-crop-v1/images/a59b262f9484236879aca9992bbd41d014638ef7cbd3eb07687bffaea3dc511d.png",
       "sha256": "a59b262f9484236879aca9992bbd41d014638ef7cbd3eb07687bffaea3dc511d"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/c505368f229d2a6baaefafd995bf95e99c60f4f2d6730fc6defda6434998a694.png",
+      "path": "data/training/real-crop-v1/images/c505368f229d2a6baaefafd995bf95e99c60f4f2d6730fc6defda6434998a694.png",
       "sha256": "c505368f229d2a6baaefafd995bf95e99c60f4f2d6730fc6defda6434998a694"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/d82691b2443325041b863001c6d4d87f874f3bf05dd891d711ebb5e08ecebcdb.png",
+      "path": "data/training/real-crop-v1/images/d82691b2443325041b863001c6d4d87f874f3bf05dd891d711ebb5e08ecebcdb.png",
       "sha256": "d82691b2443325041b863001c6d4d87f874f3bf05dd891d711ebb5e08ecebcdb"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/e0dfc88e94e9e12d1f73efde849580603f161ee559e1a314b1b014dc137bafc1.png",
+      "path": "data/training/real-crop-v1/images/e0dfc88e94e9e12d1f73efde849580603f161ee559e1a314b1b014dc137bafc1.png",
       "sha256": "e0dfc88e94e9e12d1f73efde849580603f161ee559e1a314b1b014dc137bafc1"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/f14aa4487de1e6b53612b2b6b52d9c0f6ebf7e0010b0c2ec6bc67d34e05e2055.png",
+      "path": "data/training/real-crop-v1/images/f14aa4487de1e6b53612b2b6b52d9c0f6ebf7e0010b0c2ec6bc67d34e05e2055.png",
       "sha256": "f14aa4487de1e6b53612b2b6b52d9c0f6ebf7e0010b0c2ec6bc67d34e05e2055"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450.png",
+      "path": "data/training/real-crop-v1/images/fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450.png",
       "sha256": "fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/manifest.json",
+      "path": "data/training/real-crop-v1/manifest.json",
       "sha256": "4a8cdcbc4e69721381b615498788d60cc56f0360c8532b2e780c800fe30a4bcf"
     },
     {
-      "path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/vision/val.jsonl",
+      "path": "data/training/real-crop-v1/vision/val.jsonl",
       "sha256": "59bf947cc7c40142ac8d6ea38e80448eb09333d1af17721905131c6e281c8866"
     }
   ],
@@ -181,8 +181,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-Terminal-PiCowbell-for-Pico/blob/38f512959eea28a4ae38c9ba7e700d3ac0d5618c/Adafruit%20Terminal%20PiCowbell%20for%20Pico.sch",
       "source_sha256": "0cfb7ac859c9935d48f9a8ce4b55f1c1eed5700e8e22538fdfe40d6b305f5142",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-Terminal-PiCowbell-for-Pico/Adafruit Terminal PiCowbell for Pico.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/a59b262f9484236879aca9992bbd41d014638ef7cbd3eb07687bffaea3dc511d.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-Terminal-PiCowbell-for-Pico/Adafruit Terminal PiCowbell for Pico.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/a59b262f9484236879aca9992bbd41d014638ef7cbd3eb07687bffaea3dc511d.png",
       "page": 1,
       "image": "images/a59b262f9484236879aca9992bbd41d014638ef7cbd3eb07687bffaea3dc511d.png",
       "image_sha256": "a59b262f9484236879aca9992bbd41d014638ef7cbd3eb07687bffaea3dc511d",
@@ -207,8 +207,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-Trinket-M0-PCB/blob/4103b9cd2722fadc28dc3969bbe067c6873e0540/Trinket%20M0%20rev%20D.sch",
       "source_sha256": "1d419f20aad342c8a8c792a2c2aa8dee3a5be90333e53874f60a85b8ab580307",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-Trinket-M0-PCB/Trinket M0 rev D.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/63f24327ba7374084b8522948e53b1aa91aab390c5f4af8d178a616a7ded74c9.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-Trinket-M0-PCB/Trinket M0 rev D.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/63f24327ba7374084b8522948e53b1aa91aab390c5f4af8d178a616a7ded74c9.png",
       "page": 1,
       "image": "images/63f24327ba7374084b8522948e53b1aa91aab390c5f4af8d178a616a7ded74c9.png",
       "image_sha256": "63f24327ba7374084b8522948e53b1aa91aab390c5f4af8d178a616a7ded74c9",
@@ -233,8 +233,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-STEMMA-Audio-Amp-PCB/blob/12d0f77a674db2b356c9e6b385f3917d4eb3420a/Adafruit%20STEMMA%20Audio%20Amp.sch",
       "source_sha256": "2aa9670d485c014258dc4ec5d057799a481161905ba09914b05a2650bbf3c0d8",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-STEMMA-Audio-Amp-PCB/Adafruit STEMMA Audio Amp.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/f14aa4487de1e6b53612b2b6b52d9c0f6ebf7e0010b0c2ec6bc67d34e05e2055.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-STEMMA-Audio-Amp-PCB/Adafruit STEMMA Audio Amp.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/f14aa4487de1e6b53612b2b6b52d9c0f6ebf7e0010b0c2ec6bc67d34e05e2055.png",
       "page": 1,
       "image": "images/f14aa4487de1e6b53612b2b6b52d9c0f6ebf7e0010b0c2ec6bc67d34e05e2055.png",
       "image_sha256": "f14aa4487de1e6b53612b2b6b52d9c0f6ebf7e0010b0c2ec6bc67d34e05e2055",
@@ -259,8 +259,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-STMPE610-Breakout-PCB/blob/8cf4f3cc9aaa31c6f5b90e661fa7ba99559052bb/Adafruit%20STMPE610.sch",
       "source_sha256": "345815802bcdb2b61a55bc69b1fadbb33e7ca4fb24c7300e3c54635f6ad0f877",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-STMPE610-Breakout-PCB/Adafruit STMPE610.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/d82691b2443325041b863001c6d4d87f874f3bf05dd891d711ebb5e08ecebcdb.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-STMPE610-Breakout-PCB/Adafruit STMPE610.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/d82691b2443325041b863001c6d4d87f874f3bf05dd891d711ebb5e08ecebcdb.png",
       "page": 1,
       "image": "images/d82691b2443325041b863001c6d4d87f874f3bf05dd891d711ebb5e08ecebcdb.png",
       "image_sha256": "d82691b2443325041b863001c6d4d87f874f3bf05dd891d711ebb5e08ecebcdb",
@@ -285,8 +285,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-TMP119-Temperature-Sensor-PCB/blob/fe8ae26b0f8362aa93a8074374984c1da7bf01aa/Adafruit%20TMP119%20Temperature%20Sensor.sch",
       "source_sha256": "438e19d1be9c30f7d8a4c94127d4679559369abfe0f5af59968014672e2d6a1f",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-TMP119-Temperature-Sensor-PCB/Adafruit TMP119 Temperature Sensor.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/761b8ce691c7cce109a25c246c0a4b487c69c56d59261d424c4467adfc63ce87.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-TMP119-Temperature-Sensor-PCB/Adafruit TMP119 Temperature Sensor.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/761b8ce691c7cce109a25c246c0a4b487c69c56d59261d424c4467adfc63ce87.png",
       "page": 1,
       "image": "images/761b8ce691c7cce109a25c246c0a4b487c69c56d59261d424c4467adfc63ce87.png",
       "image_sha256": "761b8ce691c7cce109a25c246c0a4b487c69c56d59261d424c4467adfc63ce87",
@@ -311,8 +311,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-USB-Host-FeatherWing-PCB/blob/7011deb5316121374db87580ad3b03f22d8f676d/Adafruit%20USB%20Host%20FeatherWing.sch",
       "source_sha256": "4f7c1a85ea9f65994535e865aef3353420df58e2bbf0e7d14da67ad4d48e7c73",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-USB-Host-FeatherWing-PCB/Adafruit USB Host FeatherWing.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/146ef5c8e83c58d0dacffb03b680f13f84894a67921e4ffa201c7a75af1b01b6.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-USB-Host-FeatherWing-PCB/Adafruit USB Host FeatherWing.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/146ef5c8e83c58d0dacffb03b680f13f84894a67921e4ffa201c7a75af1b01b6.png",
       "page": 1,
       "image": "images/146ef5c8e83c58d0dacffb03b680f13f84894a67921e4ffa201c7a75af1b01b6.png",
       "image_sha256": "146ef5c8e83c58d0dacffb03b680f13f84894a67921e4ffa201c7a75af1b01b6",
@@ -337,8 +337,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-Verter-PCB/blob/47ff9d8588a4b841b6d0a1efa42fc9275463c16e/Adafruit%20Verter%20TPS63060%202A%20BoostBuck.sch",
       "source_sha256": "64da290fb975b669352cf63e2c187b6d28431df4864f31dc31252d978b1784e5",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-Verter-PCB/Adafruit Verter TPS63060 2A BoostBuck.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-Verter-PCB/Adafruit Verter TPS63060 2A BoostBuck.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450.png",
       "page": 1,
       "image": "images/fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450.png",
       "image_sha256": "fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450",
@@ -363,8 +363,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit_ADXL343_PCB/blob/13dce5a5963041d7d7f60492da459e00a96f4344/ADXL343%20Rev%20B.sch",
       "source_sha256": "8914b549208865182257a379bb148d10218440743f5c21a4919c52c02c5c5be2",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit_ADXL343_PCB/ADXL343 Rev B.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/6ac7eb2686c99469741ef9c4057a2cc149ecc2e2aef183c2a957aac2acef765f.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit_ADXL343_PCB/ADXL343 Rev B.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/6ac7eb2686c99469741ef9c4057a2cc149ecc2e2aef183c2a957aac2acef765f.png",
       "page": 1,
       "image": "images/6ac7eb2686c99469741ef9c4057a2cc149ecc2e2aef183c2a957aac2acef765f.png",
       "image_sha256": "6ac7eb2686c99469741ef9c4057a2cc149ecc2e2aef183c2a957aac2acef765f",
@@ -389,8 +389,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit_2.8_Inch_TFT_Shield_PCB/blob/048abde4fd0ae02c8872e1938297e66b5d4e8784/tfttouchshield.sch",
       "source_sha256": "8cfa9f969cd7abdef57679dd94c53fb6968bec9b11ad120638ee8d6853d28413",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit_2.8_Inch_TFT_Shield_PCB/tfttouchshield.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/12d1ad4a99534d842ff3cb49fe5eda2d2bc0ae8314fcf48eab2d0cbcdc09d2c7.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit_2.8_Inch_TFT_Shield_PCB/tfttouchshield.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/12d1ad4a99534d842ff3cb49fe5eda2d2bc0ae8314fcf48eab2d0cbcdc09d2c7.png",
       "page": 1,
       "image": "images/12d1ad4a99534d842ff3cb49fe5eda2d2bc0ae8314fcf48eab2d0cbcdc09d2c7.png",
       "image_sha256": "12d1ad4a99534d842ff3cb49fe5eda2d2bc0ae8314fcf48eab2d0cbcdc09d2c7",
@@ -415,8 +415,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-TPA2012-or-TS2012-Breakout-PCB/blob/b099d41a3fb4cddce5f19a7a8bbdc7a2d68711d8/Adafruit%20TS2012%20TPA2012%20Class%20D%20Audio%20Amp.sch",
       "source_sha256": "91c9543e7305527060ab9b92e5949215a9b44d49a822db974918afb712f6ab3a",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-TPA2012-or-TS2012-Breakout-PCB/Adafruit TS2012 TPA2012 Class D Audio Amp.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/5855ba1136e38f766e97462a2d40818590f27f3f4e2e01189ec99a19d20ae023.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-TPA2012-or-TS2012-Breakout-PCB/Adafruit TS2012 TPA2012 Class D Audio Amp.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/5855ba1136e38f766e97462a2d40818590f27f3f4e2e01189ec99a19d20ae023.png",
       "page": 1,
       "image": "images/5855ba1136e38f766e97462a2d40818590f27f3f4e2e01189ec99a19d20ae023.png",
       "image_sha256": "5855ba1136e38f766e97462a2d40818590f27f3f4e2e01189ec99a19d20ae023",
@@ -441,8 +441,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-WCH-CH9102F-Friend-PCB/blob/eb022866b738f738971172c8725546e7b221369f/Adafruit%20CH9102F.sch",
       "source_sha256": "9508a2b89bbb403e43e1b850dfa9a986e75b5c08f419f2885610413d509e1821",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-WCH-CH9102F-Friend-PCB/Adafruit CH9102F.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/e0dfc88e94e9e12d1f73efde849580603f161ee559e1a314b1b014dc137bafc1.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-WCH-CH9102F-Friend-PCB/Adafruit CH9102F.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/e0dfc88e94e9e12d1f73efde849580603f161ee559e1a314b1b014dc137bafc1.png",
       "page": 1,
       "image": "images/e0dfc88e94e9e12d1f73efde849580603f161ee559e1a314b1b014dc137bafc1.png",
       "image_sha256": "e0dfc88e94e9e12d1f73efde849580603f161ee559e1a314b1b014dc137bafc1",
@@ -467,8 +467,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-Terminal-Block-BFF-PCB/blob/6e2c47d43d37a4911910750956fb27c9459b2a57/Adafruit%20Terminal%20Block%20BFF.sch",
       "source_sha256": "c8a604dd5dde4cd64418c0e667b33b1a2ea9849c85062c47f7bc7271c0517278",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-Terminal-Block-BFF-PCB/Adafruit Terminal Block BFF.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/c505368f229d2a6baaefafd995bf95e99c60f4f2d6730fc6defda6434998a694.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-Terminal-Block-BFF-PCB/Adafruit Terminal Block BFF.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/c505368f229d2a6baaefafd995bf95e99c60f4f2d6730fc6defda6434998a694.png",
       "page": 1,
       "image": "images/c505368f229d2a6baaefafd995bf95e99c60f4f2d6730fc6defda6434998a694.png",
       "image_sha256": "c505368f229d2a6baaefafd995bf95e99c60f4f2d6730fc6defda6434998a694",
@@ -493,8 +493,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-UDA1334A-I2S-Stereo-DAC-PCB/blob/e836025c26c8dcfa3fab3e9aa7756542770f4849/Adafruit%20UDA1334%20I2S%20DAC.sch",
       "source_sha256": "ed5f22fd2b645d797d97316cc02a8872d747e7b37163ff7cb2b6bfcdabc89327",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-UDA1334A-I2S-Stereo-DAC-PCB/Adafruit UDA1334 I2S DAC.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/96c1acf4918a7a62b2bc150e0cd791818c6a30f81dc0e2426b17627097d7d667.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-UDA1334A-I2S-Stereo-DAC-PCB/Adafruit UDA1334 I2S DAC.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/96c1acf4918a7a62b2bc150e0cd791818c6a30f81dc0e2426b17627097d7d667.png",
       "page": 1,
       "image": "images/96c1acf4918a7a62b2bc150e0cd791818c6a30f81dc0e2426b17627097d7d667.png",
       "image_sha256": "96c1acf4918a7a62b2bc150e0cd791818c6a30f81dc0e2426b17627097d7d667",
@@ -518,8 +518,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-STEMMA-Audio-Amp-PCB/blob/12d0f77a674db2b356c9e6b385f3917d4eb3420a/Adafruit%20STEMMA%20Audio%20Amp.sch",
       "source_sha256": "2aa9670d485c014258dc4ec5d057799a481161905ba09914b05a2650bbf3c0d8",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-STEMMA-Audio-Amp-PCB/Adafruit STEMMA Audio Amp.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/f14aa4487de1e6b53612b2b6b52d9c0f6ebf7e0010b0c2ec6bc67d34e05e2055.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-STEMMA-Audio-Amp-PCB/Adafruit STEMMA Audio Amp.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/f14aa4487de1e6b53612b2b6b52d9c0f6ebf7e0010b0c2ec6bc67d34e05e2055.png",
       "page": 1,
       "image": "images/f14aa4487de1e6b53612b2b6b52d9c0f6ebf7e0010b0c2ec6bc67d34e05e2055.png",
       "image_sha256": "f14aa4487de1e6b53612b2b6b52d9c0f6ebf7e0010b0c2ec6bc67d34e05e2055",
@@ -543,8 +543,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-UDA1334A-I2S-Stereo-DAC-PCB/blob/e836025c26c8dcfa3fab3e9aa7756542770f4849/Adafruit%20UDA1334%20I2S%20DAC.sch",
       "source_sha256": "ed5f22fd2b645d797d97316cc02a8872d747e7b37163ff7cb2b6bfcdabc89327",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-UDA1334A-I2S-Stereo-DAC-PCB/Adafruit UDA1334 I2S DAC.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/96c1acf4918a7a62b2bc150e0cd791818c6a30f81dc0e2426b17627097d7d667.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-UDA1334A-I2S-Stereo-DAC-PCB/Adafruit UDA1334 I2S DAC.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/96c1acf4918a7a62b2bc150e0cd791818c6a30f81dc0e2426b17627097d7d667.png",
       "page": 1,
       "image": "images/96c1acf4918a7a62b2bc150e0cd791818c6a30f81dc0e2426b17627097d7d667.png",
       "image_sha256": "96c1acf4918a7a62b2bc150e0cd791818c6a30f81dc0e2426b17627097d7d667",
@@ -568,8 +568,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-Terminal-Block-BFF-PCB/blob/6e2c47d43d37a4911910750956fb27c9459b2a57/Adafruit%20Terminal%20Block%20BFF.sch",
       "source_sha256": "c8a604dd5dde4cd64418c0e667b33b1a2ea9849c85062c47f7bc7271c0517278",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-Terminal-Block-BFF-PCB/Adafruit Terminal Block BFF.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/c505368f229d2a6baaefafd995bf95e99c60f4f2d6730fc6defda6434998a694.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-Terminal-Block-BFF-PCB/Adafruit Terminal Block BFF.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/c505368f229d2a6baaefafd995bf95e99c60f4f2d6730fc6defda6434998a694.png",
       "page": 1,
       "image": "images/c505368f229d2a6baaefafd995bf95e99c60f4f2d6730fc6defda6434998a694.png",
       "image_sha256": "c505368f229d2a6baaefafd995bf95e99c60f4f2d6730fc6defda6434998a694",
@@ -593,8 +593,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-WCH-CH9102F-Friend-PCB/blob/eb022866b738f738971172c8725546e7b221369f/Adafruit%20CH9102F.sch",
       "source_sha256": "9508a2b89bbb403e43e1b850dfa9a986e75b5c08f419f2885610413d509e1821",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-WCH-CH9102F-Friend-PCB/Adafruit CH9102F.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/e0dfc88e94e9e12d1f73efde849580603f161ee559e1a314b1b014dc137bafc1.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-WCH-CH9102F-Friend-PCB/Adafruit CH9102F.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/e0dfc88e94e9e12d1f73efde849580603f161ee559e1a314b1b014dc137bafc1.png",
       "page": 1,
       "image": "images/e0dfc88e94e9e12d1f73efde849580603f161ee559e1a314b1b014dc137bafc1.png",
       "image_sha256": "e0dfc88e94e9e12d1f73efde849580603f161ee559e1a314b1b014dc137bafc1",
@@ -618,8 +618,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-TPA2012-or-TS2012-Breakout-PCB/blob/b099d41a3fb4cddce5f19a7a8bbdc7a2d68711d8/Adafruit%20TS2012%20TPA2012%20Class%20D%20Audio%20Amp.sch",
       "source_sha256": "91c9543e7305527060ab9b92e5949215a9b44d49a822db974918afb712f6ab3a",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-TPA2012-or-TS2012-Breakout-PCB/Adafruit TS2012 TPA2012 Class D Audio Amp.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/5855ba1136e38f766e97462a2d40818590f27f3f4e2e01189ec99a19d20ae023.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-TPA2012-or-TS2012-Breakout-PCB/Adafruit TS2012 TPA2012 Class D Audio Amp.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/5855ba1136e38f766e97462a2d40818590f27f3f4e2e01189ec99a19d20ae023.png",
       "page": 1,
       "image": "images/5855ba1136e38f766e97462a2d40818590f27f3f4e2e01189ec99a19d20ae023.png",
       "image_sha256": "5855ba1136e38f766e97462a2d40818590f27f3f4e2e01189ec99a19d20ae023",
@@ -643,8 +643,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-Terminal-PiCowbell-for-Pico/blob/38f512959eea28a4ae38c9ba7e700d3ac0d5618c/Adafruit%20Terminal%20PiCowbell%20for%20Pico.sch",
       "source_sha256": "0cfb7ac859c9935d48f9a8ce4b55f1c1eed5700e8e22538fdfe40d6b305f5142",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-Terminal-PiCowbell-for-Pico/Adafruit Terminal PiCowbell for Pico.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/a59b262f9484236879aca9992bbd41d014638ef7cbd3eb07687bffaea3dc511d.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-Terminal-PiCowbell-for-Pico/Adafruit Terminal PiCowbell for Pico.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/a59b262f9484236879aca9992bbd41d014638ef7cbd3eb07687bffaea3dc511d.png",
       "page": 1,
       "image": "images/a59b262f9484236879aca9992bbd41d014638ef7cbd3eb07687bffaea3dc511d.png",
       "image_sha256": "a59b262f9484236879aca9992bbd41d014638ef7cbd3eb07687bffaea3dc511d",
@@ -676,8 +676,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-Verter-PCB/blob/47ff9d8588a4b841b6d0a1efa42fc9275463c16e/Adafruit%20Verter%20TPS63060%202A%20BoostBuck.sch",
       "source_sha256": "64da290fb975b669352cf63e2c187b6d28431df4864f31dc31252d978b1784e5",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-Verter-PCB/Adafruit Verter TPS63060 2A BoostBuck.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-Verter-PCB/Adafruit Verter TPS63060 2A BoostBuck.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450.png",
       "page": 1,
       "image": "images/fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450.png",
       "image_sha256": "fd3f436dbc8a2beb6e9ed80c0e955e11af1d3b6b55468db48d6d16f6b574a450",
@@ -709,8 +709,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-Trinket-M0-PCB/blob/4103b9cd2722fadc28dc3969bbe067c6873e0540/Trinket%20M0%20rev%20D.sch",
       "source_sha256": "1d419f20aad342c8a8c792a2c2aa8dee3a5be90333e53874f60a85b8ab580307",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-Trinket-M0-PCB/Trinket M0 rev D.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/63f24327ba7374084b8522948e53b1aa91aab390c5f4af8d178a616a7ded74c9.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-Trinket-M0-PCB/Trinket M0 rev D.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/63f24327ba7374084b8522948e53b1aa91aab390c5f4af8d178a616a7ded74c9.png",
       "page": 1,
       "image": "images/63f24327ba7374084b8522948e53b1aa91aab390c5f4af8d178a616a7ded74c9.png",
       "image_sha256": "63f24327ba7374084b8522948e53b1aa91aab390c5f4af8d178a616a7ded74c9",
@@ -750,8 +750,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit_ADXL343_PCB/blob/13dce5a5963041d7d7f60492da459e00a96f4344/ADXL343%20Rev%20B.sch",
       "source_sha256": "8914b549208865182257a379bb148d10218440743f5c21a4919c52c02c5c5be2",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit_ADXL343_PCB/ADXL343 Rev B.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/6ac7eb2686c99469741ef9c4057a2cc149ecc2e2aef183c2a957aac2acef765f.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit_ADXL343_PCB/ADXL343 Rev B.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/6ac7eb2686c99469741ef9c4057a2cc149ecc2e2aef183c2a957aac2acef765f.png",
       "page": 1,
       "image": "images/6ac7eb2686c99469741ef9c4057a2cc149ecc2e2aef183c2a957aac2acef765f.png",
       "image_sha256": "6ac7eb2686c99469741ef9c4057a2cc149ecc2e2aef183c2a957aac2acef765f",
@@ -790,8 +790,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-TMP119-Temperature-Sensor-PCB/blob/fe8ae26b0f8362aa93a8074374984c1da7bf01aa/Adafruit%20TMP119%20Temperature%20Sensor.sch",
       "source_sha256": "438e19d1be9c30f7d8a4c94127d4679559369abfe0f5af59968014672e2d6a1f",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-TMP119-Temperature-Sensor-PCB/Adafruit TMP119 Temperature Sensor.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/761b8ce691c7cce109a25c246c0a4b487c69c56d59261d424c4467adfc63ce87.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-TMP119-Temperature-Sensor-PCB/Adafruit TMP119 Temperature Sensor.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/761b8ce691c7cce109a25c246c0a4b487c69c56d59261d424c4467adfc63ce87.png",
       "page": 1,
       "image": "images/761b8ce691c7cce109a25c246c0a4b487c69c56d59261d424c4467adfc63ce87.png",
       "image_sha256": "761b8ce691c7cce109a25c246c0a4b487c69c56d59261d424c4467adfc63ce87",
@@ -824,8 +824,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit-USB-Host-FeatherWing-PCB/blob/7011deb5316121374db87580ad3b03f22d8f676d/Adafruit%20USB%20Host%20FeatherWing.sch",
       "source_sha256": "4f7c1a85ea9f65994535e865aef3353420df58e2bbf0e7d14da67ad4d48e7c73",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit-USB-Host-FeatherWing-PCB/Adafruit USB Host FeatherWing.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/146ef5c8e83c58d0dacffb03b680f13f84894a67921e4ffa201c7a75af1b01b6.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit-USB-Host-FeatherWing-PCB/Adafruit USB Host FeatherWing.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/146ef5c8e83c58d0dacffb03b680f13f84894a67921e4ffa201c7a75af1b01b6.png",
       "page": 1,
       "image": "images/146ef5c8e83c58d0dacffb03b680f13f84894a67921e4ffa201c7a75af1b01b6.png",
       "image_sha256": "146ef5c8e83c58d0dacffb03b680f13f84894a67921e4ffa201c7a75af1b01b6",
@@ -858,8 +858,8 @@
       },
       "source_url": "https://github.com/adafruit/Adafruit_2.8_Inch_TFT_Shield_PCB/blob/048abde4fd0ae02c8872e1938297e66b5d4e8784/tfttouchshield.sch",
       "source_sha256": "8cfa9f969cd7abdef57679dd94c53fb6968bec9b11ad120638ee8d6853d28413",
-      "native_source_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real/sources/adafruit__Adafruit_2.8_Inch_TFT_Shield_PCB/tfttouchshield.sch",
-      "frozen_image_path": "/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/training/real-crop-v1/images/12d1ad4a99534d842ff3cb49fe5eda2d2bc0ae8314fcf48eab2d0cbcdc09d2c7.png",
+      "native_source_path": "data/real/sources/adafruit__Adafruit_2.8_Inch_TFT_Shield_PCB/tfttouchshield.sch",
+      "frozen_image_path": "data/training/real-crop-v1/images/12d1ad4a99534d842ff3cb49fe5eda2d2bc0ae8314fcf48eab2d0cbcdc09d2c7.png",
       "page": 1,
       "image": "images/12d1ad4a99534d842ff3cb49fe5eda2d2bc0ae8314fcf48eab2d0cbcdc09d2c7.png",
       "image_sha256": "12d1ad4a99534d842ff3cb49fe5eda2d2bc0ae8314fcf48eab2d0cbcdc09d2c7",
@@ -874,5 +874,10 @@
     "Image-only user content contains only the frozen image and question; no native facts, labels, or coordinates are injected.",
     "Existing deterministic scorers remain unchanged; contextual refusal v2 does not recognize these new question templates and requires manual adjudication."
   ],
-  "plan_sha256": "010e037e864ec0a7c12ff85a38aa31167f1354a391e9edf4df11ae0af3321e6a"
+  "plan_sha256": "a57fa88d702e66c5ca1c998b23c2a362a0eb6ee47a2db43ba0700882c9666d19",
+  "public_copy": {
+    "scope": "Public copy with repository-relative paths. The current plan hash binds this copy; the historical hashes identify the original plan. Targets, questions, answers, source/image hashes and frozen dataset identities are unchanged. No review or evaluation was repeated.",
+    "historical_file_sha256": "a920982e21966f9505ac98c4898fb34dc3ccc0564de728fc8b5ada28ecfef39c",
+    "historical_plan_sha256": "010e037e864ec0a7c12ff85a38aa31167f1354a391e9edf4df11ae0af3321e6a"
+  }
 }

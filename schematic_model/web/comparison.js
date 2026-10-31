@@ -26,8 +26,9 @@ function comparisonControls() {
     comparison.attempts >= 20;
   for (const id of ["compare-a", "compare-b", "compare-history"])
     $(id).disabled = comparison.pending || comparison.turns > 0;
-  $("compare-new").disabled = comparison.pending;
+  $("compare-new").disabled = comparison.pending || !state.doc;
   $("compare-close").disabled = comparison.pending;
+  $("compare-saved").disabled = comparison.pending;
   $("compare-stop").hidden = !comparison.pending;
   $("compare-progress").hidden = !comparison.pending;
   $("compare-results").setAttribute("aria-busy", String(comparison.pending));
@@ -59,15 +60,23 @@ function resetComparison() {
   $("compare-error").textContent = "";
   $("compare-source").textContent =
     `${doc.title} · page ${doc.page} · ${comparison.snapshot.mode === "vision" ? "image only" : "native evidence + image"}. Frozen for this comparison; normal chat is separate.`;
+  $("compare-image").hidden = false;
   $("compare-image").src = doc.image;
   $("compare-image").alt = `Frozen schematic: ${doc.title}, page ${doc.page}`;
   comparisonControls();
 }
 
 async function openComparison() {
-  if (!state.doc || state.pending) return;
+  if (state.pending) return;
   $("comparison").showModal();
-  if (!comparison.snapshot) resetComparison();
+  if (!comparison.snapshot) {
+    if (state.doc) resetComparison();
+    else {
+      $("compare-source").textContent =
+        "Open a schematic for live comparison, or review saved benchmarks.";
+      $("compare-image").hidden = true;
+    }
+  }
   $("compare-error").textContent = "";
   if (!comparison.config) {
     try {

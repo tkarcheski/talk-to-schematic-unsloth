@@ -110,6 +110,68 @@ def test_tool_messages_require_published_tools_and_answered_calls():
         plain_messages(CONVERSATION[:2] + [CONVERSATION[3]], VIEW_TOOLS)
 
 
+@pytest.mark.parametrize("call_id", [None, "", " ", 7, "x" * 129])
+def test_tool_calls_require_bounded_nonempty_ids(call_id):
+    messages = copy.deepcopy(CONVERSATION[:4])
+    messages[2]["tool_calls"][0]["id"] = call_id
+    with pytest.raises(ToolFormatError, match="nonempty ID"):
+        plain_messages(messages, VIEW_TOOLS)
+    del messages[2]["tool_calls"][0]["id"]
+    with pytest.raises(ToolFormatError, match="nonempty ID"):
+        plain_messages(messages, VIEW_TOOLS)
+
+
+@pytest.mark.parametrize("call_id", ["call-0", "call-1"])
+def test_duplicate_call_ids_are_rejected_in_and_across_turns(call_id):
+    messages = copy.deepcopy(CONVERSATION)
+    messages[6]["tool_calls"][1]["id"] = call_id
+    with pytest.raises(ToolFormatError, match="unique"):
+        plain_messages(messages, VIEW_TOOLS)
+
+
+def invalid_result_history(case):
+    messages = copy.deepcopy(CONVERSATION)
+    if case == "missing_id":
+        del messages[3]["tool_call_id"]
+    elif case == "unknown_id":
+        messages[3]["tool_call_id"] = "unrelated"
+    elif case == "duplicate_result":
+        messages[8]["tool_call_id"] = "call-1"
+    elif case == "reused_result":
+        messages[7]["tool_call_id"] = "call-0"
+    elif case == "reordered_results":
+        messages[7], messages[8] = messages[8], messages[7]
+    elif case == "wrong_name":
+        messages[3]["name"] = "show_full_sheet"
+    elif case == "incomplete_results":
+        messages.pop()
+    else:
+        raise AssertionError(case)
+    return messages
+
+
+INVALID_RESULTS = ["missing_id", "unknown_id", "duplicate_result", "reused_result",
+                   "reordered_results", "wrong_name", "incomplete_results"]
+
+
+@pytest.mark.parametrize("case", INVALID_RESULTS)
+def test_tool_results_are_bound_to_the_exact_ordered_calls(case):
+    with pytest.raises(ToolFormatError):
+        plain_messages(invalid_result_history(case), VIEW_TOOLS)
+
+
+def test_named_results_and_final_training_call_preserve_template():
+    messages = copy.deepcopy(CONVERSATION)
+    messages[3]["name"] = "show_label"
+    assert render(plain_messages(messages, VIEW_TOOLS)) == render(native(messages), VIEW_TOOLS)
+    target = messages[:3]
+    assert render(plain_messages(target, VIEW_TOOLS)) == render(native(target), VIEW_TOOLS)
+    # Training can end with an assistant tool-call target; serving cannot.
+    with pytest.raises(ValueError, match="end with a user message"):
+        validate_request({"model": "schematic", "messages": target, "tools": VIEW_TOOLS},
+                         DeploymentConfig(model=""))
+
+
 def test_request_validation_and_assistant_message_shape(tmp_path):
     config = DeploymentConfig(model=str(tmp_path))
     request = validate_request({"model": "schematic", "messages": CONVERSATION[:4], "tools": VIEW_TOOLS}, config)
@@ -174,6 +236,15 @@ def test_server_publishes_tools_and_returns_openai_tool_calls(tool_server):
     assert post(server, {"model": "schematic", "messages": CONVERSATION[:2],
                          "tools": [{"type": "function", "function": {"name": "shell"}}]})[0] == 400
     assert len(calls) == 2
+
+
+@pytest.mark.parametrize("case", INVALID_RESULTS)
+def test_server_rejects_mismatched_results_before_inference(tool_server, case):
+    server, calls = tool_server
+    code, _ = post(server, {"model": "schematic", "messages": invalid_result_history(case),
+                            "tools": VIEW_TOOLS})
+    assert code == 400
+    assert calls == []
 
 
 def view_row():

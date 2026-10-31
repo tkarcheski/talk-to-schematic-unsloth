@@ -3,10 +3,10 @@
   "snapshot_path": "data/validation/generalization-v2",
   "snapshot_sha256": "aaa4e5a862bc8307fdb5100144706a2b059ebd64b71ce6eac04066ff55789192",
   "plan_file": "docs/validation/generalization-eval-plan-v2.json",
-  "plan_file_sha256": "2a4c0e7d0fce6689f81d08d52120b350db2bef9c5c6a832f54c720c9bb6c5263",
-  "plan_sha256": "31354cbf66e43bfe8dd10753b009ab0296fb269ce5790b6bba5e9a3a4da464dd",
+  "plan_file_sha256": "9522bd4d9d76baf112a496dab3bc47fe6cfada01538b177794de18de284b2b0b",
+  "plan_sha256": "52a1cfde6aec593aed550848a1adce40788040ecc5b622ee3b780ba8caa4e14c",
   "serving_readability_review": "docs/validation/generalization-readability-2048.json",
-  "serving_readability_review_sha256": "5c1172b8f750490520fc73f6a2008bccf293bd24bbd8a7c2b4c4fa6376b011a5",
+  "serving_readability_review_sha256": "ba9f76dc481495184898c55540f7a739ace98f17e14c7aa92439032dcdbb1d8a",
   "datasets": [
     {
       "path": "vision/val.jsonl",
@@ -34,5 +34,16 @@
     "Image-only user content contains only the frozen image and question; no native facts, labels, or coordinates are injected.",
     "Existing deterministic scorers remain unchanged; contextual refusal v2 does not recognize these new question templates and requires manual adjudication.",
     "Serving-scale visual review binds this versioned plan in a separate report; no model-processor readability certification is implied."
-  ]
+  ],
+  "public_copy": {
+    "scope": "Public summary of the original frozen snapshot. Top-level plan and readability hashes identify the current public documents only; historical_document_bindings retain the documents used for publication. snapshot_sha256, dataset hashes and row counts still identify the original frozen artifacts. No snapshot, image, review or evaluation was regenerated.",
+    "historical_file_sha256": "f3920a64b593f451c520e3d1f0b998623035761882a25f5c8bc7f65102f93068",
+    "historical_document_bindings": {
+      "plan_file": "docs/validation/generalization-eval-plan-v2.json",
+      "plan_file_sha256": "2a4c0e7d0fce6689f81d08d52120b350db2bef9c5c6a832f54c720c9bb6c5263",
+      "plan_sha256": "31354cbf66e43bfe8dd10753b009ab0296fb269ce5790b6bba5e9a3a4da464dd",
+      "serving_readability_review": "docs/validation/generalization-readability-2048.json",
+      "serving_readability_review_sha256": "5c1172b8f750490520fc73f6a2008bccf293bd24bbd8a7c2b4c4fa6376b011a5"
+    }
+  }
 }

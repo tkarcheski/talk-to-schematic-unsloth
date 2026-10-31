@@ -96,6 +96,7 @@ try {
     function: { name: "show_label", arguments: JSON.stringify({ label }) },
   });
   const calls = (...items) => ({
+    continuation_id: `continuation-${items[0].id}`,
     choices: [
       { message: { role: "assistant", content: null, tool_calls: items } },
     ],
@@ -107,6 +108,12 @@ try {
   await page.route("**/api/agent/chat", async (route) => {
     const body = route.request().postDataJSON();
     received.push(body);
+    if (body.continuation_id) {
+      expect(body.messages).toBeUndefined();
+      expect(body.tool).toMatch(/^show_/u);
+      expect(["shown", "denied"]).toContain(body.result.status);
+      return json(route, answer("Turn completed without any further action."));
+    }
     if (body.approval_id === "first-navigation")
       return json(route, {
         ...calls(call("first-call", "R1")),
