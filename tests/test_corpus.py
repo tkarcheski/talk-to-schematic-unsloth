@@ -86,7 +86,7 @@ class CorpusTests(unittest.TestCase):
         svg = source_svg(self.source, 1, attribution='Adafruit Industries | CC BY-SA 3.0')
         self.assertEqual(ET.fromstring(svg).get('viewBox'), initial)
         self.assertIn('Adafruit Industries | CC BY-SA 3.0', svg)
-        self.assertIn('eagle_xml_geometry_v3_text_alignment', svg)
+        self.assertIn('eagle_xml_geometry_v4_arc_bounds', svg)
         self.assertIn('circuit crop', svg)
 
     def test_crop_keeps_disconnected_electrical_symbols(self):
