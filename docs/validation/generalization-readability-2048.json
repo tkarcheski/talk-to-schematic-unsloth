@@ -3,15 +3,15 @@
   "status": "serving_resize_manual_review_bound_to_versioned_plan",
   "inputs": {
     "original_plan_path": "docs/validation/generalization-eval-plan.json",
-    "original_plan_file_sha256": "a920982e21966f9505ac98c4898fb34dc3ccc0564de728fc8b5ada28ecfef39c",
-    "original_plan_content_sha256": "010e037e864ec0a7c12ff85a38aa31167f1354a391e9edf4df11ae0af3321e6a",
+    "original_plan_file_sha256": "757d4af511b79f9529243107f4fdcad39fedcdd20e6a088653236065f370693b",
+    "original_plan_content_sha256": "a57fa88d702e66c5ca1c998b23c2a362a0eb6ee47a2db43ba0700882c9666d19",
     "prior_original_resolution_report_path": "docs/validation/generalization-readability.json",
-    "prior_original_resolution_report_sha256": "9e7c68d7ba06e3820d28ce9b51a3259c2c1a0042ea0f3637fd3499ed3675bc5d",
+    "prior_original_resolution_report_sha256": "0208053811dd82614199d7b04d6a91a0438a2a8267dbc0038029c5cef01e4f31",
     "base_snapshot_sha256": "8b152832864cfd0eb78a8881b16eef8a47be1c050a091461f6366be067bf993c",
     "final_plan_binding_status": "verified_all_13_value_targets_match",
     "final_plan_path": "docs/validation/generalization-eval-plan-v2.json",
-    "final_plan_file_sha256": "2a4c0e7d0fce6689f81d08d52120b350db2bef9c5c6a832f54c720c9bb6c5263",
-    "final_plan_content_sha256": "31354cbf66e43bfe8dd10753b009ab0296fb269ce5790b6bba5e9a3a4da464dd"
+    "final_plan_file_sha256": "9522bd4d9d76baf112a496dab3bc47fe6cfada01538b177794de18de284b2b0b",
+    "final_plan_content_sha256": "52a1cfde6aec593aed550848a1adce40788040ecc5b622ee3b780ba8caa4e14c"
   },
   "scope": "Thirteen image-only value targets in the versioned v2 plan on existing validation boards: twelve unchanged targets and the explicit Verter R9 replacement for overlapping C8. Connectivity and refusal cases are outside this visual review.",
   "method": {
@@ -1051,6 +1051,22 @@
     "versioned_plan_replacement": {
       "refdes": "R9",
       "literal_value": "75K 1%"
+    }
+  },
+  "public_copy": {
+    "scope": "Historical serving-resize review with current public-copy document bindings in inputs. historical_inputs retain the documents inspected at the original review. Observations, reviewed targets, pixel hashes, resize measurements and counts are unchanged; no new resize or visual review occurred.",
+    "historical_file_sha256": "5c1172b8f750490520fc73f6a2008bccf293bd24bbd8a7c2b4c4fa6376b011a5",
+    "historical_inputs": {
+      "original_plan_path": "docs/validation/generalization-eval-plan.json",
+      "original_plan_file_sha256": "a920982e21966f9505ac98c4898fb34dc3ccc0564de728fc8b5ada28ecfef39c",
+      "original_plan_content_sha256": "010e037e864ec0a7c12ff85a38aa31167f1354a391e9edf4df11ae0af3321e6a",
+      "prior_original_resolution_report_path": "docs/validation/generalization-readability.json",
+      "prior_original_resolution_report_sha256": "9e7c68d7ba06e3820d28ce9b51a3259c2c1a0042ea0f3637fd3499ed3675bc5d",
+      "base_snapshot_sha256": "8b152832864cfd0eb78a8881b16eef8a47be1c050a091461f6366be067bf993c",
+      "final_plan_binding_status": "verified_all_13_value_targets_match",
+      "final_plan_path": "docs/validation/generalization-eval-plan-v2.json",
+      "final_plan_file_sha256": "2a4c0e7d0fce6689f81d08d52120b350db2bef9c5c6a832f54c720c9bb6c5263",
+      "final_plan_content_sha256": "31354cbf66e43bfe8dd10753b009ab0296fb269ce5790b6bba5e9a3a4da464dd"
     }
   }
 }
