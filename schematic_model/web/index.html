@@ -8,6 +8,7 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/assets/style.css" />
     <script src="/assets/app.js" defer></script>
+    <script src="/assets/comparison.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#question">Skip to chat</a>
@@ -18,6 +19,9 @@
       </div>
       <button id="open-library" class="primary-ghost" type="button">
         Open schematic
+      </button>
+      <button id="open-comparison" class="primary-ghost" type="button" disabled>
+        Compare models
       </button>
       <p id="doc-title" class="doc-title">No schematic open</p>
       <div id="model-status" class="status" role="status">
@@ -359,6 +363,85 @@
           operator.
         </p>
       </div>
+    </dialog>
+    <dialog
+      id="comparison"
+      class="comparison-dialog"
+      aria-labelledby="compare-title"
+    >
+      <div class="comparison-header">
+        <h2 id="compare-title">Compare model answers</h2>
+        <button id="compare-close" type="button">Close</button>
+      </div>
+      <p class="mode-note">
+        Answer-only mode: tools, search and navigation are unavailable.
+        Responses and traces stay in this session; nothing is saved as training
+        data.
+      </p>
+      <details class="comparison-source">
+        <summary id="compare-source">Frozen schematic</summary>
+        <img id="compare-image" alt="Frozen schematic" />
+      </details>
+      <div class="comparison-options">
+        <label
+          >A
+          <select id="compare-a" aria-label="Model A"></select
+        ></label>
+        <label
+          >B
+          <select id="compare-b" aria-label="Model B"></select
+        ></label>
+        <label
+          >Conversation history
+          <select id="compare-history">
+            <option value="shared">Identical history for both</option>
+            <option value="independent">Each model's own answers</option>
+          </select></label
+        >
+        <button id="compare-new" type="button">New comparison</button>
+      </div>
+      <p class="mode-note">
+        Identical history: choose A or B after each pair as shared context for
+        the next question. Independent history: each model sees only its own
+        previous answers. New comparison captures the currently open schematic
+        and keeps your draft.
+      </p>
+      <p id="compare-settings" class="mode-note"></p>
+      <div
+        id="compare-results"
+        aria-live="polite"
+        aria-relevant="additions text"
+      ></div>
+      <div id="compare-choice" class="comparison-choice" hidden>
+        <span>Choose context for the next question:</span
+        ><button id="compare-use-a" type="button">Use A for both</button
+        ><button id="compare-use-b" type="button">Use B for both</button>
+      </div>
+      <p id="compare-limit" class="mode-note" hidden>
+        This comparison reached its 20-attempt limit. Start a new comparison to
+        continue.
+      </p>
+      <p id="compare-error" role="alert"></p>
+      <div id="compare-progress" class="comparison-progress" hidden>
+        <span class="pilot-dot" aria-hidden="true"></span
+        ><span id="compare-stage" role="status"></span>
+      </div>
+      <form id="compare-form" class="composer">
+        <label for="compare-question">Ask both models</label
+        ><textarea
+          id="compare-question"
+          rows="3"
+          maxlength="4000"
+          required
+          placeholder="Ask the same question about the frozen schematic"
+        ></textarea>
+        <div class="composer-actions">
+          <button id="compare-stop" type="button" hidden>Stop</button
+          ><button id="compare-send" type="submit" disabled>
+            Compare answers
+          </button>
+        </div>
+      </form>
     </dialog>
   </body>
 </html>
