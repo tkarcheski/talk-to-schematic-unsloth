@@ -1,26 +1,59 @@
 <!-- cspell:words venv urlopen noexec SEARXNG -->
 # Self-hosted deployment with Docker Compose
 
-The root `compose.yaml` runs the browser application and the project's native
-Unsloth model server. It uses your existing adapter and base weights; it does not
-download a model or require a cloud AI account. This is a single-user application
-bound to your computer's loopback interface, without a public login service.
+The default Compose stack runs the single-user browser workspace and native
+Unsloth server with existing local base weights. It does not download models or
+use a cloud fallback. The gateway-only stack connects to an existing private
+OpenAI-compatible inference server without starting a GPU service.
 
 ## Start the private workspace
 
-For the existing local v1 artifacts, run from the repository root (adjust the
-paths when deploying on another machine):
+Place a complete model at `models/base`, or set `SCHEMATIC_BASE_DIR` to its
+reviewed directory, then run:
 
 ```sh
-export SCHEMATIC_ADAPTER_DIR=/home/tkarcheski/Projects/talk-to-schematic-unsloth/outputs/real-crop-v1-r16-e3
-export SCHEMATIC_BASE_DIR=/home/tkarcheski/Projects/talk-to-schematic-unsloth/models/Qwen3.5-4B
 docker compose up --build
 ```
 
-Alternatively put weights at `models/adapter` and `models/base`; then the single
-`docker compose up --build` command is sufficient. Startup rebinds the copied
-adapter to `/models/base` inside the container; do not supply a host deployment
-bundle that depends on unmounted absolute paths.
+To serve an adapter, explicitly add its overlay:
+
+```sh
+export SCHEMATIC_ADAPTER_DIR=/path/to/adapter
+export SCHEMATIC_BASE_DIR=/path/to/base-model
+docker compose -f compose.yaml -f compose.adapter.yaml up --build
+```
+
+Only adapter mode copies the adapter into temporary storage and rebinds its base
+reference. Original model files remain read-only. Stop with the same Compose
+file arguments followed by `down`.
+
+Native serving accepts `SCHEMATIC_CONTEXT_LIMIT`, `SCHEMATIC_MAX_TOKENS`,
+`SCHEMATIC_MAX_IMAGE_SIZE`, `SCHEMATIC_MIN_FREE_VRAM_GB`, `SCHEMATIC_MODEL_NAME`,
+and `SCHEMATIC_FOUR_BIT` (`true` or `false`). Defaults remain 8192 context tokens,
+1024 output tokens, 2048 image pixels and a 10 GiB minimum free-memory check.
+These are configuration defaults, not a guarantee that a model fits. Match the
+operator's gateway configuration to the native model name and budgets; increasing
+one server's limits does not qualify the other server or the selected model.
+
+For an already-running local/private endpoint, edit an operator-owned agent
+configuration and use the standalone Linux gateway stack:
+
+```sh
+export SCHEMATIC_AGENT_CONFIG=/path/to/agent.json
+docker compose -f compose.gateway.yaml up --build
+```
+
+This stack uses host networking to reach host-loopback inference, while binding
+the UI to loopback only. It has no GPU reservation or native model container.
+Unlike the default stack, its networking is not isolated by an internal Docker
+network; endpoint restrictions and host network policy remain authoritative.
+
+If the endpoint requires a key, set `api_key_env` in the agent configuration to
+its environment variable name. Store only that variable in a private environment
+file outside the repository, set `SCHEMATIC_AGENT_ENV_FILE` to that file, and add
+`-f compose.gateway-auth.yaml` after `-f compose.gateway.yaml`. Credentials are
+not automatically inherited from the shell. Do not commit the environment file
+or publish expanded Compose configuration.
 
 Requires Docker daemon access, NVIDIA Container Toolkit, a CUDA 13 compatible
 driver and at least 10 GiB free GPU memory (actual needs depend on context and
@@ -34,7 +67,7 @@ Open **http://127.0.0.1:8893** and upload a schematic. No example corpus is bund
 in these images. To use the prepared corpus with component region maps:
 
 ```sh
-export SCHEMATIC_CORPUS_DIR=/home/tkarcheski/Projects/talk-to-schematic-unsloth/data/real-v3
+export SCHEMATIC_CORPUS_DIR=/path/to/reviewed-corpus
 docker compose -f compose.yaml -f compose.examples.yaml up --build
 ```
 
@@ -115,17 +148,22 @@ docker compose -f compose.yaml -f compose.search.yaml down
 ## Reproducibility and verification
 
 The gateway installs the committed `uv.lock` using Python 3.13. The GPU image pins
-core packages in `docker/requirements-inference.txt` to versions inspected in the
-native serving environment, including CUDA 13 PyTorch and Unsloth. Its complete
+core packages in `docker/requirements-inference.txt`, including CUDA 13 PyTorch
+and Unsloth. Its complete
 transitive GPU environment is **not yet locked**. Python, CUDA and SearXNG images are pinned to digests read from their official
 Docker Hub registry metadata on 2026-10-07. uv is pinned to release 0.12.19.
 Review replacements through Dockerfile build arguments (`PYTHON_IMAGE`, `UV_IMAGE`,
 `CUDA_IMAGE`) and `SEARXNG_IMAGE`; build once, test and retain the resulting images.
 
-Validation on 2026-10-07: Compose configuration and shell syntax were checked.
-The local Docker daemon socket was inaccessible to the agent, so the images have
-**not been built or run**, and container GPU compatibility and optional search
-remain unverified. This packaging does not establish production readiness.
+CI builds and starts the CPU gateway container, then checks its UI, health,
+privacy headers and origin rejection without model inference. Passing that job
+does not validate the GPU image, model quality, memory fit, or optional search.
+The GPU image and model-specific serving require separate runtime verification.
+The dependency gate audits locked runtime/development registry packages and npm;
+the pinned Git audit tool requires source review, and GPU extras outside `uv.lock`
+are not covered by that registry audit. Advisory queries require networking;
+unavailable audit services fail the gate rather than returning a clean result.
+
 After building, verify loaded inference, an actual schematic question, viewer
 tool use, search deny/allow behavior, and absence of runtime egress with search
 disabled before introducing sensitive data. Do not enable diagnostics that retain

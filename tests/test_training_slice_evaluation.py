@@ -1,4 +1,7 @@
 """Scheduled evaluation settings remain bound to a resumable training plan."""
+import json
+
+from PIL import Image
 import pytest
 
 from scripts.training_slice import training_argv
@@ -8,9 +11,16 @@ from scripts.training_slice import training_argv
 def plan(tmp_path):
     data = tmp_path / 'data'
     data.mkdir()
-    for name in ('train.jsonl', 'val.jsonl'):
-        (data / name).write_text('{}\n')
-    return {'data': str(data), 'out': str(tmp_path / 'run'), 'model': str(tmp_path / 'model'),
+    model = tmp_path / 'model'
+    model.mkdir()
+    (model / 'model.safetensors').write_bytes(b'weights fixture')
+    for split, color in [('train', 'white'), ('val', 'black')]:
+        Image.new('RGB', (8, 8), color).save(data / f'{split}.png')
+        row = {'id': split, 'messages': [
+            {'role': 'user', 'content': [{'type': 'image', 'image': f'{split}.png'}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': 'fixture answer'}]}]}
+        (data / f'{split}.jsonl').write_text(json.dumps(row) + '\n')
+    return {'data': str(data), 'out': str(tmp_path / 'run'), 'model': str(model),
             'max_steps': 10, 'save_steps': 2, 'max_seq': 4096, 'rank': 16,
             'gradient_accumulation': 4, 'eval_steps': 2,
             'load_best_model_at_end': True, 'early_stopping_patience': 3}
@@ -23,7 +33,9 @@ def test_evaluation_reaches_training_cli_and_survives_resume(plan, tmp_path):
     assert '--load-best-model-at-end' in argv
     checkpoint = tmp_path / 'run/checkpoint-2'
     checkpoint.mkdir(parents=True)
-    (checkpoint / 'trainer_state.json').write_text('{}')
+    (checkpoint / 'trainer_state.json').write_text('{"global_step": 2}')
+    for name in ('adapter_model.safetensors', 'adapter_config.json', 'optimizer.pt', 'scheduler.pt', 'rng_state.pth', 'training_args.bin'):
+        (checkpoint / name).write_bytes(b'fixture')
     resumed = training_argv(plan)
     assert resumed == [*argv, '--resume', str(checkpoint)]
     with pytest.raises(ValueError, match='different'):

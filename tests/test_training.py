@@ -176,6 +176,7 @@ def test_preflight_rejects_jsonl_changed_between_hash_and_parse(dataset):
 @pytest.mark.parametrize("change", [
     {"max_steps": 0}, {"max_train_rows": 0}, {"max_seq": 0}, {"lr": float("nan")},
     {"epochs": float("inf")}, {"model": "Qwen/model-GGUF"}, {"resume": "/nonexistent/checkpoint"},
+    {"placement": "unknown"},
 ])
 def test_invalid_run_configuration_is_rejected(dataset, change):
     with pytest.raises(ValueError):
@@ -249,13 +250,96 @@ def test_resume_directory_must_identify_its_positive_checkpoint_step(
     assert_resume_rejected_without_side_effects(dataset, renamed, monkeypatch, "checkpoint-N")
 
 
-def test_complete_resume_checkpoint_passes_cpu_preflight_without_output(dataset, resume_checkpoint, monkeypatch):
+def recorded_resume(dataset, resume_checkpoint):
+    output = Path(dataset.out)
+    output.mkdir()
+    checkpoint = output / resume_checkpoint.name
+    resume_checkpoint.rename(checkpoint)
+    manifest = output / "training_manifest.json"
+    manifest.write_text(json.dumps(training.preflight(dataset)))
+    return replace(dataset, resume=str(checkpoint)), manifest
+
+
+def test_complete_bound_resume_passes_cpu_preflight_without_writes(dataset, resume_checkpoint, monkeypatch):
+    config, manifest = recorded_resume(replace(dataset, max_steps=400), resume_checkpoint)
+    before = manifest.read_bytes()
     gpu = Mock(side_effect=AssertionError("preflight must stay on CPU"))
     monkeypatch.setattr(training, "gpu_inventory", gpu)
-    report = training.preflight(replace(dataset, max_steps=301, resume=str(resume_checkpoint)))
-    assert report["config"]["resume"] == str(resume_checkpoint)
+    report = training.preflight(config)
+    assert report["config"]["resume"] == config.resume
+    assert manifest.read_bytes() == before
     gpu.assert_not_called()
-    assert not Path(dataset.out).exists()
+
+
+@pytest.mark.parametrize("placement", ["auto", "single_gpu"])
+def test_resume_legacy_placement_preserves_default_policy(dataset, resume_checkpoint, placement):
+    config, manifest = recorded_resume(replace(dataset, max_steps=400), resume_checkpoint)
+    previous = json.loads(manifest.read_text())
+    del previous["config"]["placement"]
+    manifest.write_text(json.dumps(previous))
+    before = manifest.read_bytes()
+    config = replace(config, placement=placement)
+    if placement == "auto":
+        assert training.preflight(config)["config"]["placement"] == "auto"
+    else:
+        with pytest.raises(ValueError, match="Resume recipe differs"):
+            training.preflight(config)
+    assert manifest.read_bytes() == before
+
+
+@pytest.mark.parametrize("change", ["recipe", "placement", "dataset", "image", "model", "tokenizer", "chat_template", "missing_binding", "foreign_checkpoint"])
+def test_resume_changed_binding_preserves_manifest_before_gpu(dataset, resume_checkpoint, monkeypatch, change):
+    model = Path(dataset.data).parent / "model"
+    model.mkdir()
+    (model / "model.safetensors").write_bytes(b"original weights")
+    (model / "tokenizer.model").write_bytes(b"original tokenizer")
+    (model / "chat_templates").mkdir()
+    template = model / "chat_templates/default.jinja"
+    template.write_text("original chat template")
+    config, manifest = recorded_resume(replace(dataset, model=str(model)), resume_checkpoint)
+    if change == "recipe":
+        config = replace(config, lr=config.lr / 2)
+    elif change == "placement":
+        config = replace(config, placement="single_gpu")
+    elif change == "dataset":
+        path = Path(config.data) / "train.jsonl"
+        path.write_text(path.read_text() + "\n")
+    elif change == "image":
+        Image.new("RGB", (32, 24), "red").save(Path(config.data) / "images/train.png")
+    elif change == "model":
+        (model / "model.safetensors").write_bytes(b"different weights")
+    elif change == "tokenizer":
+        (model / "tokenizer.model").write_bytes(b"changed tokenizer")
+    elif change == "chat_template":
+        template.write_text("changed chat template")
+    elif change == "missing_binding":
+        value = json.loads(manifest.read_text())
+        del value["model_binding"]
+        manifest.write_text(json.dumps(value))
+    else:
+        foreign = Path(config.out).parent / "checkpoint-300"
+        Path(config.resume).rename(foreign)
+        config = replace(config, resume=str(foreign))
+    before = manifest.read_bytes()
+    gpu = Mock(side_effect=AssertionError("validation must precede GPU inspection"))
+    monkeypatch.setattr(training, "gpu_inventory", gpu)
+    with pytest.raises(ValueError):
+        training.run_training(config)
+    assert manifest.read_bytes() == before
+    gpu.assert_not_called()
+
+
+def test_model_binding_detects_changed_adapter_base(tmp_path):
+    base = tmp_path / "base"
+    adapter = tmp_path / "adapter"
+    base.mkdir()
+    adapter.mkdir()
+    (base / "model.safetensors").write_bytes(b"base")
+    (adapter / "adapter_model.safetensors").write_bytes(b"adapter")
+    (adapter / "adapter_config.json").write_text(json.dumps({"base_model_name_or_path": str(base)}))
+    before = training.model_binding(str(adapter))
+    (base / "model.safetensors").write_bytes(b"changed")
+    assert training.model_binding(str(adapter)) != before
 
 
 def test_low_memory_refuses_before_gpu_import_or_output_creation(dataset, monkeypatch):
@@ -487,9 +571,10 @@ def test_loss_history_rejects_nonfinite_or_missing_best_checkpoint(dataset):
     assert training.evaluation_summary(config, state, require_best=False)["best_checkpoint"] is None
 
 
-def test_mocked_training_wires_loss_selection_callback_and_records_history(dataset, monkeypatch):
+@pytest.mark.parametrize("placement,expected_device_map", [("auto", None), ("single_gpu", {"": 0})])
+def test_mocked_training_wires_loss_selection_callback_and_records_history(dataset, monkeypatch, placement, expected_device_map):
     """Exercise the training integration without importing GPU/Transformers packages."""
-    config = replace(dataset, max_steps=100, eval_steps=50, load_best_model_at_end=True, early_stopping_patience=2)
+    config = replace(dataset, max_steps=100, eval_steps=50, load_best_model_at_end=True, early_stopping_patience=2, placement=placement)
     model = SimpleNamespace(config=SimpleNamespace(_commit_hash="test-revision"), save_pretrained=Mock())
     processor = SimpleNamespace(chat_template="fixture", save_pretrained=Mock())
     state = SimpleNamespace(
@@ -519,6 +604,7 @@ def test_mocked_training_wires_loss_selection_callback_and_records_history(datas
     monkeypatch.delenv("SCHEMATIC_DEADLINE", raising=False)  # cspell:ignore delenv
     monkeypatch.setattr(training, "gpu_inventory", lambda: [{"free_mib": 20480}])
     report = training.run_training(config)
+    assert modules["unsloth"].FastVisionModel.from_pretrained.call_args.kwargs.get("device_map") == expected_device_map
     kwargs = trainer_factory.call_args.kwargs
     assert kwargs["args"].eval_strategy == "steps"
     assert kwargs["args"].eval_steps == kwargs["args"].save_steps == 50
@@ -555,9 +641,11 @@ def test_plain_resume_rejects_changed_evaluation_recipe(dataset, resume_checkpoi
 
 def test_plain_resume_accepts_identical_evaluation_recipe(dataset, resume_checkpoint):
     recipe = {"eval_steps": 50, "load_best_model_at_end": True, "early_stopping_patience": 3}
-    (resume_checkpoint.parent / "training_manifest.json").write_text(json.dumps({"config": recipe}))
-    report = training.preflight(replace(dataset, max_steps=350, resume=str(resume_checkpoint), **recipe))
+    config, manifest = recorded_resume(replace(dataset, max_steps=400, **recipe), resume_checkpoint)
+    before = manifest.read_bytes()
+    report = training.preflight(config)
     assert report["config"]["early_stopping_patience"] == 3
+    assert manifest.read_bytes() == before
 
 
 def test_plain_resume_requires_manifest_before_gpu(dataset, resume_checkpoint, monkeypatch):
@@ -631,10 +719,12 @@ def test_resume_remaining_explicit_budget_and_epoch_mode_preflight(
         dataset, resume_checkpoint, monkeypatch, max_steps):
     gpu = Mock(side_effect=AssertionError("preflight must stay on CPU"))
     monkeypatch.setattr(training, "gpu_inventory", gpu)
-    report = training.preflight(replace(dataset, max_steps=max_steps, epochs=301, resume=str(resume_checkpoint)))
+    config, manifest = recorded_resume(replace(dataset, max_steps=max_steps, epochs=301), resume_checkpoint)
+    before = manifest.read_bytes()
+    report = training.preflight(config)
     assert report["config"]["max_steps"] == max_steps
     gpu.assert_not_called()
-    assert not Path(dataset.out).exists()
+    assert manifest.read_bytes() == before
 
 
 @pytest.mark.parametrize("row_count,epochs,limit", [
@@ -666,8 +756,15 @@ def test_resume_fractional_epoch_budget_with_one_remaining_step(
                               for index in range(row_count)))
     gpu = Mock(side_effect=AssertionError("preflight must stay on CPU"))
     monkeypatch.setattr(training, "gpu_inventory", gpu)
-    report = training.preflight(replace(dataset, epochs=epochs, max_train_rows=limit,
-                                        resume=str(resume_checkpoint)))
+    config, manifest = recorded_resume(replace(dataset, epochs=epochs, max_train_rows=limit), resume_checkpoint)
+    before = manifest.read_bytes()
+    report = training.preflight(config)
     assert report["training_step_budget"]["max_optimizer_steps"] == 301
     gpu.assert_not_called()
-    assert not Path(dataset.out).exists()
+    assert manifest.read_bytes() == before
+def test_model_binding_rejects_missing_indexed_shard(tmp_path):
+    (tmp_path / "model-1.safetensors").write_bytes(b"fixture")
+    (tmp_path / "model.safetensors.index.json").write_text(json.dumps({
+        "weight_map": {"weight": "model-2.safetensors"}}))
+    with pytest.raises(ValueError, match="missing or invalid shard"):
+        training.model_binding(str(tmp_path))
