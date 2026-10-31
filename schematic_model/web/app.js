@@ -324,7 +324,11 @@ function controls() {
   for (const id of ["zoom-in", "zoom-out", "zoom-fit"])
     $(id).disabled = !state.doc;
   for (const button of $("suggestions").children) button.disabled = !ok;
-  for (const button of $("pages").children) button.disabled = state.pending;
+  for (const button of $("pages").children) {
+    const page = Number(button.dataset.page);
+    button.disabled =
+      state.pending || page < 1 || page > (state.pdf?.pages || 0);
+  }
   let status;
   if (state.pending) status = "Local model is working…";
   else if (!state.doc) status = "Waiting for a schematic";
@@ -763,6 +767,9 @@ function renderModelDetails(details) {
       : "Version not reported";
 }
 function accumulateMetrics(metrics) {
+  // Approval-only responses did not run inference; missing metrics still count
+  // as unavailable when the server does not explicitly report zero model steps.
+  if (metrics?.model_steps === 0) return;
   const keys = [
     "prompt_tokens",
     "completion_tokens",
@@ -1209,7 +1216,8 @@ async function asDataURL(blob) {
   });
 }
 async function decode(data) {
-  const image = $("sheet");
+  // Decoding a superseded selection must never mutate the visible sheet.
+  const image = document.createElement("img");
   image.src = data;
   try {
     await image.decode();
@@ -1229,6 +1237,7 @@ function present(doc) {
   state.conversationDocumentId = doc.kind === "pdf" ? doc.documentId : null;
   // Uploads have no native evidence; examples restore the user's last choice.
   $("mode").value = doc.kind === "example" ? state.preferredMode : "vision";
+  $("sheet").src = doc.image;
   $("sheet").hidden = false;
   $("sheet").alt = `${doc.title}, schematic page ${doc.page}`;
   $("placeholder").hidden = true;
@@ -1334,12 +1343,13 @@ async function openFile(file) {
     return;
   }
   const selection = loading(`Opening ${file.name}…`);
+  state.pdf = null;
+  renderPages();
   showError("");
   try {
     if (!isPdf) {
-      state.pdf = null;
-      renderPages();
       const data = await asDataURL(file);
+      if (selection !== state.selection) return;
       const [width, height] = await decode(data);
       if (selection !== state.selection) return;
       present(uploadDoc(file.name, 1, data, width, height, []));
@@ -1395,55 +1405,90 @@ function uploadDoc(name, page, image, width, height, words) {
 }
 async function openPdfPage(number) {
   const pdf = state.pdf;
+  if (!pdf || !Number.isInteger(number) || number < 1 || number > pdf.pages)
+    return;
   const selection = loading(`Rendering page ${number}…`);
-  const page = await pdf.document.getPage(number);
-  const base = page.getViewport({ scale: 1 });
-  let scale = PDF_LONG_SIDE / Math.max(base.width, base.height);
-  scale = Math.min(
-    scale,
-    Math.sqrt(PDF_MAX_PIXELS / (base.width * base.height)),
-  );
-  const viewport = page.getViewport({ scale });
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.floor(viewport.width);
-  canvas.height = Math.floor(viewport.height);
-  const context = canvas.getContext("2d");
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  await page.render({ canvas, canvasContext: context, viewport }).promise;
-  const text = await page.getTextContent();
-  if (selection !== state.selection) return;
-  const words = textWords(
-    text.items,
-    viewport.transform,
-    viewport.scale,
-    canvas.width,
-    canvas.height,
-  );
-  const data = canvas.toDataURL("image/png");
-  const [width, height] = await decode(data);
-  if (selection !== state.selection) return;
-  pdf.page = number;
   renderPages();
-  present(uploadDoc(pdf.name, number, data, width, height, words));
+  showError("");
+  try {
+    const page = await pdf.document.getPage(number);
+    if (selection !== state.selection) return;
+    const base = page.getViewport({ scale: 1 });
+    let scale = PDF_LONG_SIDE / Math.max(base.width, base.height);
+    scale = Math.min(
+      scale,
+      Math.sqrt(PDF_MAX_PIXELS / (base.width * base.height)),
+    );
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.floor(viewport.width);
+    canvas.height = Math.floor(viewport.height);
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvas, canvasContext: context, viewport }).promise;
+    const text = await page.getTextContent();
+    if (selection !== state.selection) return;
+    const words = textWords(
+      text.items,
+      viewport.transform,
+      viewport.scale,
+      canvas.width,
+      canvas.height,
+    );
+    const data = canvas.toDataURL("image/png");
+    const [width, height] = await decode(data);
+    if (selection !== state.selection) return;
+    pdf.page = number;
+    present(uploadDoc(pdf.name, number, data, width, height, words));
+    renderPages();
+  } catch (error) {
+    // This operation owns the page-load token, including the first PDF page.
+    if (selection === state.selection) {
+      $("placeholder-text").textContent = `Could not render page ${number}`;
+      showError(error.message || "The PDF page could not be rendered.");
+      renderPages();
+      controls();
+    }
+  }
 }
 function renderPages() {
   const nav = $("pages");
+  const pdf = state.pdf;
   nav.replaceChildren();
-  nav.hidden = !state.pdf || state.pdf.pages < 2;
+  nav.hidden = !pdf || (pdf.pages < 2 && Boolean(state.doc));
   if (nav.hidden) return;
-  for (let number = 1; number <= Math.min(state.pdf.pages, 200); number += 1) {
+  const addPage = (number, text = String(number), label = `Page ${number}`) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = String(number);
-    button.setAttribute("aria-label", `Page ${number}`);
-    if (number === state.pdf.page) button.setAttribute("aria-current", "page");
+    button.dataset.page = String(number);
+    button.textContent = text;
+    button.setAttribute("aria-label", label);
+    button.disabled = state.pending || number < 1 || number > pdf.pages;
+    if (number === pdf.page) button.setAttribute("aria-current", "page");
     button.addEventListener("click", () => {
-      if (number !== state.pdf.page && !state.pending)
-        openPdfPage(number).catch((error) => showError(error.message));
+      if (
+        state.pdf === pdf &&
+        (number !== pdf.page || !state.doc) &&
+        !state.pending
+      )
+        openPdfPage(number);
     });
     nav.append(button);
-  }
+  };
+  // First/last and a moving window keep every page reachable with bounded DOM.
+  const start = Math.max(1, Math.min(pdf.page - 4, pdf.pages - 8));
+  const pages = new Set([1, pdf.pages]);
+  for (
+    let number = start;
+    number <= Math.min(start + 8, pdf.pages);
+    number += 1
+  )
+    pages.add(number);
+  if (pdf.pages > 9) addPage(pdf.page - 1, "Previous", "Previous page");
+  for (const number of [...pages].sort((left, right) => left - right))
+    addPage(number);
+  if (pdf.pages > 9) addPage(pdf.page + 1, "Next", "Next page");
 }
 
 /* ---------- library ---------- */
@@ -1716,6 +1761,7 @@ function bind() {
     else if (event.key === "0") showFull(true);
     else if (moves[event.key]) {
       const [dx, dy] = moves[event.key];
+      state.fit = false;
       applyView(
         { ...state.view, x: state.view.x + dx, y: state.view.y + dy },
         false,
