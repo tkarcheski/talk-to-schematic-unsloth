@@ -22,6 +22,8 @@ from .corpus import PUBLISHERS, parse_eagle, publisher
 ASSETS = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/favicon.svg": ("favicon.svg", "image/svg+xml"),
+    "/assets/saved_benchmark.js": ("saved_benchmark.js", "text/javascript; charset=utf-8"),
+    "/assets/saved_comparison.js": ("saved_comparison.js", "text/javascript; charset=utf-8"),
     "/assets/comparison.js": ("comparison.js", "text/javascript; charset=utf-8"),
     "/assets/app.js": ("app.js", "text/javascript; charset=utf-8"),
     "/assets/style.css": ("style.css", "text/css; charset=utf-8"),

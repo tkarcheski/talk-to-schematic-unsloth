@@ -3,8 +3,8 @@
   "status": "manual_value_target_review_no_dataset_changes",
   "inputs": {
     "plan_path": "docs/validation/generalization-eval-plan.json",
-    "plan_file_sha256": "a920982e21966f9505ac98c4898fb34dc3ccc0564de728fc8b5ada28ecfef39c",
-    "plan_content_sha256": "010e037e864ec0a7c12ff85a38aa31167f1354a391e9edf4df11ae0af3321e6a",
+    "plan_file_sha256": "757d4af511b79f9529243107f4fdcad39fedcdd20e6a088653236065f370693b",
+    "plan_content_sha256": "a57fa88d702e66c5ca1c998b23c2a362a0eb6ee47a2db43ba0700882c9666d19",
     "base_snapshot_sha256": "8b152832864cfd0eb78a8881b16eef8a47be1c050a091461f6366be067bf993c"
   },
   "scope": "Thirteen proposed image-only value targets on existing validation boards. Connectivity and refusal cases are outside this visual review.",
@@ -919,5 +919,15 @@
       ],
       "model_scale_status": "unreviewed"
     }
-  ]
+  ],
+  "public_copy": {
+    "scope": "Historical visual review with current public-copy document bindings in inputs. historical_inputs retain the documents inspected at the original review. Observations, targets, counts and source/image identities are unchanged; no new visual review occurred.",
+    "historical_file_sha256": "9e7c68d7ba06e3820d28ce9b51a3259c2c1a0042ea0f3637fd3499ed3675bc5d",
+    "historical_inputs": {
+      "plan_path": "docs/validation/generalization-eval-plan.json",
+      "plan_file_sha256": "a920982e21966f9505ac98c4898fb34dc3ccc0564de728fc8b5ada28ecfef39c",
+      "plan_content_sha256": "010e037e864ec0a7c12ff85a38aa31167f1354a391e9edf4df11ae0af3321e6a",
+      "base_snapshot_sha256": "8b152832864cfd0eb78a8881b16eef8a47be1c050a091461f6366be067bf993c"
+    }
+  }
 }

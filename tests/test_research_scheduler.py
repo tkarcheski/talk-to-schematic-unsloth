@@ -220,6 +220,75 @@ def test_training_continuation_cli_contract(tmp_path, monkeypatch):
     assert not out.exists()
 
 
+@pytest.fixture
+def supervised_slice_plan(tmp_path):
+    from PIL import Image
+
+    data = tmp_path / 'data'
+    data.mkdir()
+    for split, color in [('train', 'white'), ('val', 'black')]:
+        Image.new('RGB', (8, 8), color).save(data / f'{split}.png')
+        row = {'id': split, 'design_id': split, 'messages': [
+            {'role': 'user', 'content': [{'type': 'image', 'image': f'{split}.png'},
+                                        {'type': 'text', 'text': 'What is shown?'}]},
+            {'role': 'assistant', 'content': [{'type': 'text', 'text': 'A test drawing.'}]}]}
+        (data / f'{split}.jsonl').write_text(json.dumps(row) + '\n')
+    model = tmp_path / 'model'
+    model.mkdir()
+    (model / 'model.safetensors').write_bytes(b'structural fixture; never loaded')
+    return {'data': str(data), 'out': str(tmp_path / 'run'),
+            'model': str(model), 'max_steps': 10, 'save_steps': 2,
+            'max_seq': 4096, 'rank': 16, 'gradient_accumulation': 4}
+
+
+@pytest.mark.parametrize('requested', [None, False, True])
+def test_training_slice_supervision_reaches_training_config(
+        supervised_slice_plan, monkeypatch, requested):
+    from scripts.training_slice import training_argv
+    from schematic_model import training
+
+    plan = supervised_slice_plan
+    if requested is not None:
+        plan['last_response_only'] = requested
+    observed = []
+    monkeypatch.setattr(training, 'run_training', lambda config: observed.append(config) or {})
+    assert training.main(training_argv(plan)[3:]) == 0
+    assert len(observed) == 1
+    assert observed[0].last_response_only is (requested is True)
+
+
+@pytest.mark.parametrize('requested', [False, True])
+def test_training_slice_preserves_supervision_recipe_on_resume(
+        supervised_slice_plan, tmp_path, requested):
+    from scripts.training_slice import training_argv
+
+    plan = {**supervised_slice_plan, 'last_response_only': requested}
+    initial = training_argv(plan)
+    checkpoint = tmp_path / 'run' / 'checkpoint-2'
+    checkpoint.mkdir(parents=True)
+    for name in ('adapter_model.safetensors', 'adapter_config.json', 'optimizer.pt',
+                 'scheduler.pt', 'rng_state.pth', 'training_args.bin'):
+        (checkpoint / name).write_bytes(b'structural fixture; never loaded')
+    (checkpoint / 'trainer_state.json').write_text('{"global_step":2}')
+    marker = tmp_path / 'run.scheduler-plan.sha256'
+    binding = marker.read_bytes()
+    assert training_argv(plan) == [*initial, '--resume', str(checkpoint)]
+    with pytest.raises(ValueError, match='different'):
+        training_argv({**plan, 'last_response_only': not requested})
+    assert marker.read_bytes() == binding
+
+
+@pytest.mark.parametrize('invalid', [None, 0, 1, 'true', []])
+def test_training_slice_rejects_invalid_supervision_before_binding(
+        supervised_slice_plan, tmp_path, invalid):
+    from scripts.training_slice import training_argv
+
+    with pytest.raises(ValueError, match='last_response_only must be a boolean'):
+        training_argv({**supervised_slice_plan, 'last_response_only': invalid})
+    assert not (tmp_path / 'run').exists()
+    assert not (tmp_path / 'run.scheduler-plan.sha256').exists()
+
+
 def test_native_owned_research_and_advice_no_server(tmp_path, monkeypatch):
     import sys
     from scripts import research_agent_step as agent

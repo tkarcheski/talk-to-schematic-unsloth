@@ -596,10 +596,14 @@ def test_loss_history_rejects_nonfinite_or_missing_best_checkpoint(dataset):
 
 
 @pytest.mark.parametrize("placement,expected_device_map", [("auto", None), ("single_gpu", {"": 0})])
-@pytest.mark.parametrize("offload_layers", [0, 24])
-def test_mocked_training_wires_loss_selection_callback_and_records_history(dataset, monkeypatch, placement, expected_device_map, offload_layers):
+@pytest.mark.parametrize("offload_layers,offload_prefetch", [(0, 1), (24, 2)])
+@pytest.mark.parametrize("last_response_only", [False, True])
+def test_mocked_training_wires_loss_selection_callback_and_records_history(
+        dataset, monkeypatch, placement, expected_device_map, offload_layers, offload_prefetch, last_response_only):
     """Exercise the training integration without importing GPU/Transformers packages."""
-    config = replace(dataset, max_steps=100, eval_steps=50, load_best_model_at_end=True, early_stopping_patience=2, placement=placement, offload_layers=offload_layers)
+    config = replace(dataset, max_steps=100, eval_steps=50, load_best_model_at_end=True,
+                     early_stopping_patience=2, placement=placement, offload_layers=offload_layers,
+                     offload_prefetch=offload_prefetch, last_response_only=last_response_only)
     model = SimpleNamespace(config=SimpleNamespace(_commit_hash="test-revision"), save_pretrained=Mock())
     processor = SimpleNamespace(chat_template="fixture", save_pretrained=Mock())
     state = SimpleNamespace(
@@ -614,6 +618,7 @@ def test_mocked_training_wires_loss_selection_callback_and_records_history(datas
     def adapter_factory(model, offload_layers=None, **kwargs):
         adapter_calls.append({"offload_layers": offload_layers, **kwargs})
         return model
+    collator_factory = Mock(return_value=NativeCollator(10))
     cuda = SimpleNamespace(
         is_available=lambda: True, mem_get_info=lambda: (20 * 1024**3, 24 * 1024**3),
         reset_peak_memory_stats=lambda: None, get_device_name=lambda: "test GPU",
@@ -623,7 +628,7 @@ def test_mocked_training_wires_loss_selection_callback_and_records_history(datas
         "unsloth": SimpleNamespace(FastVisionModel=SimpleNamespace(
             from_pretrained=Mock(return_value=(model, processor)), get_peft_model=adapter_factory,
             for_training=lambda model: None), is_bf16_supported=lambda: True),
-        "unsloth.trainer": SimpleNamespace(UnslothVisionDataCollator=lambda *a, **kw: NativeCollator(10)),
+        "unsloth.trainer": SimpleNamespace(UnslothVisionDataCollator=collator_factory),
         "torch": SimpleNamespace(cuda=cuda, bfloat16="bf16", float16="fp16"),
         "trl": SimpleNamespace(SFTConfig=lambda **kw: SimpleNamespace(**kw), SFTTrainer=trainer_factory),
         "transformers": SimpleNamespace(TrainerCallback=object, EarlyStoppingCallback=early_stop),
@@ -635,10 +640,12 @@ def test_mocked_training_wires_loss_selection_callback_and_records_history(datas
     report = training.run_training(config)
     assert modules["unsloth"].FastVisionModel.from_pretrained.call_args.kwargs.get("device_map") == expected_device_map
     assert adapter_calls[0]["offload_layers"] == (offload_layers or None)
-    assert adapter_calls[0].get("prefetch_depth") == (1 if offload_layers else None)
+    assert adapter_calls[0].get("prefetch_depth") == (offload_prefetch if offload_layers else None)
     assert adapter_calls[0].get("checkpoint_skip_layers") == (0 if offload_layers else None)
     assert report["config"]["offload_layers"] == offload_layers
+    assert report["config"]["offload_prefetch"] == offload_prefetch
     kwargs = trainer_factory.call_args.kwargs
+    assert collator_factory.call_args.kwargs["last_response_only"] is last_response_only
     assert kwargs["args"].eval_strategy == "steps"
     assert kwargs["args"].eval_steps == kwargs["args"].save_steps == 50
     assert kwargs["args"].load_best_model_at_end is True
@@ -663,6 +670,70 @@ def test_legacy_adapter_factory_cannot_silently_ignore_requested_offload(dataset
     with pytest.raises(RuntimeError, match="explicit offload_layers support"):
         training.offload_arguments(replace(dataset, offload_layers=24), legacy)
     legacy.assert_not_called()
+
+
+@pytest.mark.parametrize("offload_layers,offload_prefetch", [(0, 1), (24, 2)])
+def test_last_response_only_cli_and_resume_are_bound(dataset, resume_checkpoint, capsys, offload_layers, offload_prefetch):
+    assert training.main(["--data", dataset.data, "--dry-run", "--last-response-only",
+                          "--offload-layers", str(offload_layers), "--offload-prefetch", str(offload_prefetch)]) == 0
+    reported = json.loads(capsys.readouterr().out)["config"]
+    assert reported["last_response_only"] is True
+    assert reported["offload_layers"] == offload_layers
+    assert reported["offload_prefetch"] == offload_prefetch
+    config, manifest = recorded_resume(
+        replace(dataset, max_steps=400, last_response_only=True, offload_layers=offload_layers,
+                offload_prefetch=offload_prefetch), resume_checkpoint)
+    before = manifest.read_bytes()
+    assert training.preflight(config)["config"]["last_response_only"] is True
+    for change in ({"last_response_only": False}, {"offload_layers": offload_layers + 1},
+                   {"offload_prefetch": offload_prefetch + 1}):
+        with pytest.raises(ValueError, match="Resume .*recipe differs"):
+            training.preflight(replace(config, **change))
+    assert manifest.read_bytes() == before
+
+
+def test_scheduled_supervision_and_offload_flags_survive_resume_together(dataset, resume_checkpoint, capsys):
+    from scripts.training_slice import training_argv
+    model = Path(dataset.data).parent / "model"
+    model.mkdir()
+    (model / "model.safetensors").write_bytes(b"fixture weights")
+    plan = {"data": dataset.data, "out": dataset.out, "model": str(model), "max_steps": 400,
+            "save_steps": 50, "max_seq": 4096, "rank": 16, "gradient_accumulation": 4,
+            "four_bit": True, "placement": "single_gpu", "offload_layers": 24,
+            "offload_prefetch": 2, "last_response_only": True}
+    initial = training_argv(plan)
+    assert training.main([*initial[3:], "--dry-run"]) == 0
+    reported = json.loads(capsys.readouterr().out)["config"]
+    for field in ("four_bit", "placement", "offload_layers", "offload_prefetch", "last_response_only"):
+        assert reported[field] == plan[field]
+    output = Path(dataset.out)
+    output.mkdir()
+    checkpoint = output / resume_checkpoint.name
+    resume_checkpoint.rename(checkpoint)
+    marker = output.with_name(output.name + ".scheduler-plan.sha256")
+    before = marker.read_bytes()
+    assert training_argv(plan) == [*initial, "--resume", str(checkpoint)]
+    for change in ({"last_response_only": False}, {"offload_layers": 16}, {"offload_prefetch": 1},
+                   {"four_bit": False}, {"placement": "auto"}):
+        with pytest.raises(ValueError, match="different or untracked training plan"):
+            training_argv({**plan, **change})
+        assert marker.read_bytes() == before
+
+
+@pytest.mark.parametrize("last_response_only", [False, True])
+def test_resume_legacy_supervision_preserves_default_policy(dataset, resume_checkpoint, last_response_only):
+    config, manifest = recorded_resume(replace(dataset, max_steps=400), resume_checkpoint)
+    previous = json.loads(manifest.read_text())
+    del previous["config"]["last_response_only"]
+    manifest.write_text(json.dumps(previous))
+    before = manifest.read_bytes()
+    config = replace(config, last_response_only=last_response_only)
+    if last_response_only:
+        with pytest.raises(ValueError, match="Resume supervision recipe differs"):
+            training.preflight(config)
+    else:
+        assert training.preflight(config)["config"]["last_response_only"] is False
+    assert manifest.read_bytes() == before
 
 
 @pytest.mark.parametrize("recorded", [
