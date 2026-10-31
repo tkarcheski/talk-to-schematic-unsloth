@@ -132,6 +132,7 @@ try {
       typeof text === "string" ? text.split("User question:\n").at(-1) : text;
     if (last === "Show me R1.")
       return fulfill(route, {
+        continuation_id: "viewer-continuation-fixture",
         choices: [
           {
             message: {
@@ -151,12 +152,18 @@ try {
           },
         ],
       });
-    if (body.messages?.at(-1)?.tool_call_id === "viewer-fixture")
+    if (body.continuation_id === "viewer-continuation-fixture") {
+      expect(body.tool_call_id).toBe("viewer-fixture");
+      expect(body.tool).toBe("show_label");
+      expect(body.arguments).toEqual({ label: "R1" });
+      expect(body.result.status).toBe("shown");
+      expect(body.messages).toBeUndefined();
       return fulfill(route, {
         choices: [
           { message: { role: "assistant", content: "R1 is now focused." } },
         ],
       });
+    }
     if (last === "Do a web search for that part") {
       searchContext = JSON.parse(
         text

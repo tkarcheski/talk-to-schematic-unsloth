@@ -2,10 +2,17 @@
 name: Package checks
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
   contents: read
+
+# A PR update needs one run; main is checked again after integration.
+# Replace obsolete runs when another update arrives on the same PR or branch.
+concurrency:
+  group: checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # Branch protection requires this exact check name; retain it when changing its implementation.

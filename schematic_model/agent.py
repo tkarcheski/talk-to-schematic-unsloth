@@ -155,6 +155,35 @@ class AgentRuntime:
             if timer:
                 timer.cancel()
 
+    def _retain(self, state, kind):
+        token = secrets.token_urlsafe(32)
+        state.update(pending_kind=kind, expires=time.time() + 300)
+        with self.pending_lock:
+            retained = sum(len(json.dumps(value)) for value in self.pending.values())
+            if len(self.pending) >= 8 or len(json.dumps(state)) + retained > 32 * 1024 * 1024:
+                raise ValueError("Pending approval memory limit reached")
+            self.pending[token] = state
+            timer = threading.Timer(300, self._expire, args=(token,))
+            timer.daemon = True
+            self.timers[token] = timer
+            timer.start()
+        return token
+
+    def _consume(self, token, kind):
+        if not isinstance(token, str) or not 1 <= len(token) <= 128:
+            raise ValueError("Invalid continuation or approval token")
+        with self.pending_lock:
+            state = self.pending.get(token)
+            if state is None or state["expires"] <= time.time() or state["pending_kind"] != kind:
+                raise ValueError("Approval or continuation expired or already consumed")
+            self.pending.pop(token)
+            timer = self.timers.pop(token, None)
+            if timer:
+                timer.cancel()
+        state.pop("pending_kind")
+        state["trace"] = []
+        return state
+
     def describe(self):
         return {"enabled": True, "provider": "self_hosted", "model": self.config.model, "endpoint": self.config.endpoint, "network": "approval_required" if self.config.search_endpoint else "disabled", "max_steps": self.config.max_steps,
                 "tools": [{"name": n, "permission": self.config.action(n)} for n in [*sorted(TOOL_NAMES), "calculate", "web_search"]]}
@@ -253,17 +282,31 @@ class AgentRuntime:
             expired = [k for k, v in self.pending.items() if v["expires"] <= now]
         for token in expired:
             self._expire(token)
-        if "approval_id" in payload:
+        if "continuation_id" in payload:
+            if set(payload) != {"continuation_id", "tool_call_id", "tool", "arguments", "result"}:
+                raise ValueError("Viewer continuation requires exactly its token, call, arguments and result")
+            state = self._consume(payload["continuation_id"], "viewer_result")
+            call, args = state.pop("call"), state.pop("args")
+            name = call["function"]["name"]
+            if (payload["tool_call_id"] != call["id"] or payload["tool"] != name
+                    or payload["arguments"] != args):
+                raise ValueError("Viewer continuation must match the approved call and arguments")
+            validate_agent_arguments(name, payload["arguments"])
+            result = payload["result"]
+            if (not isinstance(result, dict)
+                    or result.get("status") not in ("shown", "not_found", "location_unavailable", "error", "denied")
+                    or len(json.dumps(result, allow_nan=False)) > 16_384):
+                raise ValueError("Viewer result must be a bounded result object")
+            self._record(state, call, args, result, "completed" if result["status"] == "shown"
+                         else "denied" if result["status"] == "denied" else "error")
+            from .deployment import DeploymentConfig, validate_request
+            validate_request({"model": self.config.model, "messages": state["messages"], "tools": AGENT_TOOLS},
+                             DeploymentConfig(model="", served_model_name=self.config.model, agent_tools=True,
+                                              **limits_from(self.config).describe()))
+        elif "approval_id" in payload:
             if set(payload) != {"approval_id", "decision"} or payload["decision"] not in {"allow", "deny"}:
                 raise ValueError("Invalid approval decision")
-            with self.pending_lock:
-                state = self.pending.pop(payload["approval_id"], None)
-                timer = self.timers.pop(payload["approval_id"], None)
-                if timer:
-                    timer.cancel()
-            if state is None:
-                raise ValueError("Approval expired or already consumed")
-            state["trace"] = []
+            state = self._consume(payload["approval_id"], "approval")
             call, args = state.pop("call"), state.pop("args")
             name = call["function"]["name"]
             trace_event(state, "approval", {"tool": name, "arguments": args, "decision": payload["decision"]})
@@ -273,8 +316,11 @@ class AgentRuntime:
                 message = state["messages"][-1]
                 state["events"].append({"id": secrets.token_hex(8), "tool": name,
                                         "status": "approved", "arguments": args})
+                state.update(call=call, args=args)
+                continuation = self._retain(state, "viewer_result")
                 result = {"choices": [{"message": message}], "events": state["events"],
                           "messages": state["messages"][:-1],
+                          "continuation_id": continuation, "continuation_expires_at": state["expires"],
                           "viewer_authorization": {"tool_call_id": call["id"], "tool": name, "arguments": args}}
                 return self._finish(state, result, InferenceMetrics())
             result = self._execute(name, args) if payload["decision"] == "allow" else {"error": "User denied tool execution"}
@@ -285,6 +331,8 @@ class AgentRuntime:
             validation = dict(payload)
             validation["tools"] = [*VIEW_TOOLS, CALCULATE_TOOL, SEARCH_TOOL]
             validate_request(validation, config)
+            if payload["messages"][-1]["role"] != "user":
+                raise ValueError("Viewer results require a continuation token; new turns require a user message")
             state = {"messages": copy.deepcopy(payload["messages"]), "events": [], "steps": 0, "max_tokens": payload.get("max_tokens", self.config.max_tokens), "temperature": payload.get("temperature", 0)}
         metrics = InferenceMetrics()
         result = self._run(state, metrics, cancel_event=cancel_event)
@@ -292,7 +340,10 @@ class AgentRuntime:
 
     def _finish(self, state, result, metrics):
         result["metrics"] = metrics.result()
-        result["model_details"] = self.model_details
+        # A zero-inference approval belongs to its original response, even if
+        # another request has since observed a different model artifact.
+        result["model_details"] = dict(state.get("model_details", {
+            "served_model_name": self.config.model, "backend": "self_hosted"}))
         result["trace"] = state.pop("trace", [])
         return result
 
@@ -333,6 +384,32 @@ class AgentRuntime:
                 raise ValueError("Malformed upstream completion")
             if response.get("context_truncated"):
                 raise ValueError("Upstream truncated the requested evidence")
+            choice = response["choices"][0]
+            message = choice.get("message")
+            if not isinstance(message, dict) or message.get("role") != "assistant" or message.get("content") is not None and (not isinstance(message["content"], str) or len(message["content"]) > 100_000):
+                raise ValueError("Malformed upstream assistant message")
+            calls = message.get("tool_calls", [])
+            if not isinstance(calls, list):
+                raise ValueError("Malformed upstream tool calls")
+            expected_finish = "tool_calls" if calls else "stop"
+            if choice.get("finish_reason") != expected_finish:
+                raise ValueError("Upstream finish reason does not confirm a completed answer or tool call")
+            if calls:
+                if len(calls) != 1:
+                    raise ValueError("Agent requires one tool call per turn")
+                call = calls[0]
+                if not isinstance(call, dict) or call.get("type") != "function" or not isinstance(call.get("function"), dict) or not isinstance(call.get("id"), str) or not call["id"].strip() or len(call["id"]) > 128:
+                    raise ValueError("Invalid tool call id")
+                if any(previous.get("id") == call["id"] for message in state["messages"]
+                       if message.get("role") == "assistant" for previous in (message.get("tool_calls") or [])):
+                    raise ValueError("Upstream reused a tool call ID from the conversation")
+                name = call["function"].get("name")
+                if not isinstance(name, str) or not isinstance(call["function"].get("arguments"), str) or len(call["function"]["arguments"]) > 4096:
+                    raise ValueError("Malformed upstream tool arguments")
+                args = validate_agent_arguments(name, json.loads(call["function"]["arguments"]))
+                call = {"id": call["id"], "type": "function", "function": {"name": name, "arguments": json.dumps(args, allow_nan=False)}}
+            elif not isinstance(message.get("content"), str) or not message["content"].strip():
+                raise ValueError("Upstream returned no answer")
             upstream_metrics = response.get("metrics")
             seconds, scope = wall_seconds, "upstream_wall_time"
             if isinstance(upstream_metrics, dict):
@@ -340,53 +417,25 @@ class AgentRuntime:
                 if isinstance(reported, (int, float)) and type(reported) in (int, float) and math.isfinite(reported) and reported > 0 and upstream_metrics.get("timing_scope") == "model_inference_including_prefill":
                     seconds, scope = reported, "model_inference_including_prefill"
             metrics.add(response.get("usage"), seconds, scope)
-            details = safe_model_details(response.get("model_details"))
-            if details:
-                self.model_details = {"served_model_name": self.config.model, **details}
-            choice = response["choices"][0]
-            if choice.get("finish_reason") in {"length", "content_filter"}:
-                raise ValueError("Upstream did not complete the answer")
-            message = choice.get("message")
-            if not isinstance(message, dict) or message.get("role") != "assistant" or message.get("content") is not None and (not isinstance(message["content"], str) or len(message["content"]) > 100_000):
-                raise ValueError("Malformed upstream assistant message")
+            # Missing metadata is unknown for this response, not evidence that
+            # the preceding response's weights are still serving this request.
+            details = {"served_model_name": self.config.model, "backend": "self_hosted",
+                       **safe_model_details(response.get("model_details"))}
+            state["model_details"] = details
+            self.model_details = dict(details)
             reasoning = message.get("reasoning_content")
             reasoning = reasoning if isinstance(reasoning, str) and len(reasoning) <= 100_000 else None
             trace_event(state, "model_response", {"content": message.get("content"), "reasoning_content": reasoning,
-                        "finish_reason": choice.get("finish_reason"), "usage": metrics.result(), "model_details": self.model_details})
-            calls = message.get("tool_calls", [])
-            if not isinstance(calls, list):
-                raise ValueError("Malformed upstream tool calls")
+                        "finish_reason": choice["finish_reason"], "usage": metrics.result(), "model_details": dict(details)})
             if not calls:
-                if not isinstance(message.get("content"), str) or not message["content"].strip():
-                    raise ValueError("Upstream returned no answer")
                 return {"choices": [{"message": {"role": "assistant", "content": message["content"]}}], "events": state["events"], "messages": state["messages"]}
-            if len(calls) != 1:
-                raise ValueError("Agent requires one tool call per turn")
-            call = calls[0]
-            if not isinstance(call, dict) or call.get("type") != "function" or not isinstance(call.get("function"), dict) or not isinstance(call.get("id"), str) or not 1 <= len(call["id"]) <= 128:
-                raise ValueError("Invalid tool call id")
-            name = call["function"].get("name")
-            if not isinstance(name, str) or not isinstance(call["function"].get("arguments"), str) or len(call["function"]["arguments"]) > 4096:
-                raise ValueError("Malformed upstream tool arguments")
-            args = validate_agent_arguments(name, json.loads(call["function"]["arguments"]))
-            call = {"id": call["id"], "type": "function", "function": {"name": name, "arguments": json.dumps(args, allow_nan=False)}}
             calls = [call]
             action = self.config.action(name)
             trace_event(state, "tool_call", {"tool": name, "arguments": args, "permission": action})
             state["messages"].append({"role": "assistant", "content": message.get("content") or None, "tool_calls": calls})
             if action == "ask":
-                token = secrets.token_urlsafe(32)
-                state.update(call=call, args=args, expires=time.time() + 300)
-                with self.pending_lock:
-                    size = len(json.dumps(state))
-                    retained = sum(len(json.dumps(value)) for value in self.pending.values())
-                    if len(self.pending) >= 8 or size + retained > 32 * 1024 * 1024:
-                        raise ValueError("Pending approval memory limit reached")
-                    self.pending[token] = state
-                    timer = threading.Timer(300, self._expire, args=(token,))
-                    timer.daemon = True
-                    self.timers[token] = timer
-                    timer.start()
+                state.update(call=call, args=args)
+                token = self._retain(state, "approval")
                 return {"choices": [], "events": state["events"], "pending_approval": {"id": token, "tool": name, "arguments": args, "destination": self.config.search_endpoint if name == "web_search" else "schematic viewer" if name in TOOL_NAMES else "local calculator", "expires_at": state["expires"]}}
             result = self._execute(name, args) if action == "allow" else {"error": "Tool denied by operator policy"}
             self._record(state, call, args, result, "completed" if action == "allow" else "denied")
