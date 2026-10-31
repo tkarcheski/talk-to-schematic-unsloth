@@ -208,23 +208,20 @@ tick(); setInterval(tick,10000);
 </script>"""
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--run", type=Path, help="run directory (default: newest under outputs/)")
-    parser.add_argument("--log", type=Path, help="progress log (default: newest results/<run name>*.log)")
-    parser.add_argument("--follow", action="store_true", help="follow newest manifest under the selected run parent")
-    parser.add_argument("--ledger", type=Path, help="read-only research scheduler SQLite ledger")
-    parser.add_argument("--port", type=int, default=8890)
-    args = parser.parse_args()
-    run = (args.run or newest_run(ROOT / "outputs")).resolve()
-    log = progress_log(run, args.log)
-
+def make_server(run: Path, *, log: Path | None = None, follow: bool = False,
+                ledger: Path | None = None, port: int = 8890) -> ThreadingHTTPServer:
+    """Serve private state only for the actual loopback authority."""
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
+            hosts = self.headers.get_all("Host", [])
+            allowed = {f"127.0.0.1:{server.server_port}", f"localhost:{server.server_port}"}
+            if len(hosts) != 1 or hosts[0].lower() not in allowed:
+                self.send_error(403, "Invalid request host")
+                return
             if self.path == "/api/state":
-                selected = newest_run(run.parent) if args.follow else run
-                selected_log = progress_log(selected, args.log)
-                body, kind = json.dumps({**snapshot(selected, selected_log), "jobs": queue_snapshot(args.ledger)}).encode(), "application/json"
+                selected = newest_run(run.parent) if follow else run
+                selected_log = progress_log(selected, log)
+                body, kind = json.dumps({**snapshot(selected, selected_log), "jobs": queue_snapshot(ledger)}).encode(), "application/json"
             elif self.path == "/":
                 body, kind = PAGE.encode(), "text/html; charset=utf-8"
             else:
@@ -239,8 +236,23 @@ def main() -> None:
         def log_message(self, *_args) -> None:
             pass
 
+    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    return server
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--run", type=Path, help="run directory (default: newest under outputs/)")
+    parser.add_argument("--log", type=Path, help="progress log (default: newest results/<run name>*.log)")
+    parser.add_argument("--follow", action="store_true", help="follow newest manifest under the selected run parent")
+    parser.add_argument("--ledger", type=Path, help="read-only research scheduler SQLite ledger")
+    parser.add_argument("--port", type=int, default=8890)
+    args = parser.parse_args()
+    run = (args.run or newest_run(ROOT / "outputs")).resolve()
+    log = progress_log(run, args.log)
     print(f"Dashboard for {run}\nlog: {log}\nhttp://127.0.0.1:{args.port}")
-    ThreadingHTTPServer(("127.0.0.1", args.port), Handler).serve_forever()
+    with make_server(run, log=args.log, follow=args.follow, ledger=args.ledger, port=args.port) as server:
+        server.serve_forever()
 
 
 if __name__ == "__main__":

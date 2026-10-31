@@ -1,6 +1,10 @@
 """Viewer-command conversations: source-derived targets, wire format and gold."""
 
 import json
+import hashlib
+
+import pytest
+from PIL import Image
 
 from evaluate import grade, validate_gold_rows
 from schematic_model.view_data import conversation
@@ -58,3 +62,51 @@ def test_pages_without_clear_targets_are_skipped():
     assert conversation(RECORD, sparse, REGIONS, "image.png") is None
     no_net = {**SHEET, "nets": {"N$4": ["R2.2", "U1.3"]}}
     assert conversation(RECORD, no_net, REGIONS, "image.png") is None
+
+
+@pytest.fixture
+def viewer_corpus(tmp_path, monkeypatch):
+    from schematic_model import render_eagle, view_data
+
+    corpus = tmp_path / 'corpus'
+    corpus.mkdir()
+    image = corpus / 'sheet.png'
+    Image.new('RGB', (12, 12), 'white').save(image)
+    svg = '<svg>fixture geometry</svg>'
+    record = {**RECORD, 'images': [{'page': 1, 'path': image.name,
+                                  'sha256': hashlib.sha256(image.read_bytes()).hexdigest(),
+                                  'svg_sha256': hashlib.sha256(svg.encode()).hexdigest()}]}
+    (corpus / 'manifest.jsonl').write_text(json.dumps(record) + '\n')
+    monkeypatch.setattr(view_data, 'parse_eagle', lambda source: {'sha256': RECORD['sha256'], 'sheets': [SHEET]})
+    monkeypatch.setattr(render_eagle, 'source_layout', lambda *args, **kwargs: (svg, REGIONS))
+    return corpus, image, record
+
+
+def test_builder_binds_verified_png_in_row_provenance(viewer_corpus):
+    from schematic_model.view_data import build
+
+    corpus, _, record = viewer_corpus
+    output = corpus / 'view'
+    assert build(corpus, output)['conversations'] == 1
+    rows = [json.loads(line) for path in output.glob('*.jsonl') for line in path.read_text().splitlines()]
+    assert rows[0]['provenance']['images'] == record['images']
+
+
+@pytest.mark.parametrize('change', ['bytes', 'missing-hash', 'malformed-hash', 'missing-file'])
+def test_changed_png_cannot_reuse_valid_svg_geometry_or_replace_existing_rows(viewer_corpus, change):
+    from schematic_model.view_data import build
+
+    corpus, image, record = viewer_corpus
+    output = corpus / 'view'
+    build(corpus, output)
+    before = {p.name: p.read_bytes() for p in output.iterdir()}
+    if change == 'bytes':
+        Image.new('RGB', (12, 12), 'black').save(image)
+    elif change == 'missing-file':
+        image.unlink()
+    else:
+        record['images'][0]['sha256'] = None if change == 'missing-hash' else 'invalid'
+        (corpus / 'manifest.jsonl').write_text(json.dumps(record) + '\n')
+    with pytest.raises((ValueError, FileNotFoundError)):
+        build(corpus, output, overwrite=True)
+    assert {p.name: p.read_bytes() for p in output.iterdir()} == before

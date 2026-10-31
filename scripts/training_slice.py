@@ -17,7 +17,8 @@ from schematic_model.training import TrainingConfig
 def training_argv(plan):
     required = {'data', 'out', 'model', 'max_steps', 'save_steps', 'max_seq', 'rank', 'gradient_accumulation'}
     optional = {'continue_adapter', 'lr', 'max_image_size', 'finetune_vision',
-                'eval_steps', 'load_best_model_at_end', 'early_stopping_patience'}
+                'eval_steps', 'load_best_model_at_end', 'early_stopping_patience',
+                'four_bit', 'placement', 'offload_layers', 'offload_prefetch'}
     if set(plan) - required - optional or not required <= set(plan):
         raise ValueError('unknown/missing training plan fields')
     for key in ('data', 'out', 'model'):
@@ -33,10 +34,17 @@ def training_argv(plan):
             raise ValueError('invalid evaluation bound')
     if type(plan.get('load_best_model_at_end', False)) is not bool:
         raise ValueError('best model selection must be boolean')
+    if type(plan.get('four_bit', False)) is not bool:
+        raise ValueError('four_bit must be boolean')
+    if plan.get('offload_layers', 0) and plan.get('continue_adapter', False):
+        raise ValueError('Block offload requires a base-model run; use its checkpoints for resume')
     evaluation = TrainingConfig(max_steps=plan['max_steps'], save_steps=plan['save_steps'],
                                 eval_steps=plan.get('eval_steps'),
                                 load_best_model_at_end=plan.get('load_best_model_at_end', False),
-                                early_stopping_patience=plan.get('early_stopping_patience'))
+                                early_stopping_patience=plan.get('early_stopping_patience'),
+                                placement=plan.get('placement', 'auto'),
+                                offload_layers=plan.get('offload_layers', 0),
+                                offload_prefetch=plan.get('offload_prefetch', 1))
     evaluation.validate()
     data = Path(plan['data'])
     hashes = {name: hashlib.sha256((data / name).read_bytes()).hexdigest() for name in ('train.jsonl', 'val.jsonl')}
@@ -60,9 +68,11 @@ def training_argv(plan):
     if type(image_size) is not int or not 64 <= image_size <= 4096:
         raise ValueError('invalid image bound')
     argv.extend(['--lr', str(lr), '--max-image-size', str(image_size), '--finetune-vision' if plan.get('finetune_vision', False) else '--no-finetune-vision'])
-    for key in ('eval_steps', 'early_stopping_patience'):
+    for key in ('eval_steps', 'early_stopping_patience', 'placement', 'offload_layers', 'offload_prefetch'):
         if key in plan:
             argv.extend(['--' + key.replace('_', '-'), str(plan[key])])
+    if plan.get('four_bit', False):
+        argv.append('--4bit')
     if evaluation.load_best_model_at_end:
         argv.append('--load-best-model-at-end')
     checkpoints = sorted((p for p in out.glob('checkpoint-*') if p.name.removeprefix('checkpoint-').isdigit()),
